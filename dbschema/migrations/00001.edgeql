@@ -1,4 +1,4 @@
-CREATE MIGRATION m1td2lf5svpxhxh36owp6wj3z6zx2tfkxmf2a7qccnqlgdjabgmmjq
+CREATE MIGRATION m1daeydpj2lrn5hygc3jfaniygjn2v5ma5n5c2vzrrsihzx7mtwpbq
     ONTO initial
 {
   CREATE TYPE default::Student {

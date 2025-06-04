@@ -1,0 +1,269 @@
+import aiogram
+import aiogram.filters
+import aiogram.fsm.context
+import bot.database.queries as queries
+import bot.keyboards.reply as keyboards
+import bot.states.user_states as states
+import bot.utils.helpers as helpers
+import config
+
+async def handle_my_reports(message: aiogram.types.Message):
+    """Показать отчеты пользователя"""
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    
+    if not student:
+        await message.answer("❌ Вы не зарегистрированы в системе.")
+        return
+    
+    reports = await queries.ReportQueries.get_by_student(student['id'])
+    report_text = helpers.format_reports_list(reports)
+    
+    await message.answer(report_text, parse_mode="Markdown")
+
+async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Начало создания отчета"""
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    
+    if not student or not student.get('team_memberships'):
+        await message.answer("❌ Вы не состоите в команде.")
+        return
+    
+    await state.set_state(states.ReportCreation.sprint_selection)
+    await message.answer(
+        "📝 *Отправка отчета*\n\n"
+        "Выберите номер спринта:",
+        reply_markup=keyboards.get_sprints_keyboard(),
+        parse_mode="Markdown"
+    )
+
+async def process_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Обработка выбора спринта"""
+    if message.text == "Отмена":
+        await cancel_action(message, state)
+        return
+    
+    sprint_num = helpers.extract_sprint_number(message.text)
+    
+    if sprint_num is None:
+        await message.answer("❌ Неверный формат. Выберите спринт из предложенных вариантов:")
+        return
+    
+    await state.update_data(sprint_num=sprint_num)
+    await state.set_state(states.ReportCreation.report_text)
+    
+    await message.answer(
+        f"✅ Спринт №{sprint_num}\n\n"
+        f"📝 Введите текст отчета о проделанной работе:",
+        reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад")
+    )
+
+async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Обработка текста отчета"""
+    if message.text in ["Отмена", "Назад"]:
+        if message.text == "Назад":
+            await state.set_state(states.ReportCreation.sprint_selection)
+            await message.answer(
+                "📝 Выберите номер спринта:",
+                reply_markup=keyboards.get_sprints_keyboard()
+            )
+        else:
+            await cancel_action(message, state)
+        return
+    
+    report_text = message.text.strip()
+    
+    if len(report_text) < 10:
+        await message.answer(
+            "❌ Отчет слишком короткий. Минимум 10 символов. Попробуйте еще раз:"
+        )
+        return
+    
+    if len(report_text) > 4000:
+        await message.answer(
+            "❌ Отчет слишком длинный. Максимум 4000 символов. Попробуйте еще раз:"
+        )
+        return
+    
+    await state.update_data(report_text=report_text)
+    await state.set_state(states.ReportCreation.confirmation)
+    
+    data = await state.get_data()
+    
+    confirmation_text = (
+        "📋 *Проверьте отчет:*\n\n"
+        f"📊 Спринт: №{data['sprint_num']}\n"
+        f"📝 Отчет: {report_text[:200]}{'...' if len(report_text) > 200 else ''}\n\n"
+        f"Отправить отчет?"
+    )
+    
+    await message.answer(
+        confirmation_text,
+        reply_markup=keyboards.get_confirmation_keyboard("Отправить", "Отмена"),
+        parse_mode="Markdown"
+    )
+
+async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Подтверждение отправки отчета"""
+    if message.text == "Отправить":
+        student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+        data = await state.get_data()
+        
+        try:
+            await queries.ReportQueries.create_or_update(
+                student_id=student['id'],
+                sprint_num=data['sprint_num'],
+                report_text=data['report_text']
+            )
+            
+            await state.clear()
+            
+            # Возвращаем главное меню
+            has_team = bool(student.get('team_memberships'))
+            is_admin = False
+            if has_team:
+                team_membership = student['team_memberships'][0]
+                is_admin = team_membership['team']['admin']['id'] == student['id']
+            
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+            
+            await message.answer(
+                f"✅ *Отчет успешно отправлен!*\n\n"
+                f"📊 Спринт: №{data['sprint_num']}\n"
+                f"📅 Дата: {helpers.format_datetime('now')}",
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+            
+        except Exception as e:
+            await message.answer(
+                f"❌ Ошибка при сохранении отчета: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
+            await state.clear()
+    
+    elif message.text == "Отмена":
+        await cancel_action(message, state)
+
+async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Начало удаления отчета"""
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    
+    if not student:
+        await message.answer("❌ Вы не зарегистрированы в системе.")
+        return
+    
+    # Получаем отчеты пользователя
+    reports = await queries.ReportQueries.get_by_student(student['id'])
+    
+    if not reports:
+        await message.answer("📋 У вас нет отчетов для удаления.")
+        return
+    
+    # Создаем список спринтов с отчетами
+    sprint_options = [f"Спринт №{report['sprint_num']}" for report in reports]
+    
+    await state.set_state(states.ReportDeletion.sprint_selection)
+    await message.answer(
+        "🗑 *Удаление отчета*\n\n"
+        "Выберите спринт для удаления отчета:",
+        reply_markup=keyboards.get_dynamic_keyboard(sprint_options, columns=3),
+        parse_mode="Markdown"
+    )
+
+async def process_delete_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Обработка выбора спринта для удаления"""
+    if message.text == "Отмена":
+        await cancel_action(message, state)
+        return
+    
+    sprint_num = helpers.extract_sprint_number(message.text)
+    
+    if sprint_num is None:
+        await message.answer("❌ Неверный формат. Выберите спринт из списка:")
+        return
+    
+    await state.update_data(sprint_num=sprint_num)
+    await state.set_state(states.ReportDeletion.confirmation)
+    
+    await message.answer(
+        f"⚠️ *Подтверждение удаления*\n\n"
+        f"Вы действительно хотите удалить отчет по спринту №{sprint_num}?\n\n"
+        f"*Это действие нельзя отменить!*",
+        reply_markup=keyboards.get_confirmation_keyboard("Удалить", "Отмена"),
+        parse_mode="Markdown"
+    )
+
+async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Подтверждение удаления отчета"""
+    if message.text == "Удалить":
+        student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+        data = await state.get_data()
+        
+        try:
+            await queries.ReportQueries.delete_report(
+                student_id=student['id'],
+                sprint_num=data['sprint_num']
+            )
+            
+            await state.clear()
+            
+            # Возвращаем главное меню
+            has_team = bool(student.get('team_memberships'))
+            is_admin = False
+            if has_team:
+                team_membership = student['team_memberships'][0]
+                is_admin = team_membership['team']['admin']['id'] == student['id']
+            
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+            
+            await message.answer(
+                f"🗑 *Отчет удален*\n\n"
+                f"📊 Спринт №{data['sprint_num']} - отчет успешно удален",
+                reply_markup=keyboard,
+                parse_mode="Markdown"
+            )
+            
+        except Exception as e:
+            await message.answer(
+                f"❌ Ошибка при удалении отчета: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
+            await state.clear()
+    
+    elif message.text == "Отмена":
+        await cancel_action(message, state)
+
+async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Отмена текущего действия"""
+    await state.clear()
+    
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    
+    if student:
+        has_team = bool(student.get('team_memberships'))
+        is_admin = False
+        if has_team:
+            team_membership = student['team_memberships'][0]
+            is_admin = team_membership['team']['admin']['id'] == student['id']
+        
+        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+    else:
+        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+    
+    await message.answer("❌ Действие отменено.", reply_markup=keyboard)
+
+def register_reports_handlers(dp: aiogram.Dispatcher):
+    """Регистрация обработчиков отчетов"""
+    # Основные команды
+    dp.message.register(handle_my_reports, aiogram.filters.Text("Мои отчёты"))
+    dp.message.register(handle_send_report, aiogram.filters.Text("Отправить отчёт"))
+    dp.message.register(handle_delete_report, aiogram.filters.Text("Удалить отчёт"))
+    
+    # FSM для создания отчета
+    dp.message.register(process_sprint_selection, states.ReportCreation.sprint_selection)
+    dp.message.register(process_report_text, states.ReportCreation.report_text)
+    dp.message.register(confirm_report, states.ReportCreation.confirmation)
+    
+    # FSM для удаления отчета
+    dp.message.register(process_delete_sprint_selection, states.ReportDeletion.sprint_selection)
+    dp.message.register(confirm_delete_report, states.ReportDeletion.confirmation)
