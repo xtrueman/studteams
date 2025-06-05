@@ -11,6 +11,7 @@ import bot.handlers.team as team_handlers
 import bot.handlers.reports as reports_handlers
 import bot.handlers.reviews as reviews_handlers
 import bot.handlers.admin as admin_handlers
+import bot.middlewares.logging as logging_middleware
 
 # Настройка логирования с loguru
 loguru.logger.add(
@@ -26,13 +27,16 @@ logger = loguru.logger
 async def main():
     # Проверяем конфигурацию
     if not config.BOT_TOKEN:
-        logger.error("BOT_TOKEN не установлен в config.py")
+        logger.error("BOT_TOKEN not set in config.py")
         return
     
     # Создаем бота и диспетчер
     bot = aiogram.Bot(token=config.BOT_TOKEN)
     storage = aiogram.fsm.storage.memory.MemoryStorage()
     dp = aiogram.Dispatcher(storage=storage)
+    
+    # Регистрируем middleware для логирования
+    dp.update.middleware(logging_middleware.LoggingMiddleware())
     
     # Регистрируем обработчики
     start_handlers.register_start_handlers(dp)
@@ -41,22 +45,21 @@ async def main():
     reviews_handlers.register_reviews_handlers(dp)
     admin_handlers.register_admin_handlers(dp)
     
-    logger.info("StudHelper Bot запускается...")
+    logger.info("StudHelper Bot starting...")
     
     try:
         # Проверяем подключение к EdgeDB
         client = await db_client.db_client.get_client()
-        logger.info("Подключение к EdgeDB установлено")
+        logger.info("EdgeDB connection established")
         
         # Запускаем polling
         await dp.start_polling(bot)
         
     except Exception as e:
-        logger.error(f"Ошибка при запуске бота: {e}")
+        logger.error(f"Bot startup error: {e}")
     finally:
         # Закрываем соединение с БД
         await db_client.db_client.close()
         await bot.session.close()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())

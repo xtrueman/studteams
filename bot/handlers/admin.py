@@ -1,11 +1,14 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
+import bot.utils.decorators as decorators
 
+@decorators.log_handler("remove_member")
 async def handle_remove_member(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало удаления участника команды"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -42,6 +45,7 @@ async def handle_remove_member(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_member_selection")
 async def process_member_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора участника для удаления"""
     if message.text == "Отмена":
@@ -74,6 +78,7 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_member_removal")
 async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение удаления участника"""
     if message.text == "Удалить":
@@ -109,6 +114,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
     elif message.text == "Отмена":
         await cancel_admin_action(message, state)
 
+@decorators.log_handler("team_report")
 async def handle_team_report(message: aiogram.types.Message):
     """Отчет о команде для администратора"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -172,8 +178,8 @@ async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm
 def register_admin_handlers(dp: aiogram.Dispatcher):
     """Регистрация админских обработчиков"""
     # Основные команды
-    dp.message.register(handle_remove_member, aiogram.filters.Text("Удалить участника"))
-    dp.message.register(handle_team_report, aiogram.filters.Text("Отчёт о команде"))
+    dp.message.register(handle_remove_member, F.text == "Удалить участника")
+    dp.message.register(handle_team_report, F.text == "Отчёт о команде")
     
     # FSM для удаления участника
     dp.message.register(process_member_selection, states.MemberRemoval.member_selection)

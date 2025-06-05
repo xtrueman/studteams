@@ -1,12 +1,15 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
+import bot.utils.decorators as decorators
 import config
 
+@decorators.log_handler("rate_teammates")
 async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало оценивания участников команды"""
     if not config.ENABLE_REVIEWS:
@@ -42,6 +45,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_teammate_selection")
 async def process_teammate_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора участника для оценки"""
     if message.text == "Отмена":
@@ -75,6 +79,7 @@ async def process_teammate_selection(message: aiogram.types.Message, state: aiog
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_rating_input")
 async def process_rating_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка ввода оценки"""
     if message.text == "Отмена":
@@ -101,6 +106,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_advantages_input")
 async def process_advantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка ввода положительных качеств"""
     if message.text == "Отмена":
@@ -125,6 +131,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_disadvantages_input")
 async def process_disadvantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка ввода областей для улучшения"""
     if message.text == "Отмена":
@@ -158,6 +165,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_review")
 async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение отправки оценки"""
     if message.text == "Отправить":
@@ -203,6 +211,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
     elif message.text == "Отмена":
         await cancel_review(message, state)
 
+@decorators.log_handler("who_rated_me")
 async def handle_who_rated_me(message: aiogram.types.Message):
     """Показать кто оценил пользователя"""
     if not config.ENABLE_REVIEWS:
@@ -269,8 +278,8 @@ def register_reviews_handlers(dp: aiogram.Dispatcher):
         return
     
     # Основные команды
-    dp.message.register(handle_rate_teammates, aiogram.filters.Text("Оценить участников команды"))
-    dp.message.register(handle_who_rated_me, aiogram.filters.Text("Кто меня оценил?"))
+    dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
+    dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
     
     # FSM для процесса оценивания
     dp.message.register(process_teammate_selection, states.ReviewProcess.teammate_selection)

@@ -1,7 +1,7 @@
 # StudHelper Bot Configuration
 
-BOT_TOKEN = "your_bot_token_here"
-EDGEDB_DSN = "edgedb://localhost:5656/studteams"
+BOT_TOKEN = "5102428240:AAEkizPNNjnJna97FNYRApvjhPvEsExWePs"
+EDGEDB_DSN = "edgedb://localhost:10701/studteams"
 
 # Features
 ENABLE_REVIEWS = True

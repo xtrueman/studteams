@@ -1,11 +1,14 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
+import bot.utils.decorators as decorators
 
+@decorators.log_handler("register_team")
 async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало регистрации команды"""
     # Проверяем, не зарегистрирован ли уже пользователь
@@ -24,6 +27,7 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_team_name")
 async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка названия команды"""
     team_name = message.text.strip()
@@ -42,6 +46,7 @@ async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.c
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_product_name")
 async def process_product_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка названия продукта"""
     product_name = message.text.strip()
@@ -60,6 +65,7 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_admin_name")
 async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка имени администратора"""
     user_name = message.text.strip()
@@ -78,6 +84,7 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_admin_group")
 async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка группы администратора"""
     user_group = message.text.strip()
@@ -109,6 +116,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_team_registration")
 async def confirm_team_registration(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение регистрации команды"""
     if message.text == "Продолжить":
@@ -128,13 +136,13 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
                 team_name=data['team_name'],
                 product_name=data['product_name'],
                 invite_code=invite_code,
-                admin_id=student['id']
+                admin_id=student.id
             )
             
             # Добавляем администратора в команду
             await queries.TeamQueries.add_member(
-                team_id=team['id'],
-                student_id=student['id'],
+                team_id=team.id,
+                student_id=student.id,
                 role="Scrum Master"
             )
             
@@ -165,6 +173,7 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
         await message.answer("❌ Регистрация команды отменена.", reply_markup=keyboard)
 
+@decorators.log_handler("invite_link")
 async def handle_invite_link(message: aiogram.types.Message):
     """Генерация ссылки-приглашения"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -192,6 +201,7 @@ async def handle_invite_link(message: aiogram.types.Message):
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("my_team")
 async def handle_my_team(message: aiogram.types.Message):
     """Показать информацию о команде"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -212,6 +222,7 @@ async def handle_my_team(message: aiogram.types.Message):
     team_info = helpers.format_team_info(team, all_members)
     await message.answer(team_info, parse_mode="Markdown")
 
+@decorators.log_handler("process_join_user_name")
 async def process_join_user_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка имени при присоединении к команде"""
     user_name = message.text.strip()
@@ -230,6 +241,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_join_user_group")
 async def process_join_user_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка группы при присоединении к команде"""
     user_group = message.text.strip()
@@ -249,6 +261,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_join_user_role")
 async def process_join_user_role(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка роли при присоединении к команде"""
     if message.text == "Отмена":
@@ -282,6 +295,7 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_join_team")
 async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение присоединения к команде"""
     if message.text == "Присоединиться":
@@ -340,9 +354,9 @@ async def cancel_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
 def register_team_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков команды"""
     # Основные команды
-    dp.message.register(handle_register_team, aiogram.filters.Text("Регистрация команды"))
-    dp.message.register(handle_invite_link, aiogram.filters.Text("Ссылка-приглашение"))
-    dp.message.register(handle_my_team, aiogram.filters.Text("Моя команда"))
+    dp.message.register(handle_register_team, F.text == "Регистрация команды")
+    dp.message.register(handle_invite_link, F.text == "Ссылка-приглашение")
+    dp.message.register(handle_my_team, F.text == "Моя команда")
     
     # FSM для регистрации команды
     dp.message.register(process_team_name, states.TeamRegistration.team_name)

@@ -30,10 +30,17 @@ class StudentQueries:
     async def create(tg_id: int, name: str, group_num: str = None):
         client = await db_client.db_client.get_client()
         return await client.query_single("""
-            INSERT Student {
-                tg_id := <int64>$tg_id,
-                name := <str>$name,
-                group_num := <optional str>$group_num
+            SELECT (
+                INSERT Student {
+                    tg_id := <int64>$tg_id,
+                    name := <str>$name,
+                    group_num := <optional str>$group_num
+                }
+            ) {
+                id,
+                tg_id,
+                name,
+                group_num
             }
         """, tg_id=tg_id, name=name, group_num=group_num)
     
@@ -86,11 +93,18 @@ class TeamQueries:
     async def create(team_name: str, product_name: str, invite_code: str, admin_id: uuid.UUID):
         client = await db_client.db_client.get_client()
         return await client.query_single("""
-            INSERT Team {
-                team_name := <str>$team_name,
-                product_name := <str>$product_name,
-                invite_code := <str>$invite_code,
-                admin := (SELECT Student FILTER .id = <uuid>$admin_id)
+            SELECT (
+                INSERT Team {
+                    team_name := <str>$team_name,
+                    product_name := <str>$product_name,
+                    invite_code := <str>$invite_code,
+                    admin := (SELECT Student FILTER .id = <uuid>$admin_id)
+                }
+            ) {
+                id,
+                team_name,
+                product_name,
+                invite_code
             }
         """, team_name=team_name, product_name=product_name, invite_code=invite_code, admin_id=admin_id)
     
@@ -111,7 +125,7 @@ class TeamQueries:
     @staticmethod
     async def add_member(team_id: uuid.UUID, student_id: uuid.UUID, role: str):
         client = await db_client.db_client.get_client()
-        return await client.query_single("""
+        await client.execute("""
             INSERT TeamMember {
                 team := (SELECT Team FILTER .id = <uuid>$team_id),
                 student := (SELECT Student FILTER .id = <uuid>$student_id),
@@ -122,7 +136,7 @@ class TeamQueries:
     @staticmethod
     async def remove_member(team_id: uuid.UUID, student_id: uuid.UUID):
         client = await db_client.db_client.get_client()
-        return await client.query("""
+        await client.execute("""
             DELETE TeamMember
             FILTER .team.id = <uuid>$team_id AND .student.id = <uuid>$student_id
         """, team_id=team_id, student_id=student_id)
@@ -139,7 +153,7 @@ class ReportQueries:
         """, student_id=student_id, sprint_num=sprint_num)
         
         if existing:
-            return await client.query_single("""
+            await client.execute("""
                 UPDATE SprintReport
                 FILTER .student.id = <uuid>$student_id AND .sprint_num = <int32>$sprint_num
                 SET {
@@ -148,7 +162,7 @@ class ReportQueries:
                 }
             """, student_id=student_id, sprint_num=sprint_num, report_text=report_text)
         else:
-            return await client.query_single("""
+            await client.execute("""
                 INSERT SprintReport {
                     student := (SELECT Student FILTER .id = <uuid>$student_id),
                     sprint_num := <int32>$sprint_num,
@@ -173,7 +187,7 @@ class ReportQueries:
     @staticmethod
     async def delete_report(student_id: uuid.UUID, sprint_num: int):
         client = await db_client.db_client.get_client()
-        return await client.query("""
+        await client.execute("""
             DELETE SprintReport
             FILTER .student.id = <uuid>$student_id AND .sprint_num = <int32>$sprint_num
         """, student_id=student_id, sprint_num=sprint_num)
@@ -183,7 +197,7 @@ class RatingQueries:
     @staticmethod
     async def create(assessor_id: uuid.UUID, assessed_id: uuid.UUID, overall_rating: int, advantages: str, disadvantages: str):
         client = await db_client.db_client.get_client()
-        return await client.query_single("""
+        await client.execute("""
             INSERT TeamMemberRating {
                 assessor := (SELECT Student FILTER .id = <uuid>$assessor_id),
                 assessed := (SELECT Student FILTER .id = <uuid>$assessed_id),

@@ -1,11 +1,15 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+from aiogram.filters import Command
+from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
+import bot.utils.decorators as decorators
 import config
 
+@decorators.log_handler("start_command")
 async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработчик команды /start"""
     await state.clear()
@@ -87,14 +91,17 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
             parse_mode="Markdown"
         )
 
+@decorators.log_handler("help_command")
 async def cmd_help(message: aiogram.types.Message):
     """Обработчик команды /help"""
     await message.answer(config.HELP_MESSAGE, parse_mode="Markdown")
 
+@decorators.log_handler("help_button")
 async def handle_help_button(message: aiogram.types.Message):
     """Обработчик кнопки Помощь"""
     await message.answer(config.HELP_MESSAGE, parse_mode="Markdown")
 
+@decorators.log_handler("update_button")
 async def handle_update_button(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработчик кнопки Обновить"""
     await state.clear()
@@ -117,7 +124,7 @@ async def handle_update_button(message: aiogram.types.Message, state: aiogram.fs
 
 def register_start_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков"""
-    dp.message.register(cmd_start, aiogram.filters.Command("start"))
-    dp.message.register(cmd_help, aiogram.filters.Command("help"))
-    dp.message.register(handle_help_button, aiogram.filters.Text("Помощь"))
-    dp.message.register(handle_update_button, aiogram.filters.Text("Обновить"))
+    dp.message.register(cmd_start, Command("start"))
+    dp.message.register(cmd_help, Command("help"))
+    dp.message.register(handle_help_button, F.text == "Помощь")
+    dp.message.register(handle_update_button, F.text == "Обновить")

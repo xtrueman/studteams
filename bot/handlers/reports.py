@@ -1,12 +1,15 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
+import bot.utils.decorators as decorators
 import config
 
+@decorators.log_handler("my_reports")
 async def handle_my_reports(message: aiogram.types.Message):
     """Показать отчеты пользователя"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -20,6 +23,7 @@ async def handle_my_reports(message: aiogram.types.Message):
     
     await message.answer(report_text, parse_mode="Markdown")
 
+@decorators.log_handler("send_report")
 async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало создания отчета"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -36,6 +40,7 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_sprint_selection")
 async def process_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора спринта"""
     if message.text == "Отмена":
@@ -57,6 +62,7 @@ async def process_sprint_selection(message: aiogram.types.Message, state: aiogra
         reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад")
     )
 
+@decorators.log_handler("process_report_text")
 async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка текста отчета"""
     if message.text in ["Отмена", "Назад"]:
@@ -102,6 +108,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_report")
 async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение отправки отчета"""
     if message.text == "Отправить":
@@ -144,6 +151,7 @@ async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.cont
     elif message.text == "Отмена":
         await cancel_action(message, state)
 
+@decorators.log_handler("delete_report")
 async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало удаления отчета"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
@@ -170,6 +178,7 @@ async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("process_delete_sprint_selection")
 async def process_delete_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора спринта для удаления"""
     if message.text == "Отмена":
@@ -193,6 +202,7 @@ async def process_delete_sprint_selection(message: aiogram.types.Message, state:
         parse_mode="Markdown"
     )
 
+@decorators.log_handler("confirm_delete_report")
 async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение удаления отчета"""
     if message.text == "Удалить":
@@ -255,9 +265,9 @@ async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.conte
 def register_reports_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков отчетов"""
     # Основные команды
-    dp.message.register(handle_my_reports, aiogram.filters.Text("Мои отчёты"))
-    dp.message.register(handle_send_report, aiogram.filters.Text("Отправить отчёт"))
-    dp.message.register(handle_delete_report, aiogram.filters.Text("Удалить отчёт"))
+    dp.message.register(handle_my_reports, F.text == "Мои отчёты")
+    dp.message.register(handle_send_report, F.text == "Отправить отчёт")
+    dp.message.register(handle_delete_report, F.text == "Удалить отчёт")
     
     # FSM для создания отчета
     dp.message.register(process_sprint_selection, states.ReportCreation.sprint_selection)
