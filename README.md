@@ -53,7 +53,7 @@
 # 1. Установить зависимости
 pip install -r requirements.txt
 
-# 2. Настроить EdgeDB (см. gel-setup.md)
+# 2. Настроить Gel (см. gel-setup.md)
 gel project init && gel migrate
 
 # 3. Настроить config.py (BOT_TOKEN)
