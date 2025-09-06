@@ -257,8 +257,19 @@ async def handle_my_team(message: aiogram.types.Message):
     # Получаем всех участников команды
     teammates = await queries.StudentQueries.get_teammates(student.id)
     
+    # Создаем объект для текущего пользователя
+    class MockStudent:
+        def __init__(self, student_obj):
+            self.id = student_obj.id
+            self.name = student_obj.name
+    
+    class MockMembership:
+        def __init__(self, student_obj, role):
+            self.student = MockStudent(student_obj)
+            self.role = role
+    
     # Формируем список участников включая текущего пользователя
-    all_members = teammates + [{'student': {'id': student.id, 'name': student.name}, 'role': team_membership.role}]
+    all_members = list(teammates) + [MockMembership(student, team_membership.role)]
     
     team_info = helpers.format_team_info(team, all_members)
     await message.answer(team_info, parse_mode="Markdown")

@@ -18,15 +18,15 @@ def format_team_info(team_data, members_data) -> str:
     if not team_data:
         return "❌ Команда не найдена"
     
-    text = f"👥 *{team_data['team_name']}*\n"
-    text += f"📱 Продукт: {team_data['product_name']}\n"
-    text += f"👑 Администратор: {team_data['admin']['name']}\n\n"
+    text = f"👥 *{team_data.team_name}*\n"
+    text += f"📱 Продукт: {team_data.product_name}\n"
+    text += f"👑 Администратор: {team_data.admin.name}\n\n"
     
     if members_data:
         text += "*Участники команды:*\n"
         for i, member in enumerate(members_data, 1):
-            role_icon = "👑" if member['student']['id'] == team_data['admin']['id'] else "👤"
-            text += f"{i}. {role_icon} {member['student']['name']} - {member['role']}\n"
+            role_icon = "👑" if member.student.id == team_data.admin.id else "👤"
+            text += f"{i}. {role_icon} {member.student.name} - {member.role}\n"
     else:
         text += "Участников пока нет\n"
     
@@ -39,10 +39,10 @@ def format_reports_list(reports) -> str:
     
     text = "📋 *Ваши отчеты:*\n\n"
     for report in reports:
-        date_str = report['report_date'].strftime("%d.%m.%Y %H:%M")
-        text += f"*Спринт №{report['sprint_num']}*\n"
+        date_str = report.report_date.strftime("%d.%m.%Y %H:%M")
+        text += f"*Спринт №{report.sprint_num}*\n"
         text += f"📅 {date_str}\n"
-        text += f"📝 {report['report_text'][:100]}{'...' if len(report['report_text']) > 100 else ''}\n\n"
+        text += f"📝 {report.report_text[:100]}{'...' if len(report.report_text) > 100 else ''}\n\n"
     
     return text
 
@@ -53,11 +53,11 @@ def format_ratings_list(ratings) -> str:
     
     text = "⭐ *Ваши оценки:*\n\n"
     for rating in ratings:
-        date_str = rating['rate_date'].strftime("%d.%m.%Y")
-        text += f"👤 *{rating['assessor']['name']}*\n"
-        text += f"⭐ Оценка: {rating['overall_rating']}/10\n"
-        text += f"✅ Плюсы: {rating['advantages']}\n"
-        text += f"📈 Что улучшить: {rating['disadvantages']}\n"
+        date_str = rating.rate_date.strftime("%d.%m.%Y")
+        text += f"👤 *{rating.assessor.name}*\n"
+        text += f"⭐ Оценка: {rating.overall_rating}/10\n"
+        text += f"✅ Плюсы: {rating.advantages}\n"
+        text += f"📈 Что улучшить: {rating.disadvantages}\n"
         text += f"📅 {date_str}\n\n"
     
     return text

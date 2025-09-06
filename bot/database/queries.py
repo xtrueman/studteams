@@ -24,7 +24,7 @@ class StudentQueries:
                         team_name,
                         product_name,
                         invite_code,
-                        admin: { id }
+                        admin: { id, name }
                     },
                     role
                 }
@@ -62,11 +62,10 @@ class StudentQueries:
                 }
             }
             FILTER .id IN (
-                SELECT TeamMember.student.id
+                SELECT DETACHED TeamMember.student.id
                 FILTER TeamMember.team.id IN (
-                    SELECT other_member.team.id
-                    FOR other_member IN TeamMember
-                    FILTER other_member.student.id = <uuid>$student_id
+                    SELECT (DETACHED TeamMember).team.id
+                    FILTER (DETACHED TeamMember).student.id = <uuid>$student_id
                 )
             )
             AND .id != <uuid>$student_id
@@ -81,11 +80,10 @@ class StudentQueries:
                 name
             }
             FILTER .id IN (
-                SELECT TeamMember.student.id
+                SELECT DETACHED TeamMember.student.id
                 FILTER TeamMember.team.id IN (
-                    SELECT other_member.team.id
-                    FOR other_member IN TeamMember
-                    FILTER other_member.student.id = <uuid>$assessor_id
+                    SELECT (DETACHED TeamMember).team.id
+                    FILTER (DETACHED TeamMember).student.id = <uuid>$assessor_id
                 )
             )
             AND .id != <uuid>$assessor_id
