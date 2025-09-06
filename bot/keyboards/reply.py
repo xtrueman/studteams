@@ -43,9 +43,12 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
                 aiogram.types.KeyboardButton(text="Ссылка-приглашение"),
                 aiogram.types.KeyboardButton(text="Удалить участника")
             ]
-            admin_row2 = [aiogram.types.KeyboardButton(text="Отчёт о команде")]
             keyboard.keyboard.append(admin_row1)
-            keyboard.keyboard.append(admin_row2)
+            
+            # Кнопка "Отчёт о команде" только если включены отзывы
+            if config.ENABLE_REVIEWS:
+                admin_row2 = [aiogram.types.KeyboardButton(text="Отчёт о команде")]
+                keyboard.keyboard.append(admin_row2)
         
         keyboard.keyboard.extend([row1, row2, row3])
         

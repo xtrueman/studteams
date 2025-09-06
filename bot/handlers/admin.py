@@ -141,7 +141,15 @@ async def handle_team_report(message: aiogram.types.Message):
     try:
         # Получаем всех участников команды включая админа
         teammates = await queries.StudentQueries.get_teammates(student.id)
-        all_members = teammates + [{'id': student.id, 'name': student.name}]
+        
+        # Создаем объект для текущего пользователя (администратора)
+        class MockStudent:
+            def __init__(self, student_obj):
+                self.id = student_obj.id
+                self.name = student_obj.name
+        
+        # Формируем список всех участников включая админа
+        all_members = list(teammates) + [MockStudent(student)]
         
         report_text = f"📊 *Отчет о команде: {team.team_name}*\\n\\n"
         
