@@ -193,8 +193,6 @@ async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm
 def register_admin_handlers(dp: aiogram.Dispatcher):
     """Регистрация админских обработчиков"""
     # Основные команды
-    dp.message.register(handle_remove_member, F.text == "Удалить участника")
     dp.message.register(handle_team_report, F.text == "Отчёт о команде")
     
-    # FSM для удаления участника (только текстовые поля)
-    # process_member_selection и confirm_member_removal теперь обрабатываются через callback
+    # FSM для удаления участника теперь обрабатывается через inline callback

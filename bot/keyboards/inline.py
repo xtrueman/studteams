@@ -130,3 +130,24 @@ def get_member_removal_confirm_keyboard():
 def get_review_confirm_keyboard():
     """Клавиатура подтверждения отправки оценки"""
     return get_confirmation_inline_keyboard("Отправить", "Отмена", "confirm_review", "cancel_review")
+
+def get_team_member_management_keyboard(members, current_user_id, is_admin=False):
+    """Клавиатура управления участниками команды"""
+    keyboard = []
+    
+    if is_admin and len(members) > 1:  # Можно удалять только если есть кого удалять
+        # Кнопки для каждого участника (кроме самого админа)
+        for member in members:
+            if member.student.id != current_user_id:
+                keyboard.append([
+                    aiogram.types.InlineKeyboardButton(
+                        text=f"✏️ {member.student.name}",
+                        callback_data=f"edit_member_{member.student.id}"
+                    ),
+                    aiogram.types.InlineKeyboardButton(
+                        text=f"🗑️ Удалить",
+                        callback_data=f"remove_member_{member.student.id}"
+                    )
+                ])
+    
+    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)

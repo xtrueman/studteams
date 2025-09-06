@@ -33,6 +33,19 @@ class StudentQueries:
         """, tg_id=tg_id)
     
     @staticmethod
+    async def get_by_id(student_id: uuid.UUID):
+        client = await db_client.db_client.get_client()
+        return await client.query_single("""
+            SELECT Student {
+                id,
+                tg_id,
+                name,
+                group_num
+            }
+            FILTER .id = <uuid>$student_id
+        """, student_id=student_id)
+    
+    @staticmethod
     async def create(tg_id: int, name: str, group_num: str | None = None):
         client = await db_client.db_client.get_client()
         return await client.query_single("""

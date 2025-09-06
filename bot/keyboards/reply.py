@@ -39,10 +39,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
         
         if is_admin:
             # Дополнительные кнопки для админов
-            admin_row1 = [
-                aiogram.types.KeyboardButton(text="Ссылка-приглашение"),
-                aiogram.types.KeyboardButton(text="Удалить участника")
-            ]
+            admin_row1 = [aiogram.types.KeyboardButton(text="Ссылка-приглашение")]
             keyboard.keyboard.append(admin_row1)
             
             # Кнопка "Отчёт о команде" только если включены отзывы

@@ -237,7 +237,7 @@ async def handle_invite_link(message: aiogram.types.Message):
     await message.answer(
         f"🔗 *Ссылка-приглашение для команды*\n\n"
         f"👥 Команда: {team.team_name}\n"
-        f"🔗 Ссылка: {invite_url}\n\n"
+        f"🔗 Ссылка: `{invite_url}`\n\n"
         f"📤 Отправьте эту ссылку участникам команды для присоединения.",
         parse_mode="Markdown"
     )
@@ -272,7 +272,16 @@ async def handle_my_team(message: aiogram.types.Message):
     all_members = list(teammates) + [MockMembership(student, team_membership.role)]
     
     team_info = helpers.format_team_info(team, all_members)
-    await message.answer(team_info, parse_mode="Markdown")
+    
+    # Проверяем права администратора
+    is_admin = team.admin.id == student.id
+    
+    # Добавляем inline клавиатуру для управления участниками (только для админов)
+    keyboard = inline_keyboards.get_team_member_management_keyboard(
+        all_members, student.id, is_admin
+    )
+    
+    await message.answer(team_info, parse_mode="Markdown", reply_markup=keyboard)
 
 @decorators.log_handler("process_join_user_name")
 async def process_join_user_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -288,8 +297,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     await state.update_data(user_name=user_name)
     await state.set_state(states.JoinTeam.user_group)
     await message.answer(
-        f"✅ Имя: *{user_name}*\n\n"
-        f"Введите номер вашей группы (или 0 если без группы):",
+        "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown"
     )
 
@@ -308,8 +316,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
     await state.update_data(user_group=user_group)
     await state.set_state(states.JoinTeam.user_role)
     await message.answer(
-        f"✅ Группа: *{user_group}*\n\n"
-        f"Выберите вашу роль в команде:",
+        "Выберите вашу роль в команде:",
         reply_markup=inline_keyboards.get_roles_inline_keyboard(),
         parse_mode="Markdown"
     )

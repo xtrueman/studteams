@@ -600,6 +600,60 @@ async def callback_cancel_admin_action(callback: aiogram.types.CallbackQuery, st
     await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
+# Team Member Management Callbacks
+
+@decorators.log_handler("callback_edit_member")
+async def callback_edit_member(callback: aiogram.types.CallbackQuery):
+    """Callback обработчик редактирования участника"""
+    # Пока что просто заглушка - в будущем можно добавить функционал редактирования роли
+    await callback.answer("⚠️ Функция редактирования участников будет доступна в следующих версиях", show_alert=True)
+
+@decorators.log_handler("callback_remove_member_inline")
+async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик удаления участника через inline кнопку"""
+    if not callback.data.startswith("remove_member_"):
+        await callback.answer("❌ Неверный формат")
+        return
+    
+    member_id = int(callback.data.split("_")[2])
+    
+    # Проверяем права администратора
+    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
+    
+    if not student or not getattr(student, 'team_memberships', None):
+        await callback.answer("❌ Вы не состоите в команде")
+        return
+    
+    team_membership = student.team_memberships[0]
+    team = team_membership.team
+    
+    if team.admin.id != student.id:
+        await callback.answer("❌ Удалять участников может только администратор команды")
+        return
+    
+    # Получаем информацию об участнике
+    member_to_remove = await queries.StudentQueries.get_by_id(member_id)
+    
+    if not member_to_remove:
+        await callback.answer("❌ Участник не найден")
+        return
+    
+    # Сохраняем данные в состоянии
+    await state.update_data(
+        selected_member=member_to_remove,
+        team_id=team.id
+    )
+    
+    await callback.message.edit_text(
+        f"⚠️ *Подтверждение удаления*\n\n"
+        f"Вы действительно хотите удалить *{member_to_remove.name}* из команды?\n\n"
+        f"*Это действие нельзя отменить!*\n"
+        f"Участник потеряет доступ ко всем функциям команды.",
+        reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
+        parse_mode="Markdown"
+    )
+    await callback.answer()
+
 def register_callback_handlers(dp: aiogram.Dispatcher):
     """Регистрация callback обработчиков"""
     # Team registration callbacks
@@ -626,6 +680,10 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     dp.callback_query.register(callback_member_selection, F.data.startswith("member_") | (F.data == "cancel"))
     dp.callback_query.register(callback_confirm_remove_member, F.data == "confirm_remove_member")
     dp.callback_query.register(callback_cancel_remove_member, F.data == "cancel_remove_member")
+    
+    # Team member management callbacks (inline)
+    dp.callback_query.register(callback_edit_member, F.data.startswith("edit_member_"))
+    dp.callback_query.register(callback_remove_member_inline, F.data.startswith("remove_member_"))
     
     # Review callbacks
     dp.callback_query.register(callback_teammate_selection, F.data.startswith("teammate_") | (F.data == "cancel"))
