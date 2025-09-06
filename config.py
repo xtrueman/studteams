@@ -1,3 +1,9 @@
+"""
+Модуль конфигурации StudHelper Bot.
+
+Содержит настройки бота, параметры базы данных и логирования.
+"""
+
 # StudHelper Bot Configuration
 
 BOT_TOKEN = "8307678596:AAEeJm_M1rV4yMU6rRT4W7lqQPqLnwfRogo"

@@ -1,3 +1,9 @@
+"""
+Модуль reply-клавиатур для Telegram бота.
+
+Создает клавиатуры основного меню и навигации по боту.
+"""
+
 import aiogram.types
 import config
 

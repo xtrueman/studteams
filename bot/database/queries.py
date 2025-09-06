@@ -1,3 +1,9 @@
+"""
+Модуль запросов к EdgeDB.
+
+Содержит классы с методами для выполнения операций с базой данных.
+"""
+
 import uuid
 import bot.database.client as db_client
 

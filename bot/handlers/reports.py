@@ -1,3 +1,9 @@
+"""
+Обработчики функций отчетов по спринтам.
+
+Обрабатывают создание, просмотр и удаление отчетов о проделанной работе.
+"""
+
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context

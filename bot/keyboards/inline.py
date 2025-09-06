@@ -1,3 +1,9 @@
+"""
+Модуль inline-клавиатур для Telegram бота.
+
+Создает различные типы inline-клавиатур для взаимодействия с пользователем.
+"""
+
 import aiogram.types
 import config
 

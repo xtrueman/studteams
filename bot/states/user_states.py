@@ -1,3 +1,9 @@
+"""
+Состояния FSM для бота.
+
+Определяет состояния конечного автомата для различных сценариев бота.
+"""
+
 import aiogram.fsm.state
 
 class TeamRegistration(aiogram.fsm.state.StatesGroup):

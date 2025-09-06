@@ -1,3 +1,9 @@
+"""
+Middleware для логирования в боте.
+
+Логирует входящие сообщения и callback-запросы от пользователей.
+"""
+
 import aiogram
 import aiogram.types
 import loguru

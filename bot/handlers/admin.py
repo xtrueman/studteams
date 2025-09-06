@@ -1,3 +1,9 @@
+"""
+Обработчики администраторских функций бота.
+
+Обрабатывают функции, доступные только Scrum Masterам команд.
+"""
+
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context

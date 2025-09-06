@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Главный файл запуска StudHelper Bot.
+
+Telegram-бот для отслеживания прогресса студенческих команд
+и управления проектами по методологии Scrum.
+"""
 
 import asyncio
 import aiogram

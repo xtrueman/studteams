@@ -1,3 +1,9 @@
+"""
+Обработчики команд запуска бота.
+
+Обрабатывают /start, /help и основные команды навигации.
+"""
+
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context

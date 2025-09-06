@@ -1,3 +1,9 @@
+"""
+Обработчики callback-запросов от inline-клавиатур.
+
+Обрабатывает все нажатия кнопок inline-клавиатур в боте.
+"""
+
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context

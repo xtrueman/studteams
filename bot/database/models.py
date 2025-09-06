@@ -1,3 +1,9 @@
+"""
+Модели данных для StudHelper Bot.
+
+Определяет Pydantic модели для объектов базы данных.
+"""
+
 import uuid
 import datetime
 import pydantic

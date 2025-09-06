@@ -1,3 +1,9 @@
+"""
+Обработчики системы взаимного оценивания.
+
+Обрабатывают оценку участников команды и просмотр полученных оценок.
+"""
+
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
