@@ -27,7 +27,7 @@ class StudentQueries:
         """, tg_id=tg_id)
     
     @staticmethod
-    async def create(tg_id: int, name: str, group_num: str = None):
+    async def create(tg_id: int, name: str, group_num: str | None = None):
         client = await db_client.db_client.get_client()
         return await client.query_single("""
             SELECT (
@@ -57,9 +57,10 @@ class StudentQueries:
             }
             FILTER .id IN (
                 SELECT TeamMember.student.id
-                FILTER .team.id IN (
-                    SELECT TeamMember.team.id
-                    FILTER .student.id = <uuid>$student_id
+                FILTER TeamMember.team.id IN (
+                    SELECT other_member.team.id
+                    FOR other_member IN TeamMember
+                    FILTER other_member.student.id = <uuid>$student_id
                 )
             )
             AND .id != <uuid>$student_id
@@ -75,15 +76,16 @@ class StudentQueries:
             }
             FILTER .id IN (
                 SELECT TeamMember.student.id
-                FILTER .team.id IN (
-                    SELECT TeamMember.team.id
-                    FILTER .student.id = <uuid>$assessor_id
+                FILTER TeamMember.team.id IN (
+                    SELECT other_member.team.id
+                    FOR other_member IN TeamMember
+                    FILTER other_member.student.id = <uuid>$assessor_id
                 )
             )
             AND .id != <uuid>$assessor_id
             AND .id NOT IN (
                 SELECT TeamMemberRating.assessed.id
-                FILTER .assessor.id = <uuid>$assessor_id
+                FILTER TeamMemberRating.assessor.id = <uuid>$assessor_id
             )
         """, assessor_id=assessor_id)
 

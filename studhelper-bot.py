@@ -11,6 +11,7 @@ import bot.handlers.team as team_handlers
 import bot.handlers.reports as reports_handlers
 import bot.handlers.reviews as reviews_handlers
 import bot.handlers.admin as admin_handlers
+import bot.handlers.callbacks as callback_handlers
 import bot.middlewares.logging as logging_middleware
 
 # Настройка логирования с loguru
@@ -44,6 +45,7 @@ async def main():
     reports_handlers.register_reports_handlers(dp)
     reviews_handlers.register_reviews_handlers(dp)
     admin_handlers.register_admin_handlers(dp)
+    callback_handlers.register_callback_handlers(dp)
     
     logger.info("StudHelper Bot starting...")
     
@@ -51,6 +53,10 @@ async def main():
         # Проверяем подключение к EdgeDB
         client = await db_client.db_client.get_client()
         logger.info("EdgeDB connection established")
+        
+        # Удаляем webhook если он активен
+        await bot.delete_webhook(drop_pending_updates=True)
+        logger.info("Webhook deleted (if it was active)")
         
         # Запускаем polling
         await dp.start_polling(bot)

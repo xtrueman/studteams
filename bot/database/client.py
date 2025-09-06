@@ -7,6 +7,7 @@ class EdgeDBClient:
     
     async def get_client(self):
         if self._client is None:
+            # Простое решение - используем стандартные переменные окружения EdgeDB
             self._client = edgedb.create_async_client()
         return self._client
     

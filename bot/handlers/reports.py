@@ -4,6 +4,7 @@ import aiogram.fsm.context
 from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
+import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
@@ -18,7 +19,7 @@ async def handle_my_reports(message: aiogram.types.Message):
         await message.answer("❌ Вы не зарегистрированы в системе.")
         return
     
-    reports = await queries.ReportQueries.get_by_student(student['id'])
+    reports = await queries.ReportQueries.get_by_student(student.id)
     report_text = helpers.format_reports_list(reports)
     
     await message.answer(report_text, parse_mode="Markdown")
@@ -28,7 +29,7 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
     """Начало создания отчета"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if not student or not student.get('team_memberships'):
+    if not student or not getattr(student, 'team_memberships', None):
         await message.answer("❌ Вы не состоите в команде.")
         return
     
@@ -36,7 +37,7 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
     await message.answer(
         "📝 *Отправка отчета*\n\n"
         "Выберите номер спринта:",
-        reply_markup=keyboards.get_sprints_keyboard(),
+        reply_markup=inline_keyboards.get_sprints_inline_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -104,7 +105,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
     
     await message.answer(
         confirmation_text,
-        reply_markup=keyboards.get_confirmation_keyboard("Отправить", "Отмена"),
+        reply_markup=inline_keyboards.get_report_confirm_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -117,7 +118,7 @@ async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.cont
         
         try:
             await queries.ReportQueries.create_or_update(
-                student_id=student['id'],
+                student_id=student.id,
                 sprint_num=data['sprint_num'],
                 report_text=data['report_text']
             )
@@ -125,11 +126,11 @@ async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.cont
             await state.clear()
             
             # Возвращаем главное меню
-            has_team = bool(student.get('team_memberships'))
+            has_team = bool(getattr(student, 'team_memberships', None))
             is_admin = False
             if has_team:
-                team_membership = student['team_memberships'][0]
-                is_admin = team_membership['team']['admin']['id'] == student['id']
+                team_membership = student.team_memberships[0]
+                is_admin = team_membership.team.admin.id == student.id
             
             keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
             
@@ -161,14 +162,14 @@ async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fs
         return
     
     # Получаем отчеты пользователя
-    reports = await queries.ReportQueries.get_by_student(student['id'])
+    reports = await queries.ReportQueries.get_by_student(student.id)
     
     if not reports:
         await message.answer("📋 У вас нет отчетов для удаления.")
         return
     
     # Создаем список спринтов с отчетами
-    sprint_options = [f"Спринт №{report['sprint_num']}" for report in reports]
+    sprint_options = [f"Спринт №{report.sprint_num}" for report in reports]
     
     await state.set_state(states.ReportDeletion.sprint_selection)
     await message.answer(
@@ -198,7 +199,7 @@ async def process_delete_sprint_selection(message: aiogram.types.Message, state:
         f"⚠️ *Подтверждение удаления*\n\n"
         f"Вы действительно хотите удалить отчет по спринту №{sprint_num}?\n\n"
         f"*Это действие нельзя отменить!*",
-        reply_markup=keyboards.get_confirmation_keyboard("Удалить", "Отмена"),
+        reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -211,18 +212,18 @@ async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.f
         
         try:
             await queries.ReportQueries.delete_report(
-                student_id=student['id'],
+                student_id=student.id,
                 sprint_num=data['sprint_num']
             )
             
             await state.clear()
             
             # Возвращаем главное меню
-            has_team = bool(student.get('team_memberships'))
+            has_team = bool(getattr(student, 'team_memberships', None))
             is_admin = False
             if has_team:
-                team_membership = student['team_memberships'][0]
-                is_admin = team_membership['team']['admin']['id'] == student['id']
+                team_membership = student.team_memberships[0]
+                is_admin = team_membership.team.admin.id == student.id
             
             keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
             
@@ -250,11 +251,11 @@ async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.conte
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
     if student:
-        has_team = bool(student.get('team_memberships'))
+        has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
         if has_team:
-            team_membership = student['team_memberships'][0]
-            is_admin = team_membership['team']['admin']['id'] == student['id']
+            team_membership = student.team_memberships[0]
+            is_admin = team_membership.team.admin.id == student.id
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
     else:
@@ -269,11 +270,11 @@ def register_reports_handlers(dp: aiogram.Dispatcher):
     dp.message.register(handle_send_report, F.text == "Отправить отчёт")
     dp.message.register(handle_delete_report, F.text == "Удалить отчёт")
     
-    # FSM для создания отчета
-    dp.message.register(process_sprint_selection, states.ReportCreation.sprint_selection)
+    # FSM для создания отчета (только текстовые поля)
+    # process_sprint_selection теперь обрабатывается через callback
     dp.message.register(process_report_text, states.ReportCreation.report_text)
-    dp.message.register(confirm_report, states.ReportCreation.confirmation)
+    # confirm_report теперь обрабатывается через callback
     
     # FSM для удаления отчета
     dp.message.register(process_delete_sprint_selection, states.ReportDeletion.sprint_selection)
-    dp.message.register(confirm_delete_report, states.ReportDeletion.confirmation)
+    # confirm_delete_report теперь обрабатывается через callback

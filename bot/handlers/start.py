@@ -8,6 +8,7 @@ import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
 import config
+import tgtexts
 
 @decorators.log_handler("start_command")
 async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -31,15 +32,15 @@ async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fs
     
     if student:
         # Пользователь уже зарегистрирован
-        has_team = bool(student.get('team_memberships'))
+        has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
         
         if has_team:
-            team_membership = student['team_memberships'][0]
-            is_admin = team_membership['team']['admin']['id'] == student['id']
+            team_membership = student.team_memberships[0]
+            is_admin = team_membership.team.admin.id == student.id
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-        await message.answer(config.WELCOME_MESSAGE, reply_markup=keyboard, parse_mode="Markdown")
+        await message.answer(tgtexts.WELCOME_MESSAGE, reply_markup=keyboard, parse_mode="Markdown")
     else:
         # Новый пользователь
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
@@ -64,20 +65,20 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
     # Проверяем, не зарегистрирован ли уже пользователь
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if student and student.get('team_memberships'):
+    if student and getattr(student, 'team_memberships', None):
         await message.answer(
             "❌ Вы уже состоите в команде. Для смены команды обратитесь к администратору."
         )
         return
     
     # Сохраняем данные команды в состояние
-    await state.update_data(team_id=team['id'], team_name=team['team_name'])
+    await state.update_data(team_id=team.id, team_name=team.team_name)
     
     if student:
         # Пользователь есть в системе, но не в команде - сразу выбираем роль
         await state.set_state(states.JoinTeam.user_role)
         await message.answer(
-            f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
+            f"👥 Присоединяемся к команде *{team.team_name}*\n\n"
             f"Выберите вашу роль в команде:",
             reply_markup=keyboards.get_roles_keyboard(),
             parse_mode="Markdown"
@@ -86,7 +87,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
         # Новый пользователь - запрашиваем данные
         await state.set_state(states.JoinTeam.user_name)
         await message.answer(
-            f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
+            f"👥 Присоединяемся к команде *{team.team_name}*\n\n"
             f"Введите ваше имя и фамилию:",
             parse_mode="Markdown"
         )
@@ -94,12 +95,12 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
 @decorators.log_handler("help_command")
 async def cmd_help(message: aiogram.types.Message):
     """Обработчик команды /help"""
-    await message.answer(config.HELP_MESSAGE, parse_mode="Markdown")
+    await message.answer(tgtexts.HELP_MESSAGE, parse_mode="MarkdownV2")
 
 @decorators.log_handler("help_button")
 async def handle_help_button(message: aiogram.types.Message):
     """Обработчик кнопки Помощь"""
-    await message.answer(config.HELP_MESSAGE, parse_mode="Markdown")
+    await message.answer(tgtexts.HELP_MESSAGE, parse_mode="MarkdownV2")
 
 @decorators.log_handler("update_button")
 async def handle_update_button(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -109,12 +110,12 @@ async def handle_update_button(message: aiogram.types.Message, state: aiogram.fs
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
     if student:
-        has_team = bool(student.get('team_memberships'))
+        has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
         
         if has_team:
-            team_membership = student['team_memberships'][0]
-            is_admin = team_membership['team']['admin']['id'] == student['id']
+            team_membership = student.team_memberships[0]
+            is_admin = team_membership.team.admin.id == student.id
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         await message.answer("🔄 Меню обновлено", reply_markup=keyboard)

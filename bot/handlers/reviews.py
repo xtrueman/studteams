@@ -4,6 +4,7 @@ import aiogram.fsm.context
 from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
+import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
@@ -18,12 +19,12 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
     
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if not student or not student.get('team_memberships'):
+    if not student or not getattr(student, 'team_memberships', None):
         await message.answer("❌ Вы не состоите в команде.")
         return
     
     # Получаем участников команды, которых еще не оценил пользователь
-    teammates_to_rate = await queries.StudentQueries.get_teammates_not_rated(student['id'])
+    teammates_to_rate = await queries.StudentQueries.get_teammates_not_rated(student.id)
     
     if not teammates_to_rate:
         await message.answer(
@@ -33,7 +34,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         return
     
     # Создаем список имен для выбора
-    teammate_names = [teammate['name'] for teammate in teammates_to_rate]
+    teammate_names = [teammate.name for teammate in teammates_to_rate]
     
     await state.update_data(teammates_to_rate=teammates_to_rate)
     await state.set_state(states.ReviewProcess.teammate_selection)
@@ -41,7 +42,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
     await message.answer(
         "⭐ *Оценивание участников команды*\n\n"
         "Выберите участника для оценки:",
-        reply_markup=keyboards.get_dynamic_keyboard(teammate_names, columns=2),
+        reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
         parse_mode="Markdown"
     )
 
@@ -58,7 +59,7 @@ async def process_teammate_selection(message: aiogram.types.Message, state: aiog
     # Находим выбранного участника
     selected_teammate = None
     for teammate in teammates_to_rate:
-        if teammate['name'] == message.text:
+        if teammate.name == message.text:
             selected_teammate = teammate
             break
     
@@ -68,14 +69,14 @@ async def process_teammate_selection(message: aiogram.types.Message, state: aiog
     
     await state.update_data(
         selected_teammate=selected_teammate,
-        teammate_name=selected_teammate['name']
+        teammate_name=selected_teammate.name
     )
     await state.set_state(states.ReviewProcess.rating_input)
     
     await message.answer(
-        f"⭐ *Оценивание: {selected_teammate['name']}*\n\n"
+        f"⭐ *Оценивание: {selected_teammate.name}*\n\n"
         f"Поставьте общую оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-        reply_markup=keyboards.get_ratings_keyboard(),
+        reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -102,7 +103,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         f"✅ Оценка: {rating}/10\n\n"
         f"👍 *Положительные качества*\n"
         f"Напишите, что вам нравится в работе {data['teammate_name']}:",
-        reply_markup=keyboards.get_confirmation_keyboard("Пропустить", "Отмена"),
+        reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
         parse_mode="Markdown"
     )
 
@@ -127,7 +128,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
         f"✅ Положительные качества записаны\n\n"
         f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
-        reply_markup=keyboards.get_confirmation_keyboard("Пропустить", "Отмена"),
+        reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
         parse_mode="Markdown"
     )
 
@@ -161,7 +162,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
     
     await message.answer(
         confirmation_text,
-        reply_markup=keyboards.get_confirmation_keyboard("Отправить", "Отмена"),
+        reply_markup=inline_keyboards.get_review_confirm_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -174,8 +175,8 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
         
         try:
             await queries.RatingQueries.create(
-                assessor_id=student['id'],
-                assessed_id=data['selected_teammate']['id'],
+                assessor_id=student.id,
+                assessed_id=data['selected_teammate'].id,
                 overall_rating=data['overall_rating'],
                 advantages=data['advantages'],
                 disadvantages=data['disadvantages']
@@ -184,11 +185,11 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
             await state.clear()
             
             # Возвращаем главное меню
-            has_team = bool(student.get('team_memberships'))
+            has_team = bool(getattr(student, 'team_memberships', []))
             is_admin = False
             if has_team:
-                team_membership = student['team_memberships'][0]
-                is_admin = team_membership['team']['admin']['id'] == student['id']
+                team_membership = student.team_memberships[0]
+                is_admin = team_membership.team.admin.id == student.id
             
             keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
             
@@ -220,12 +221,12 @@ async def handle_who_rated_me(message: aiogram.types.Message):
     
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if not student or not student.get('team_memberships'):
+    if not student or not getattr(student, 'team_memberships', None):
         await message.answer("❌ Вы не состоите в команде.")
         return
     
     # Получаем оценки пользователя
-    ratings = await queries.RatingQueries.get_who_rated_me(student['id'])
+    ratings = await queries.RatingQueries.get_who_rated_me(student.id)
     
     if not ratings:
         await message.answer(
@@ -236,7 +237,7 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         return
     
     # Получаем информацию о команде для статистики
-    teammates = await queries.StudentQueries.get_teammates(student['id'])
+    teammates = await queries.StudentQueries.get_teammates(student.id)
     total_teammates = len(teammates)
     rated_count = len(ratings)
     
@@ -260,11 +261,11 @@ async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.conte
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
     if student:
-        has_team = bool(student.get('team_memberships'))
+        has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
         if has_team:
-            team_membership = student['team_memberships'][0]
-            is_admin = team_membership['team']['admin']['id'] == student['id']
+            team_membership = student.team_memberships[0]
+            is_admin = team_membership.team.admin.id == student.id
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
     else:
@@ -281,9 +282,7 @@ def register_reviews_handlers(dp: aiogram.Dispatcher):
     dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
     dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
     
-    # FSM для процесса оценивания
-    dp.message.register(process_teammate_selection, states.ReviewProcess.teammate_selection)
-    dp.message.register(process_rating_input, states.ReviewProcess.rating_input)
+    # FSM для процесса оценивания (только текстовые поля)
+    # process_teammate_selection, process_rating_input, confirm_review теперь обрабатываются через callback
     dp.message.register(process_advantages_input, states.ReviewProcess.advantages_input)
     dp.message.register(process_disadvantages_input, states.ReviewProcess.disadvantages_input)
-    dp.message.register(confirm_review, states.ReviewProcess.confirmation)

@@ -1,12 +1,28 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
+import aiogram.types
 from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
+import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
+import re
+
+def is_valid_full_name(name):
+    """
+    Проверяет полное имя (имя и фамилия):
+    - Точно 2 слова
+    - Каждое слово начинается с заглавной буквы
+    - Остальные буквы строчные
+    - Длина каждого слова: 2-18 букв
+    - ТОЛЬКО кириллица!
+    """
+    # Регулярное выражение: точно 2 слова, каждое от 2 до 18 букв, ТОЛЬКО кириллица
+    pattern = r'^[А-Я][а-я]{1,17} [А-Я][а-я]{1,17}$'
+    return bool(re.match(pattern, name.strip()))
 
 @decorators.log_handler("register_team")
 async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -14,7 +30,7 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
     # Проверяем, не зарегистрирован ли уже пользователь
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if student and student.get('team_memberships'):
+    if student and getattr(student, 'team_memberships', None):
         await message.answer(
             "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь."
         )
@@ -41,8 +57,7 @@ async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.c
     await state.update_data(team_name=team_name)
     await state.set_state(states.TeamRegistration.product_name)
     await message.answer(
-        f"✅ Название команды: *{team_name}*\n\n"
-        f"Теперь введите название разрабатываемого продукта:",
+        "Название разрабатываемого продукта:",
         parse_mode="Markdown"
     )
 
@@ -59,9 +74,25 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
     
     await state.update_data(product_name=product_name)
     await state.set_state(states.TeamRegistration.user_name)
+    
+    # Получаем имя пользователя из Telegram
+    first_name = message.from_user.first_name or ""
+    last_name = message.from_user.last_name or ""
+    suggested_name = f"{first_name} {last_name}".strip()
+    
+    # Создаем клавиатуру с подсказкой ТОЛЬКО если имя соответствует нашему регексу
+    keyboard = None
+    if suggested_name and is_valid_full_name(suggested_name):
+        keyboard = aiogram.types.ReplyKeyboardMarkup(
+            keyboard=[[aiogram.types.KeyboardButton(text=suggested_name)]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+            input_field_placeholder=suggested_name
+        )
+    
     await message.answer(
-        f"✅ Название продукта: *{product_name}*\n\n"
-        f"Теперь введите ваше имя и фамилию:",
+        "Ваше имя и фамилия («Иван Иванов»):",
+        reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
@@ -70,17 +101,16 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
     """Обработка имени администратора"""
     user_name = message.text.strip()
     
-    if not helpers.is_valid_name(user_name):
+    if not is_valid_full_name(user_name):
         await message.answer(
-            "❌ Имя должно содержать от 2 до 64 символов. Попробуйте еще раз:"
+            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, начинающиеся с заглавной буквы. Попробуйте еще раз:"
         )
         return
     
     await state.update_data(user_name=user_name)
     await state.set_state(states.TeamRegistration.user_group)
     await message.answer(
-        f"✅ Имя: *{user_name}*\n\n"
-        f"Введите номер вашей группы:",
+        "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown"
     )
 
@@ -89,9 +119,10 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
     """Обработка группы администратора"""
     user_group = message.text.strip()
     
-    if not helpers.is_valid_group_number(user_group):
+    # Разрешаем "0" как специальное значение для пользователей без группы
+    if user_group != "0" and not helpers.is_valid_group_number(user_group):
         await message.answer(
-            "❌ Номер группы должен содержать от 2 до 16 символов. Попробуйте еще раз:"
+            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:"
         )
         return
     
@@ -112,7 +143,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
     
     await message.answer(
         confirmation_text,
-        reply_markup=keyboards.get_confirmation_keyboard(),
+        reply_markup=inline_keyboards.get_team_registration_confirm_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -123,12 +154,16 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
         data = await state.get_data()
         
         try:
-            # Создаем пользователя
-            student = await queries.StudentQueries.create(
-                tg_id=message.from_user.id,
-                name=data['user_name'],
-                group_num=data['user_group']
-            )
+            # Проверяем, есть ли уже пользователь в системе
+            student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+            
+            if not student:
+                # Создаем нового пользователя только если его нет
+                student = await queries.StudentQueries.create(
+                    tg_id=message.from_user.id,
+                    name=data['user_name'],
+                    group_num=data['user_group']
+                )
             
             # Создаем команду
             invite_code = helpers.generate_invite_code()
@@ -178,24 +213,24 @@ async def handle_invite_link(message: aiogram.types.Message):
     """Генерация ссылки-приглашения"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if not student or not student.get('team_memberships'):
+    if not student or not getattr(student, 'team_memberships', None):
         await message.answer("❌ Вы не состоите в команде.")
         return
     
-    team_membership = student['team_memberships'][0]
-    team = team_membership['team']
+    team_membership = student.team_memberships[0]
+    team = team_membership.team
     
     # Проверяем, является ли пользователь администратором
-    if team['admin']['id'] != student['id']:
+    if team.admin.id != student.id:
         await message.answer("❌ Создавать ссылки-приглашения может только администратор команды.")
         return
     
     bot_username = (await message.bot.get_me()).username
-    invite_url = f"https://t.me/{bot_username}?start={team['invite_code']}"
+    invite_url = f"https://t.me/{bot_username}?start={team.invite_code}"
     
     await message.answer(
         f"🔗 *Ссылка-приглашение для команды*\n\n"
-        f"👥 Команда: {team['team_name']}\n"
+        f"👥 Команда: {team.team_name}\n"
         f"🔗 Ссылка: {invite_url}\n\n"
         f"📤 Отправьте эту ссылку участникам команды для присоединения.",
         parse_mode="Markdown"
@@ -206,18 +241,18 @@ async def handle_my_team(message: aiogram.types.Message):
     """Показать информацию о команде"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     
-    if not student or not student.get('team_memberships'):
+    if not student or not getattr(student, 'team_memberships', None):
         await message.answer("❌ Вы не состоите в команде.")
         return
     
-    team_membership = student['team_memberships'][0]
-    team = team_membership['team']
+    team_membership = student.team_memberships[0]
+    team = team_membership.team
     
     # Получаем всех участников команды
-    teammates = await queries.StudentQueries.get_teammates(student['id'])
+    teammates = await queries.StudentQueries.get_teammates(student.id)
     
     # Формируем список участников включая текущего пользователя
-    all_members = teammates + [{'student': {'id': student['id'], 'name': student['name']}, 'role': team_membership['role']}]
+    all_members = teammates + [{'student': {'id': student.id, 'name': student.name}, 'role': team_membership.role}]
     
     team_info = helpers.format_team_info(team, all_members)
     await message.answer(team_info, parse_mode="Markdown")
@@ -227,9 +262,9 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     """Обработка имени при присоединении к команде"""
     user_name = message.text.strip()
     
-    if not helpers.is_valid_name(user_name):
+    if not is_valid_full_name(user_name):
         await message.answer(
-            "❌ Имя должно содержать от 2 до 64 символов. Попробуйте еще раз:"
+            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, начинающиеся с заглавной буквы. Попробуйте еще раз:"
         )
         return
     
@@ -237,7 +272,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     await state.set_state(states.JoinTeam.user_group)
     await message.answer(
         f"✅ Имя: *{user_name}*\n\n"
-        f"Введите номер вашей группы:",
+        f"Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown"
     )
 
@@ -246,9 +281,10 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
     """Обработка группы при присоединении к команде"""
     user_group = message.text.strip()
     
-    if not helpers.is_valid_group_number(user_group):
+    # Разрешаем "0" как специальное значение для пользователей без группы
+    if user_group != "0" and not helpers.is_valid_group_number(user_group):
         await message.answer(
-            "❌ Номер группы должен содержать от 2 до 16 символов. Попробуйте еще раз:"
+            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:"
         )
         return
     
@@ -257,7 +293,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
     await message.answer(
         f"✅ Группа: *{user_group}*\n\n"
         f"Выберите вашу роль в команде:",
-        reply_markup=keyboards.get_roles_keyboard(),
+        reply_markup=inline_keyboards.get_roles_inline_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -291,7 +327,7 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
     
     await message.answer(
         confirmation_text,
-        reply_markup=keyboards.get_confirmation_keyboard("Присоединиться", "Отмена"),
+        reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
         parse_mode="Markdown"
     )
 
@@ -316,7 +352,7 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
             # Добавляем в команду
             await queries.TeamQueries.add_member(
                 team_id=data['team_id'],
-                student_id=student['id'],
+                student_id=student.id,
                 role=data['user_role']
             )
             
@@ -358,15 +394,14 @@ def register_team_handlers(dp: aiogram.Dispatcher):
     dp.message.register(handle_invite_link, F.text == "Ссылка-приглашение")
     dp.message.register(handle_my_team, F.text == "Моя команда")
     
-    # FSM для регистрации команды
+    # FSM для регистрации команды (только текстовые поля)
     dp.message.register(process_team_name, states.TeamRegistration.team_name)
     dp.message.register(process_product_name, states.TeamRegistration.product_name)
     dp.message.register(process_admin_name, states.TeamRegistration.user_name)
     dp.message.register(process_admin_group, states.TeamRegistration.user_group)
-    dp.message.register(confirm_team_registration, states.TeamRegistration.confirm)
+    # confirm_team_registration теперь обрабатывается через callback
     
-    # FSM для присоединения к команде
+    # FSM для присоединения к команде (только текстовые поля)
     dp.message.register(process_join_user_name, states.JoinTeam.user_name)
     dp.message.register(process_join_user_group, states.JoinTeam.user_group)
-    dp.message.register(process_join_user_role, states.JoinTeam.user_role)
-    dp.message.register(confirm_join_team, states.JoinTeam.confirm)
+    # process_join_user_role и confirm_join_team теперь обрабатываются через callback
