@@ -6,18 +6,21 @@ Middleware для логирования в боте.
 
 import aiogram
 import aiogram.types
+from aiogram import BaseMiddleware
 import loguru
+from typing import Dict, Any, Callable, Awaitable
 
-class LoggingMiddleware:
+class LoggingMiddleware(BaseMiddleware):
     def __init__(self):
+        super().__init__()
         self.logger = loguru.logger
 
     async def __call__(
         self,
-        handler,
+        handler: Callable[[aiogram.types.Update, Dict[str, Any]], Awaitable[Any]],
         event: aiogram.types.Update,
-        data: dict
-    ):
+        data: Dict[str, Any]
+    ) -> Any:
         # Логируем входящее обновление
         if event.message:
             user_id = event.message.from_user.id
