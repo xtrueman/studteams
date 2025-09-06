@@ -4,6 +4,7 @@
 Обрабатывает все нажатия кнопок inline-клавиатур в боте.
 """
 
+from typing import Optional
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
@@ -56,22 +57,32 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
         # Отправляем главное меню
         keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
         
-        await callback.message.edit_text(
-            f"🎉 *Команда успешно создана!*\n\n"
-            f"👥 Команда: {data['team_name']}\n"
-            f"📱 Продукт: {data['product_name']}\n"
-            f"🔗 Код приглашения: `{invite_code}`\n\n"
-            f"Теперь вы можете пригласить участников, используя кнопку \"Ссылка-приглашение\".",
-            parse_mode="Markdown"
-        )
+        # Генерируем ссылку-приглашение с инструкцией
+        bot_info = await callback.bot.get_me()
+        bot_username = bot_info.username if bot_info else None
+        if bot_username:
+            invite_link_text = await helpers.get_invite_link_text(data['team_name'], invite_code, bot_username, show_instruction=True)
+        else:
+            invite_link_text = ""
         
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            await callback.message.edit_text(
+                f"🎉 *Команда успешно создана!*\n\n"
+                f"👥 Команда: {data['team_name']}\n"
+                f"📱 Продукт: {data['product_name']}\n"
+                f"🔗 Код приглашения: `{invite_code}`"
+                f"{invite_link_text}",
+                parse_mode="Markdown"
+            )
+            
+            await callback.message.answer("Главное меню:", reply_markup=keyboard)
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при создании команды: {str(e)}\n"
-            f"Попробуйте еще раз или обратитесь к администратору."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при создании команды: {str(e)}\n"
+                f"Попробуйте еще раз или обратитесь к администратору."
+            )
         await state.clear()
     
     await callback.answer()
@@ -82,8 +93,9 @@ async def callback_cancel_team_registration(callback: aiogram.types.CallbackQuer
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     
-    await callback.message.edit_text("❌ Регистрация команды отменена.")
-    await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    if callback.message:
+        await callback.message.edit_text("❌ Регистрация команды отменена.")
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
 # Role Selection Callbacks
@@ -102,6 +114,10 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
         await callback_cancel_join_team(callback, state)
         return
     
+    if not callback.data:
+        await callback.answer("❌ Неверные данные")
+        return
+        
     role = role_mapping.get(callback.data)
     if not role:
         await callback.answer("❌ Неверная роль")
@@ -122,11 +138,12 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
         f"Присоединиться к команде?"
     )
     
-    await callback.message.edit_text(
-        confirmation_text,
-        reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
-        parse_mode="Markdown"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            confirmation_text,
+            reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
+            parse_mode="Markdown"
+        )
     await callback.answer()
 
 # Join Team Callbacks
@@ -160,22 +177,24 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
         # Отправляем главное меню
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=True)
         
-        await callback.message.edit_text(
-            f"🎉 *Добро пожаловать в команду!*\n\n"
-            f"👥 Команда: {data['team_name']}\n"
-            f"💼 Ваша роль: {data['user_role']}\n\n"
-            f"Теперь вы можете отправлять отчеты о проделанной работе и "
-            f"взаимодействовать с участниками команды.",
-            parse_mode="Markdown"
-        )
-        
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            await callback.message.edit_text(
+                f"🎉 *Добро пожаловать в команду!*\n\n"
+                f"👥 Команда: {data['team_name']}\n"
+                f"💼 Ваша роль: {data['user_role']}\n\n"
+                f"Теперь вы можете отправлять отчеты о проделанной работе и "
+                f"взаимодействовать с участниками команды.",
+                parse_mode="Markdown"
+            )
+            
+            await callback.message.answer("Главное меню:", reply_markup=keyboard)
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при присоединении к команде: {str(e)}\n"
-            f"Попробуйте еще раз или обратитесь к администратору."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при присоединении к команде: {str(e)}\n"
+                f"Попробуйте еще раз или обратитесь к администратору."
+            )
         await state.clear()
     
     await callback.answer()
@@ -186,15 +205,20 @@ async def callback_cancel_join_team(callback: aiogram.types.CallbackQuery, state
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     
-    await callback.message.edit_text("❌ Присоединение к команде отменено.")
-    await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    if callback.message:
+        await callback.message.edit_text("❌ Присоединение к команде отменено.")
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
 # Sprint Selection Callbacks
 
 @decorators.log_handler("callback_sprint_selection")
 async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик выбора спринта"""
+    """Обработчик callback выбора спринта"""
+    if not callback.data:
+        await callback.answer("❌ Неверные данные")
+        return
+        
     if callback.data == "cancel":
         await callback_cancel_action(callback, state)
         return
@@ -208,10 +232,11 @@ async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state
     await state.update_data(sprint_num=sprint_num)
     await state.set_state(states.ReportCreation.report_text)
     
-    await callback.message.edit_text(
-        f"✅ Спринт №{sprint_num}\n\n"
-        f"📝 Введите текст отчета о проделанной работе:"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            f"✅ Спринт №{sprint_num}\n\n"
+            f"📝 Введите текст отчета о проделанной работе:"
+        )
     await callback.answer()
 
 # Reports Callbacks
@@ -240,20 +265,22 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         
-        await callback.message.edit_text(
-            f"✅ *Отчет успешно отправлен!*\n\n"
-            f"📊 Спринт: №{data['sprint_num']}\n"
-            f"📅 Дата: {helpers.format_datetime('now')}",
-            parse_mode="Markdown"
-        )
-        
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            await callback.message.edit_text(
+                f"✅ *Отчет успешно отправлен!*\n\n"
+                f"📊 Спринт: №{data['sprint_num']}\n"
+                f"📅 Дата: {helpers.format_datetime('now')}",
+                parse_mode="Markdown"
+            )
+            
+            await callback.message.answer("Главное меню:", reply_markup=keyboard)
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при сохранении отчета: {str(e)}\n"
-            f"Попробуйте еще раз."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при сохранении отчета: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
         await state.clear()
     
     await callback.answer()
@@ -286,19 +313,21 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         
-        await callback.message.edit_text(
-            f"🗑 *Отчет удален*\n\n"
-            f"📊 Спринт №{data['sprint_num']} - отчет успешно удален",
-            parse_mode="Markdown"
-        )
-        
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            await callback.message.edit_text(
+                f"🗑 *Отчет удален*\n\n"
+                f"📊 Спринт №{data['sprint_num']} - отчет успешно удален",
+                parse_mode="Markdown"
+            )
+            
+            await callback.message.answer("Главное меню:", reply_markup=keyboard)
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при удалении отчета: {str(e)}\n"
-            f"Попробуйте еще раз."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при удалении отчета: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
         await state.clear()
     
     await callback.answer()
@@ -312,7 +341,11 @@ async def callback_cancel_delete_report(callback: aiogram.types.CallbackQuery, s
 
 @decorators.log_handler("callback_member_selection")
 async def callback_member_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик выбора участника для удаления"""
+    """Обработчик callback выбора участника для удаления"""
+    if not callback.data:
+        await callback.answer("❌ Неверные данные")
+        return
+        
     if callback.data == "cancel":
         await callback_cancel_admin_action(callback, state)
         return
@@ -334,14 +367,15 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
     await state.update_data(selected_member=selected_member)
     await state.set_state(states.MemberRemoval.confirmation)
     
-    await callback.message.edit_text(
-        f"⚠️ *Подтверждение удаления*\n\n"
-        f"Вы действительно хотите удалить *{selected_member.name}* из команды?\n\n"
-        f"*Это действие нельзя отменить!*\n"
-        f"Участник потеряет доступ ко всем функциям команды.",
-        reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
-        parse_mode="Markdown"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            f"⚠️ *Подтверждение удаления*\n\n"
+            f"Вы действительно хотите удалить *{selected_member.name}* из команды?\n\n"
+            f"*Это действие нельзя отменить!*\n"
+            f"Участник потеряет доступ ко всем функциям команды.",
+            reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
+            parse_mode="Markdown"
+        )
     await callback.answer()
 
 @decorators.log_handler("callback_confirm_remove_member")
@@ -359,22 +393,33 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
         
         await state.clear()
         
-        # Возвращаем админское меню
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
+        # Получаем обновленную информацию о команде
+        bot_info = await callback.bot.get_me()
+        bot_username = bot_info.username if bot_info else None
+        team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
         
-        await callback.message.edit_text(
-            f"🗑 *Участник удален*\n\n"
-            f"👤 {selected_member.name} исключен из команды",
-            parse_mode="Markdown"
-        )
-        
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            if team_data:
+                await callback.message.edit_text(
+                    f"🗑 *Участник удален*\n\n"
+                    f"👤 {selected_member.name} исключен из команды\n\n"
+                    f"{team_data['team_info']}",
+                    reply_markup=team_data['keyboard'],
+                    parse_mode="Markdown"
+                )
+            else:
+                await callback.message.edit_text(
+                    f"🗑 *Участник удален*\n\n"
+                    f"👤 {selected_member.name} исключен из команды",
+                    parse_mode="Markdown"
+                )
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при удалении участника: {str(e)}\n"
-            f"Попробуйте еще раз."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при удалении участника: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
         await state.clear()
     
     await callback.answer()
@@ -413,12 +458,13 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
     )
     await state.set_state(states.ReviewProcess.rating_input)
     
-    await callback.message.edit_text(
-        f"⭐ *Оценивание: {selected_teammate.name}*\n\n"
-        f"Поставьте общую оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-        reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
-        parse_mode="Markdown"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            f"⭐ *Оценивание: {selected_teammate.name}*\n\n"
+            f"Поставьте общую оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
+            reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
+            parse_mode="Markdown"
+        )
     await callback.answer()
 
 # Rating Selection Callbacks
@@ -444,13 +490,14 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
     await state.update_data(overall_rating=rating)
     await state.set_state(states.ReviewProcess.advantages_input)
     
-    await callback.message.edit_text(
-        f"✅ Оценка: {rating}/10\n\n"
-        f"👍 *Положительные качества*\n"
-        f"Напишите, что вам нравится в работе {data['teammate_name']}:",
-        reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
-        parse_mode="Markdown"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            f"✅ Оценка: {rating}/10\n\n"
+            f"👍 *Положительные качества*\n"
+            f"Напишите, что вам нравится в работе {data['teammate_name']}:",
+            reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
+            parse_mode="Markdown"
+        )
     await callback.answer()
 
 # Skip/Cancel Callbacks (for reviews)
@@ -465,13 +512,14 @@ async def callback_skip(callback: aiogram.types.CallbackQuery, state: aiogram.fs
         await state.update_data(advantages="Не указано")
         await state.set_state(states.ReviewProcess.disadvantages_input)
         
-        await callback.message.edit_text(
-            f"✅ Положительные качества записаны\n\n"
-            f"📈 *Области для улучшения*\n"
-            f"Напишите, что {data['teammate_name']} мог бы улучшить:",
-            reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
-            parse_mode="Markdown"
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"✅ Положительные качества записаны\n\n"
+                f"📈 *Области для улучшения*\n"
+                f"Напишите, что {data['teammate_name']} мог бы улучшить:",
+                reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
+                parse_mode="Markdown"
+            )
     
     elif current_state == states.ReviewProcess.disadvantages_input:
         await state.update_data(disadvantages="Не указано")
@@ -489,11 +537,12 @@ async def callback_skip(callback: aiogram.types.CallbackQuery, state: aiogram.fs
             f"Отправить оценку?"
         )
         
-        await callback.message.edit_text(
-            confirmation_text,
-            reply_markup=inline_keyboards.get_review_confirm_keyboard(),
-            parse_mode="Markdown"
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                confirmation_text,
+                reply_markup=inline_keyboards.get_review_confirm_keyboard(),
+                parse_mode="Markdown"
+            )
     
     await callback.answer()
 
@@ -525,21 +574,23 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
         
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         
-        await callback.message.edit_text(
-            f"✅ *Оценка отправлена!*\n\n"
-            f"👤 {data['teammate_name']}\n"
-            f"⭐ Оценка: {data['overall_rating']}/10\n\n"
-            f"Спасибо за обратную связь!",
-            parse_mode="Markdown"
-        )
-        
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+        if callback.message:
+            await callback.message.edit_text(
+                f"✅ *Оценка отправлена!*\n\n"
+                f"👤 {data['teammate_name']}\n"
+                f"⭐ Оценка: {data['overall_rating']}/10\n\n"
+                f"Спасибо за обратную связь!",
+                parse_mode="Markdown"
+            )
+            
+            await callback.message.answer("Главное меню:", reply_markup=keyboard)
         
     except Exception as e:
-        await callback.message.edit_text(
-            f"❌ Ошибка при сохранении оценки: {str(e)}\n"
-            f"Попробуйте еще раз."
-        )
+        if callback.message:
+            await callback.message.edit_text(
+                f"❌ Ошибка при сохранении оценки: {str(e)}\n"
+                f"Попробуйте еще раз."
+            )
         await state.clear()
     
     await callback.answer()
@@ -562,8 +613,9 @@ async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: a
     else:
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     
-    await callback.message.edit_text("❌ Оценивание отменено.")
-    await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    if callback.message:
+        await callback.message.edit_text("❌ Оценивание отменено.")
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
 # General Cancel Callbacks
@@ -586,8 +638,9 @@ async def callback_cancel_action(callback: aiogram.types.CallbackQuery, state: a
     else:
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     
-    await callback.message.edit_text("❌ Действие отменено.")
-    await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    if callback.message:
+        await callback.message.edit_text("❌ Действие отменено.")
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
 @decorators.log_handler("callback_cancel_admin_action")
@@ -596,8 +649,9 @@ async def callback_cancel_admin_action(callback: aiogram.types.CallbackQuery, st
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
     
-    await callback.message.edit_text("❌ Действие отменено.")
-    await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    if callback.message:
+        await callback.message.edit_text("❌ Действие отменено.")
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
 # Team Member Management Callbacks
@@ -615,7 +669,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
         await callback.answer("❌ Неверный формат")
         return
     
-    member_id = int(callback.data.split("_")[2])
+    member_id = callback.data.split("_")[2]
     
     # Проверяем права администратора
     student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
@@ -644,14 +698,15 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
         team_id=team.id
     )
     
-    await callback.message.edit_text(
-        f"⚠️ *Подтверждение удаления*\n\n"
-        f"Вы действительно хотите удалить *{member_to_remove.name}* из команды?\n\n"
-        f"*Это действие нельзя отменить!*\n"
-        f"Участник потеряет доступ ко всем функциям команды.",
-        reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
-        parse_mode="Markdown"
-    )
+    if callback.message:
+        await callback.message.edit_text(
+            f"⚠️ *Подтверждение удаления*\n\n"
+            f"Вы действительно хотите удалить *{member_to_remove.name}* из команды?\n\n"
+            f"*Это действие нельзя отменить!*\n"
+            f"Участник потеряет доступ ко всем функциям команды.",
+            reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
+            parse_mode="Markdown"
+        )
     await callback.answer()
 
 def register_callback_handlers(dp: aiogram.Dispatcher):

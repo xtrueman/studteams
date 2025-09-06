@@ -214,74 +214,17 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
         await message.answer("❌ Регистрация команды отменена.", reply_markup=keyboard)
 
-@decorators.log_handler("invite_link")
-async def handle_invite_link(message: aiogram.types.Message):
-    """Генерация ссылки-приглашения"""
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-    
-    if not student or not getattr(student, 'team_memberships', None):
-        await message.answer("❌ Вы не состоите в команде.")
-        return
-    
-    team_membership = student.team_memberships[0]
-    team = team_membership.team
-    
-    # Проверяем, является ли пользователь администратором
-    if team.admin.id != student.id:
-        await message.answer("❌ Создавать ссылки-приглашения может только администратор команды.")
-        return
-    
-    bot_username = (await message.bot.get_me()).username
-    invite_url = f"https://t.me/{bot_username}?start={team.invite_code}"
-    
-    await message.answer(
-        f"🔗 *Ссылка-приглашение для команды*\n\n"
-        f"👥 Команда: {team.team_name}\n"
-        f"🔗 Ссылка: `{invite_url}`\n\n"
-        f"📤 Отправьте эту ссылку участникам команды для присоединения.",
-        parse_mode="Markdown"
-    )
-
 @decorators.log_handler("my_team")
 async def handle_my_team(message: aiogram.types.Message):
     """Показать информацию о команде"""
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    bot_username = (await message.bot.get_me()).username
+    team_data = await helpers.get_team_display_data(None, message.from_user.id, bot_username)
     
-    if not student or not getattr(student, 'team_memberships', None):
+    if not team_data:
         await message.answer("❌ Вы не состоите в команде.")
         return
     
-    team_membership = student.team_memberships[0]
-    team = team_membership.team
-    
-    # Получаем всех участников команды
-    teammates = await queries.StudentQueries.get_teammates(student.id)
-    
-    # Создаем объект для текущего пользователя
-    class MockStudent:
-        def __init__(self, student_obj):
-            self.id = student_obj.id
-            self.name = student_obj.name
-    
-    class MockMembership:
-        def __init__(self, student_obj, role):
-            self.student = MockStudent(student_obj)
-            self.role = role
-    
-    # Формируем список участников включая текущего пользователя
-    all_members = list(teammates) + [MockMembership(student, team_membership.role)]
-    
-    team_info = helpers.format_team_info(team, all_members)
-    
-    # Проверяем права администратора
-    is_admin = team.admin.id == student.id
-    
-    # Добавляем inline клавиатуру для управления участниками (только для админов)
-    keyboard = inline_keyboards.get_team_member_management_keyboard(
-        all_members, student.id, is_admin
-    )
-    
-    await message.answer(team_info, parse_mode="Markdown", reply_markup=keyboard)
+    await message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
 
 @decorators.log_handler("process_join_user_name")
 async def process_join_user_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -415,7 +358,6 @@ def register_team_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков команды"""
     # Основные команды
     dp.message.register(handle_register_team, F.text == "Регистрация команды")
-    dp.message.register(handle_invite_link, F.text == "Ссылка-приглашение")
     dp.message.register(handle_my_team, F.text == "Моя команда")
     
     # FSM для регистрации команды (только текстовые поля)
