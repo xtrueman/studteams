@@ -12,8 +12,8 @@ import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
 import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
-import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
+
 
 @decorators.log_handler("remove_member")
 async def handle_remove_member(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -52,6 +52,7 @@ async def handle_remove_member(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+
 @decorators.log_handler("process_member_selection")
 async def process_member_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора участника для удаления"""
@@ -84,6 +85,7 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
         reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("confirm_member_removal")
 async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -120,6 +122,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
     
     elif message.text == "Отмена":
         await cancel_admin_action(message, state)
+
 
 @decorators.log_handler("team_report")
 async def handle_team_report(message: aiogram.types.Message):
@@ -184,11 +187,13 @@ async def handle_team_report(message: aiogram.types.Message):
             f"Попробуйте еще раз."
         )
 
+
 async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена админского действия"""
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
     await message.answer("❌ Действие отменено.", reply_markup=keyboard)
+
 
 def register_admin_handlers(dp: aiogram.Dispatcher):
     """Регистрация админских обработчиков"""

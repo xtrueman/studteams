@@ -8,11 +8,13 @@ import uuid
 import datetime
 import pydantic
 
+
 class Student(pydantic.BaseModel):
     id: uuid.UUID
     tg_id: int
     name: str
     group_num: str | None = None
+
 
 class Team(pydantic.BaseModel):
     id: uuid.UUID
@@ -21,10 +23,12 @@ class Team(pydantic.BaseModel):
     invite_code: str
     admin_id: uuid.UUID
 
+
 class TeamMember(pydantic.BaseModel):
     team_id: uuid.UUID
     student_id: uuid.UUID
     role: str
+
 
 class SprintReport(pydantic.BaseModel):
     id: uuid.UUID
@@ -32,6 +36,7 @@ class SprintReport(pydantic.BaseModel):
     sprint_num: int
     report_date: datetime.datetime
     report_text: str
+
 
 class TeamMemberRating(pydantic.BaseModel):
     id: uuid.UUID

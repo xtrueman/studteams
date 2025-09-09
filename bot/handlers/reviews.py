@@ -1,7 +1,7 @@
 """
-Обработчики системы взаимного оценивания.
+Обработчики функций оценивания участников команды.
 
-Обрабатывают оценку участников команды и просмотр полученных оценок.
+Обрабатывают процесс взаимного оценивания и просмотр полученных оценок.
 """
 
 import aiogram
@@ -15,6 +15,7 @@ import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
 import config
+
 
 @decorators.log_handler("rate_teammates")
 async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -52,6 +53,50 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         parse_mode="Markdown"
     )
 
+
+@decorators.log_handler("who_rated_me")
+async def handle_who_rated_me(message: aiogram.types.Message):
+    """Показать кто оценил пользователя"""
+    if not config.ENABLE_REVIEWS:
+        await message.answer("❌ Функция оценивания временно отключена.")
+        return
+    
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    
+    if not student or not getattr(student, 'team_memberships', None):
+        await message.answer("❌ Вы не состоите в команде.")
+        return
+    
+    # Получаем оценки пользователя
+    ratings = await queries.RatingQueries.get_who_rated_me(student.id)
+    
+    if not ratings:
+        await message.answer(
+            "⭐ Вас пока никто не оценил.\n\n"
+            "Оценки появятся здесь после того, как участники команды "
+            "воспользуются функцией \"Оценить участников команды\"."
+        )
+        return
+    
+    # Получаем информацию о команде для статистики
+    teammates = await queries.StudentQueries.get_teammates(student.id)
+    total_teammates = len(teammates)
+    rated_count = len(ratings)
+    
+    ratings_text = helpers.format_ratings_list(ratings)
+    
+    status_text = (
+        f"📊 *Статус оценок:*\n"
+        f"✅ Оценили: {rated_count}\n"
+        f"⏳ Осталось: {total_teammates - rated_count}\n"
+        f"👥 Всего участников: {total_teammates}\n\n"
+    )
+    
+    full_text = status_text + ratings_text
+    
+    await message.answer(full_text, parse_mode="Markdown")
+
+
 @decorators.log_handler("process_teammate_selection")
 async def process_teammate_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора участника для оценки"""
@@ -86,6 +131,7 @@ async def process_teammate_selection(message: aiogram.types.Message, state: aiog
         parse_mode="Markdown"
     )
 
+
 @decorators.log_handler("process_rating_input")
 async def process_rating_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка ввода оценки"""
@@ -113,6 +159,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+
 @decorators.log_handler("process_advantages_input")
 async def process_advantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка ввода положительных качеств"""
@@ -137,6 +184,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
         reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_disadvantages_input")
 async def process_disadvantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -171,6 +219,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
         reply_markup=inline_keyboards.get_review_confirm_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("confirm_review")
 async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -218,47 +267,6 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
     elif message.text == "Отмена":
         await cancel_review(message, state)
 
-@decorators.log_handler("who_rated_me")
-async def handle_who_rated_me(message: aiogram.types.Message):
-    """Показать кто оценил пользователя"""
-    if not config.ENABLE_REVIEWS:
-        await message.answer("❌ Функция оценивания временно отключена.")
-        return
-    
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-    
-    if not student or not getattr(student, 'team_memberships', None):
-        await message.answer("❌ Вы не состоите в команде.")
-        return
-    
-    # Получаем оценки пользователя
-    ratings = await queries.RatingQueries.get_who_rated_me(student.id)
-    
-    if not ratings:
-        await message.answer(
-            "⭐ Вас пока никто не оценил.\n\n"
-            "Оценки появятся здесь после того, как участники команды "
-            "воспользуются функцией \"Оценить участников команды\"."
-        )
-        return
-    
-    # Получаем информацию о команде для статистики
-    teammates = await queries.StudentQueries.get_teammates(student.id)
-    total_teammates = len(teammates)
-    rated_count = len(ratings)
-    
-    ratings_text = helpers.format_ratings_list(ratings)
-    
-    status_text = (
-        f"📊 *Статус оценок:*\n"
-        f"✅ Оценили: {rated_count}\n"
-        f"⏳ Осталось: {total_teammates - rated_count}\n"
-        f"👥 Всего участников: {total_teammates}\n\n"
-    )
-    
-    full_text = status_text + ratings_text
-    
-    await message.answer(full_text, parse_mode="Markdown")
 
 async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена процесса оценивания"""
@@ -278,6 +286,7 @@ async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.conte
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     
     await message.answer("❌ Оценивание отменено.", reply_markup=keyboard)
+
 
 def register_reviews_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков оценок"""

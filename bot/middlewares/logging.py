@@ -11,6 +11,7 @@ from aiogram.types import TelegramObject
 import loguru
 from typing import Dict, Any, Callable, Awaitable
 
+
 class LoggingMiddleware(BaseMiddleware):
     def __init__(self):
         super().__init__()
@@ -57,7 +58,6 @@ class LoggingMiddleware(BaseMiddleware):
                     user_id = "unknown"
             else:
                 user_id = "unknown"
-                
             self.logger.error(
                 f"Handler error for user_id={user_id}: {type(e).__name__}: {str(e)}"
             )

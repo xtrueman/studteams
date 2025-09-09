@@ -31,6 +31,7 @@ loguru.logger.add(
 
 logger = loguru.logger
 
+
 async def main():
     # Проверяем конфигурацию
     if not config.BOT_TOKEN:
@@ -57,7 +58,7 @@ async def main():
     
     try:
         # Проверяем подключение к EdgeDB
-        client = await db_client.db_client.get_client()
+        client = await db_client.db_client.get_client()  # noqa: F841
         logger.info("EdgeDB connection established")
         
         # Удаляем webhook если он активен

@@ -7,7 +7,11 @@
 import aiogram.types
 import config
 
-def get_confirmation_inline_keyboard(confirm_text: str = "Продолжить", cancel_text: str = "Отмена", confirm_data: str = "confirm", cancel_data: str = "cancel"):
+
+def get_confirmation_inline_keyboard(confirm_text: str = "Продолжить",
+                                     cancel_text: str = "Отмена",
+                                     confirm_data: str = "confirm",
+                                     cancel_data: str = "cancel"):
     """Inline клавиатура подтверждения"""
     return aiogram.types.InlineKeyboardMarkup(
         inline_keyboard=[
@@ -18,11 +22,12 @@ def get_confirmation_inline_keyboard(confirm_text: str = "Продолжить",
         ]
     )
 
+
 def get_roles_inline_keyboard():
     """Inline клавиатура выбора роли"""
     roles = [
         ("📈 Product owner", "role_po"),
-        ("🎯 Scrum Master", "role_sm"), 
+        ("🎯 Scrum Master", "role_sm"),
         ("💻 Разработчик", "role_dev"),
         ("👥 Участник команды", "role_member")
     ]
@@ -38,6 +43,7 @@ def get_roles_inline_keyboard():
     
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+
 def get_sprints_inline_keyboard():
     """Inline клавиатура выбора спринта"""
     keyboard = []
@@ -49,13 +55,14 @@ def get_sprints_inline_keyboard():
             if i + j < len(sprints):
                 sprint_num = i + j + 1
                 row.append(aiogram.types.InlineKeyboardButton(
-                    text=sprints[i + j], 
+                    text=sprints[i + j],
                     callback_data=f"sprint_{sprint_num}"
                 ))
         keyboard.append(row)
     
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_ratings_inline_keyboard():
     """Inline клавиатура выбора оценки"""
@@ -76,6 +83,7 @@ def get_ratings_inline_keyboard():
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+
 def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns: int = 2):
     """Динамическая inline клавиатура для списков (участники, отчеты и т.д.)"""
     keyboard = []
@@ -91,13 +99,14 @@ def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns:
                     item_text = item_text[:17] + "..."
                     
                 row.append(aiogram.types.InlineKeyboardButton(
-                    text=item_text, 
+                    text=item_text,
                     callback_data=f"{callback_prefix}_{item_index}"
                 ))
         keyboard.append(row)
     
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_skip_cancel_inline_keyboard(skip_text: str = "⏭️ Пропустить", cancel_text: str = "❌ Отмена"):
     """Inline клавиатура с кнопками Пропустить/Отмена"""
@@ -112,29 +121,36 @@ def get_skip_cancel_inline_keyboard(skip_text: str = "⏭️ Пропустит�
 
 # Специфичные клавиатуры для различных действий
 
+
 def get_team_registration_confirm_keyboard():
     """Клавиатура подтверждения регистрации команды"""
     return get_confirmation_inline_keyboard("✅ Продолжить", "❌ Отмена", "confirm_team_reg", cancel_data="cancel_team_reg")
+
 
 def get_join_team_confirm_keyboard():
     """Клавиатура подтверждения присоединения к команде"""
     return get_confirmation_inline_keyboard("✅ Присоединиться", "❌ Отмена", "confirm_join_team", "cancel_join_team")
 
+
 def get_report_confirm_keyboard():
     """Клавиатура подтверждения отправки отчета"""
     return get_confirmation_inline_keyboard("📤 Отправить", "❌ Отмена", "confirm_report", "cancel_report")
+
 
 def get_report_delete_confirm_keyboard():
     """Клавиатура подтверждения удаления отчета"""
     return get_confirmation_inline_keyboard("🗑️ Удалить", "❌ Отмена", "confirm_delete_report", "cancel_delete_report")
 
+
 def get_member_removal_confirm_keyboard():
     """Клавиатура подтверждения удаления участника"""
     return get_confirmation_inline_keyboard("⚠️ Удалить", "❌ Отмена", "confirm_remove_member", "cancel_remove_member")
 
+
 def get_review_confirm_keyboard():
     """Клавиатура подтверждения отправки оценки"""
     return get_confirmation_inline_keyboard("⭐ Отправить", "❌ Отмена", "confirm_review", "cancel_review")
+
 
 def get_team_member_management_keyboard(members, current_user_id, is_admin=False):
     """Клавиатура управления участниками команды"""
@@ -155,12 +171,13 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                         callback_data=f"edit_member_{member.student.id}"
                     ),
                     aiogram.types.InlineKeyboardButton(
-                        text=f"🗑️ Delete",
+                        text="🗑️ Delete",
                         callback_data=f"remove_member_{member.student.id}"
                     )
                 ])
     
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def get_report_management_keyboard(reports):
     """Клавиатура управления отчетами"""
@@ -182,9 +199,9 @@ def get_report_management_keyboard(reports):
                     callback_data=f"edit_report_{report.sprint_num}"
                 ),
                 aiogram.types.InlineKeyboardButton(
-                    text=f"🗑️ Удалить",
+                    text="🗑️ Удалить",
                     callback_data=f"delete_report_{report.sprint_num}"
                 )
             ])
-    
+
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)

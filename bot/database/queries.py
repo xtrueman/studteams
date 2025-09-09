@@ -7,6 +7,7 @@
 import uuid
 import bot.database.client as db_client
 
+
 class StudentQueries:
     
     @staticmethod
@@ -106,6 +107,7 @@ class StudentQueries:
             )
         """, assessor_id=assessor_id)
 
+
 class TeamQueries:
     
     @staticmethod
@@ -160,6 +162,7 @@ class TeamQueries:
             FILTER .team.id = <uuid>$team_id AND .student.id = <uuid>$student_id
         """, team_id=team_id, student_id=student_id)
 
+
 class ReportQueries:
     
     @staticmethod
@@ -211,6 +214,7 @@ class ReportQueries:
             FILTER .student.id = <uuid>$student_id AND .sprint_num = <int32>$sprint_num
         """, student_id=student_id, sprint_num=sprint_num)
 
+
 class RatingQueries:
     
     @staticmethod
@@ -224,8 +228,10 @@ class RatingQueries:
                 advantages := <str>$advantages,
                 disadvantages := <str>$disadvantages
             }
-        """, assessor_id=assessor_id, assessed_id=assessed_id, overall_rating=overall_rating, 
-             advantages=advantages, disadvantages=disadvantages)
+        """,
+                    assessor_id=assessor_id, assessed_id=assessed_id,
+                    overall_rating=overall_rating, advantages=advantages,
+                    disadvantages=disadvantages)
     
     @staticmethod
     async def get_who_rated_me(student_id: uuid.UUID):
@@ -241,7 +247,7 @@ class RatingQueries:
             FILTER .assessed.id = <uuid>$student_id
             ORDER BY .rate_date DESC
         """, student_id=student_id)
-    
+
     @staticmethod
     async def get_ratings_given_by_student(student_id: uuid.UUID):
         client = await db_client.db_client.get_client()

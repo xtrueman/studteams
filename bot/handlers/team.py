@@ -1,13 +1,13 @@
 """
-Обработчики функций управления командой.
+Обработчики функций команды.
 
-Обрабатывают регистрацию команды, присоединение участников и просмотр информации.
+Обрабатывают регистрацию команды, присоединение к команде и управление командой.
 """
 
+import re
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
-import aiogram.types
 from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
@@ -15,7 +15,7 @@ import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
-import re
+
 
 def is_valid_full_name(name):
     """
@@ -29,6 +29,7 @@ def is_valid_full_name(name):
     # Регулярное выражение: точно 2 слова, каждое от 2 до 18 букв, ТОЛЬКО кириллица
     pattern = r'^[А-Я][а-я]{1,17} [А-Я][а-я]{1,17}$'
     return bool(re.match(pattern, name.strip()))
+
 
 @decorators.log_handler("register_team")
 async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -49,6 +50,20 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+
+@decorators.log_handler("my_team")
+async def handle_my_team(message: aiogram.types.Message):
+    """Показать информацию о команде"""
+    bot_username = (await message.bot.get_me()).username
+    team_data = await helpers.get_team_display_data(None, message.from_user.id, bot_username)
+    
+    if not team_data:
+        await message.answer("❌ Вы не состоите в команде.")
+        return
+    
+    await message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+
+
 @decorators.log_handler("process_team_name")
 async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка названия команды"""
@@ -66,6 +81,7 @@ async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.c
         "Название разрабатываемого продукта:",
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_product_name")
 async def process_product_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -102,6 +118,7 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+
 @decorators.log_handler("process_admin_name")
 async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка имени администратора"""
@@ -109,7 +126,8 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
     
     if not is_valid_full_name(user_name):
         await message.answer(
-            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, начинающиеся с заглавной буквы. Попробуйте еще раз:"
+            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
+            "начинающиеся с заглавной буквы. Попробуйте еще раз:"
         )
         return
     
@@ -119,6 +137,7 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_admin_group")
 async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -152,6 +171,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
         reply_markup=inline_keyboards.get_team_registration_confirm_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("confirm_team_registration")
 async def confirm_team_registration(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -214,17 +234,6 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
         await message.answer("❌ Регистрация команды отменена.", reply_markup=keyboard)
 
-@decorators.log_handler("my_team")
-async def handle_my_team(message: aiogram.types.Message):
-    """Показать информацию о команде"""
-    bot_username = (await message.bot.get_me()).username
-    team_data = await helpers.get_team_display_data(None, message.from_user.id, bot_username)
-    
-    if not team_data:
-        await message.answer("❌ Вы не состоите в команде.")
-        return
-    
-    await message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
 
 @decorators.log_handler("process_join_user_name")
 async def process_join_user_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -233,7 +242,8 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     
     if not is_valid_full_name(user_name):
         await message.answer(
-            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, начинающиеся с заглавной буквы. Попробуйте еще раз:"
+            "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
+            "начинающиеся с заглавной буквы. Попробуйте еще раз:"
         )
         return
     
@@ -243,6 +253,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_join_user_group")
 async def process_join_user_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -263,6 +274,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
         reply_markup=inline_keyboards.get_roles_inline_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_join_user_role")
 async def process_join_user_role(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -297,6 +309,7 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
         reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("confirm_join_team")
 async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -348,11 +361,13 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
     elif message.text == "Отмена":
         await cancel_join_team(message, state)
 
+
 async def cancel_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена присоединения к команде"""
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
     await message.answer("❌ Присоединение к команде отменено.", reply_markup=keyboard)
+
 
 def register_team_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков команды"""

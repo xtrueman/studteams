@@ -14,7 +14,7 @@ import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
-import config
+
 
 @decorators.log_handler("my_reports")
 async def handle_my_reports(message: aiogram.types.Message):
@@ -33,6 +33,7 @@ async def handle_my_reports(message: aiogram.types.Message):
     
     await message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
 
+
 @decorators.log_handler("send_report")
 async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало создания отчета"""
@@ -49,6 +50,7 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
         reply_markup=inline_keyboards.get_sprints_inline_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("process_sprint_selection")
 async def process_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -71,6 +73,7 @@ async def process_sprint_selection(message: aiogram.types.Message, state: aiogra
         f"📝 Введите текст отчета о проделанной работе:",
         reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад")
     )
+
 
 @decorators.log_handler("process_report_text")
 async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -143,6 +146,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         )
         await state.clear()
 
+
 @decorators.log_handler("delete_report")
 async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало удаления отчета"""
@@ -170,6 +174,7 @@ async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fs
         parse_mode="Markdown"
     )
 
+
 @decorators.log_handler("process_delete_sprint_selection")
 async def process_delete_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора спринта для удаления"""
@@ -193,6 +198,7 @@ async def process_delete_sprint_selection(message: aiogram.types.Message, state:
         reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
         parse_mode="Markdown"
     )
+
 
 @decorators.log_handler("confirm_delete_report")
 async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -235,6 +241,7 @@ async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.f
     elif message.text == "Отмена":
         await cancel_action(message, state)
 
+
 async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена текущего действия"""
     await state.clear()
@@ -254,6 +261,7 @@ async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.conte
     
     await message.answer("❌ Действие отменено.", reply_markup=keyboard)
 
+
 def register_reports_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков отчетов"""
     # Основные команды
@@ -266,5 +274,4 @@ def register_reports_handlers(dp: aiogram.Dispatcher):
     dp.message.register(process_report_text, states.ReportCreation.report_text)
     # confirm_report больше не нужен - отчет сохраняется сразу
     
-    # FSM для удаления отчета теперь обрабатывается через inline кнопки
     # handle_delete_report, process_delete_sprint_selection удалены из регистрации

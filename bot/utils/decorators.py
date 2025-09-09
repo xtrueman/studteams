@@ -8,6 +8,7 @@ import functools
 import loguru
 import aiogram.types
 
+
 def log_handler(handler_name: str = None):
     """Декоратор для логирования вызовов обработчиков"""
     def decorator(func):

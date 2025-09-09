@@ -14,8 +14,8 @@ import bot.keyboards.reply as keyboards
 import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
-import config
 import tgtexts
+
 
 @decorators.log_handler("start_command")
 async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -32,6 +32,7 @@ async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.F
     else:
         # Обычный /start
         await handle_regular_start(message, state)
+
 
 async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка обычного старта без кода"""
@@ -57,6 +58,7 @@ async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fs
             "или обратитесь к администратору команды за ссылкой-приглашением.",
             reply_markup=keyboard
         )
+
 
 async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext, invite_code: str):
     """Обработка присоединения к команде по коду"""
@@ -99,15 +101,18 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
             parse_mode="Markdown"
         )
 
+
 @decorators.log_handler("help_command")
 async def cmd_help(message: aiogram.types.Message):
     """Обработчик команды /help"""
     await message.answer(tgtexts.HELP_MESSAGE, parse_mode="MarkdownV2")
 
+
 @decorators.log_handler("help_button")
 async def handle_help_button(message: aiogram.types.Message):
     """Обработчик кнопки Помощь"""
     await message.answer(tgtexts.HELP_MESSAGE, parse_mode="MarkdownV2")
+
 
 @decorators.log_handler("update_button")
 async def handle_update_button(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -129,6 +134,7 @@ async def handle_update_button(message: aiogram.types.Message, state: aiogram.fs
     else:
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
         await message.answer("🔄 Меню обновлено", reply_markup=keyboard)
+
 
 def register_start_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков"""

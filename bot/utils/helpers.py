@@ -5,14 +5,16 @@
 """
 
 from typing import Optional
-import uuid
+# import uuid  # noqa: F401
 import secrets
 import string
+
 
 def generate_invite_code(length: int = 8) -> str:
     """Генерация случайного кода приглашения"""
     alphabet = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 
 def format_team_info(team_data, members_data, invite_link_text: Optional[str] = None) -> str:
     """Форматирование информации о команде"""
@@ -38,6 +40,7 @@ def format_team_info(team_data, members_data, invite_link_text: Optional[str] = 
     
     return text
 
+
 def format_reports_list(reports) -> str:
     """Форматирование списка отчетов"""
     if not reports:
@@ -49,6 +52,7 @@ def format_reports_list(reports) -> str:
         text += f"_{report.report_text}_\n\n"
     
     return text
+
 
 def format_ratings_list(ratings) -> str:
     """Форматирование списка оценок"""
@@ -66,6 +70,7 @@ def format_ratings_list(ratings) -> str:
     
     return text
 
+
 def extract_sprint_number(text: str) -> int | None:
     """Извлечение номера спринта из текста кнопки"""
     try:
@@ -74,6 +79,7 @@ def extract_sprint_number(text: str) -> int | None:
     except (ValueError, IndexError):
         pass
     return None
+
 
 def validate_rating(text: str) -> int | None:
     """Валидация оценки"""
@@ -85,21 +91,26 @@ def validate_rating(text: str) -> int | None:
         pass
     return None
 
+
 def is_valid_name(name: str) -> bool:
     """Проверка валидности имени"""
     return len(name.strip()) >= 2 and len(name.strip()) <= 64
+
 
 def is_valid_team_name(name: str) -> bool:
     """Проверка валидности названия команды"""
     return len(name.strip()) >= 3 and len(name.strip()) <= 64
 
+
 def is_valid_product_name(name: str) -> bool:
     """Проверка валидности названия продукта"""
     return len(name.strip()) >= 3 and len(name.strip()) <= 100
 
+
 def is_valid_group_number(group: str) -> bool:
     """Проверка валидности номера группы"""
     return len(group.strip()) >= 2 and len(group.strip()) <= 16
+
 
 def format_datetime(dt) -> str:
     """Форматирование даты и времени"""
@@ -108,7 +119,9 @@ def format_datetime(dt) -> str:
         dt = datetime.datetime.now()
     return dt.strftime("%d.%m.%Y %H:%M")
 
-async def get_team_display_data(student_id: Optional[str], tg_id: int, bot_username: Optional[str] = None):
+
+async def get_team_display_data(student_id: Optional[str], tg_id: int,
+                                bot_username: Optional[str] = None):
     """Получение данных для отображения информации о команде"""
     import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
@@ -167,7 +180,9 @@ async def get_team_display_data(student_id: Optional[str], tg_id: int, bot_usern
         'all_members': all_members
     }
 
-async def get_invite_link_text(team_name: str, invite_code: str, bot_username: Optional[str], show_instruction: bool = False) -> str:
+
+async def get_invite_link_text(team_name: str, invite_code: str, bot_username: Optional[str],
+                               show_instruction: bool = False) -> str:
     """Генерация текста с ссылкой-приглашением"""
     invite_url = f"https://t.me/{bot_username}?start={invite_code}"
     base_text = (
@@ -176,6 +191,6 @@ async def get_invite_link_text(team_name: str, invite_code: str, bot_username: O
     )
     
     if show_instruction:
-        base_text += f"\n\n📤 Отправьте эту ссылку участникам команды для присоединения."
+        base_text += "\n\n📤 Отправьте эту ссылку участникам команды для присоединения."
     
     return base_text

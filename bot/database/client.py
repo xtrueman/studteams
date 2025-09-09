@@ -5,7 +5,7 @@
 """
 
 import edgedb
-import config
+
 
 class EdgeDBClient:
     def __init__(self):
@@ -16,11 +16,12 @@ class EdgeDBClient:
             # Простое решение - используем стандартные переменные окружения EdgeDB
             self._client = edgedb.create_async_client()
         return self._client
-    
+
     async def close(self):
         if self._client:
             await self._client.aclose()
             self._client = None
+
 
 # Глобальный экземпляр клиента
 db_client = EdgeDBClient()

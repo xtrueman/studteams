@@ -4,7 +4,6 @@
 Обрабатывает все нажатия кнопок inline-клавиатур в боте.
 """
 
-from typing import Optional
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
@@ -17,7 +16,9 @@ import bot.utils.helpers as helpers
 import bot.utils.decorators as decorators
 import config
 
+
 # Team Registration Callbacks
+
 
 @decorators.log_handler("callback_confirm_team_reg")
 async def callback_confirm_team_registration(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -61,7 +62,9 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
         bot_info = await callback.bot.get_me()
         bot_username = bot_info.username if bot_info else None
         if bot_username:
-            invite_link_text = await helpers.get_invite_link_text(data['team_name'], invite_code, bot_username, show_instruction=True)
+            invite_link_text = await helpers.get_invite_link_text(
+                data['team_name'], invite_code, bot_username, show_instruction=True
+            )
         else:
             invite_link_text = ""
         
@@ -87,6 +90,7 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_team_reg")
 async def callback_cancel_team_registration(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены регистрации команды"""
@@ -100,12 +104,13 @@ async def callback_cancel_team_registration(callback: aiogram.types.CallbackQuer
 
 # Role Selection Callbacks
 
+
 @decorators.log_handler("callback_role_selection")
 async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик выбора роли"""
     role_mapping = {
         "role_po": "Product owner",
-        "role_sm": "Scrum Master", 
+        "role_sm": "Scrum Master",
         "role_dev": "Разработчик",
         "role_member": "Участник команды"
     }
@@ -147,6 +152,7 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
     await callback.answer()
 
 # Join Team Callbacks
+
 
 @decorators.log_handler("callback_confirm_join_team")
 async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -203,6 +209,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_join_team")
 async def callback_cancel_join_team(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены присоединения к команде"""
@@ -215,6 +222,7 @@ async def callback_cancel_join_team(callback: aiogram.types.CallbackQuery, state
     await callback.answer()
 
 # Sprint Selection Callbacks
+
 
 @decorators.log_handler("callback_sprint_selection")
 async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -244,6 +252,7 @@ async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state
     await callback.answer()
 
 # Reports Callbacks
+
 
 @decorators.log_handler("callback_confirm_report")
 async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -289,10 +298,12 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_report")
 async def callback_cancel_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены отправки отчета"""
     await callback_cancel_action(callback, state)
+
 
 @decorators.log_handler("callback_confirm_delete_report")
 async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -331,12 +342,14 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_delete_report")
 async def callback_cancel_delete_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления отчета"""
     await callback_cancel_action(callback, state)
 
 # Member Selection Callbacks
+
 
 @decorators.log_handler("callback_member_selection")
 async def callback_member_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -376,6 +389,7 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
             parse_mode="Markdown"
         )
     await callback.answer()
+
 
 @decorators.log_handler("callback_confirm_remove_member")
 async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -423,12 +437,14 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_remove_member")
 async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления участника"""
     await callback_cancel_admin_action(callback, state)
 
 # Teammate Selection Callbacks (for reviews)
+
 
 @decorators.log_handler("callback_teammate_selection")
 async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -468,6 +484,7 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
 
 # Rating Selection Callbacks
 
+
 @decorators.log_handler("callback_rating_selection")
 async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик выбора оценки"""
@@ -500,6 +517,7 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
     await callback.answer()
 
 # Skip/Cancel Callbacks (for reviews)
+
 
 @decorators.log_handler("callback_skip")
 async def callback_skip(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -546,6 +564,7 @@ async def callback_skip(callback: aiogram.types.CallbackQuery, state: aiogram.fs
     await callback.answer()
 
 # Review Confirm Callbacks
+
 
 @decorators.log_handler("callback_confirm_review")
 async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -594,6 +613,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
     
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_review")
 async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены оценивания"""
@@ -619,6 +639,7 @@ async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: a
 
 # General Cancel Callbacks
 
+
 @decorators.log_handler("callback_cancel_action")
 async def callback_cancel_action(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик общей отмены действия"""
@@ -642,6 +663,7 @@ async def callback_cancel_action(callback: aiogram.types.CallbackQuery, state: a
         await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
+
 @decorators.log_handler("callback_cancel_admin_action")
 async def callback_cancel_admin_action(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены админского действия"""
@@ -655,6 +677,7 @@ async def callback_cancel_admin_action(callback: aiogram.types.CallbackQuery, st
 
 # Team Member Management Callbacks
 
+
 @decorators.log_handler("callback_edit_member")
 async def callback_edit_member(callback: aiogram.types.CallbackQuery):
     """Callback обработчик редактирования участника"""
@@ -662,6 +685,7 @@ async def callback_edit_member(callback: aiogram.types.CallbackQuery):
     await callback.answer("⚠️ Функция редактирования участников будет доступна в следующих версиях", show_alert=True)
 
 # Report Management Callbacks
+
 
 @decorators.log_handler("callback_edit_report")
 async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -705,6 +729,7 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
         )
     await callback.answer()
 
+
 @decorators.log_handler("callback_delete_report_inline")
 async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик удаления отчета через inline кнопку"""
@@ -740,6 +765,7 @@ async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, s
             parse_mode="Markdown"
         )
     await callback.answer()
+
 
 @decorators.log_handler("callback_remove_member_inline")
 async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
@@ -787,6 +813,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
             parse_mode="Markdown"
         )
     await callback.answer()
+
 
 def register_callback_handlers(dp: aiogram.Dispatcher):
     """Регистрация callback обработчиков"""

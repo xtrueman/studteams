@@ -7,6 +7,7 @@
 import aiogram.types
 import config
 
+
 def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
     """Создает основную клавиатуру в зависимости от статуса пользователя"""
     keyboard = aiogram.types.ReplyKeyboardMarkup(
@@ -29,7 +30,6 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
             aiogram.types.KeyboardButton(text="Отправить отчёт")
         ]
 
-        
         if config.ENABLE_REVIEWS:
             row4 = [
                 aiogram.types.KeyboardButton(text="Оценить участников команды"),
@@ -51,8 +51,9 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
             aiogram.types.KeyboardButton(text="Обновить")
         ]
         keyboard.keyboard.append(last_row)
-    
+
     return keyboard
+
 
 def get_confirmation_keyboard(confirm_text: str = "Продолжить", cancel_text: str = "Отмена"):
     """Клавиатура подтверждения"""
@@ -66,6 +67,7 @@ def get_confirmation_keyboard(confirm_text: str = "Продолжить", cancel
         resize_keyboard=True,
         one_time_keyboard=True
     )
+
 
 def get_roles_keyboard():
     """Клавиатура выбора роли"""
@@ -84,6 +86,7 @@ def get_roles_keyboard():
     
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
+
 
 def get_sprints_keyboard():
     """Клавиатура выбора спринта"""
@@ -105,6 +108,7 @@ def get_sprints_keyboard():
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
 
+
 def get_ratings_keyboard():
     """Клавиатура выбора оценки"""
     keyboard = aiogram.types.ReplyKeyboardMarkup(
@@ -121,6 +125,7 @@ def get_ratings_keyboard():
     keyboard.keyboard.extend([row1, row2])
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
+
 
 def get_dynamic_keyboard(items: list[str], columns: int = 2):
     """Динамическая клавиатура для списков (участники, отчеты и т.д.)"""
