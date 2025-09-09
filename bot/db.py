@@ -9,7 +9,7 @@ import myconn
 from typing import Optional, List, Dict, Any
 
 
-def get_student_by_tg_id(tg_id: int) -> Optional[Dict[str, Any]]:
+def get_student_by_tg_id(tg_id):
     """
     Получение студента по Telegram ID с информацией о команде
     
@@ -54,7 +54,7 @@ def get_student_by_tg_id(tg_id: int) -> Optional[Dict[str, Any]]:
     return student
 
 
-def get_student_by_id(student_id: int) -> Optional[Dict[str, Any]]:
+def get_student_by_id(student_id):
     """
     Получение студента по внутреннему ID
     
@@ -78,7 +78,7 @@ def get_student_by_id(student_id: int) -> Optional[Dict[str, Any]]:
     return result
 
 
-def create_student(tg_id: int, name: str, group_num: Optional[str] = None) -> Dict[str, Any]:
+def create_student(tg_id, name, group_num=None):
     """
     Создание нового студента в базе данных
     
@@ -97,7 +97,7 @@ def create_student(tg_id: int, name: str, group_num: Optional[str] = None) -> Di
     """, (tg_id, name, group_num))
     
     student_id = cur.lastrowid
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
     
     return {
         'student_id': student_id,
@@ -107,7 +107,7 @@ def create_student(tg_id: int, name: str, group_num: Optional[str] = None) -> Di
     }
 
 
-def get_teammates(student_id: int) -> List[Dict[str, Any]]:
+def get_teammates(student_id):
     """
     Получение всех участников команды студента (кроме него самого)
     
@@ -137,7 +137,7 @@ def get_teammates(student_id: int) -> List[Dict[str, Any]]:
     return result
 
 
-def get_teammates_not_rated(assessor_id: int) -> List[Dict[str, Any]]:
+def get_teammates_not_rated(assessor_id):
     """
     Получение участников команды, которых ещё не оценил данный студент
     
@@ -172,7 +172,7 @@ def get_teammates_not_rated(assessor_id: int) -> List[Dict[str, Any]]:
     return result
 
 
-def create_team(team_name: str, product_name: str, invite_code: str, admin_student_id: int) -> Dict[str, Any]:
+def create_team(team_name, product_name, invite_code, admin_student_id):
     """
     Создание новой команды с администратором
     
@@ -192,7 +192,7 @@ def create_team(team_name: str, product_name: str, invite_code: str, admin_stude
     """, (team_name, product_name, invite_code, admin_student_id))
     
     team_id = cur.lastrowid
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
     
     return {
         'team_id': team_id,
@@ -202,7 +202,7 @@ def create_team(team_name: str, product_name: str, invite_code: str, admin_stude
     }
 
 
-def get_team_by_invite_code(invite_code: str) -> Optional[Dict[str, Any]]:
+def get_team_by_invite_code(invite_code):
     """
     Поиск команды по коду приглашения
     
@@ -228,7 +228,7 @@ def get_team_by_invite_code(invite_code: str) -> Optional[Dict[str, Any]]:
     return result
 
 
-def add_team_member(team_id: int, student_id: int, role: str) -> None:
+def add_team_member(team_id, student_id, role):
     """
     Добавление участника в команду с указанной ролью
     
@@ -243,11 +243,10 @@ def add_team_member(team_id: int, student_id: int, role: str) -> None:
         VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE role = %s
     """, (team_id, student_id, role, role))
-    
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def remove_team_member(team_id: int, student_id: int) -> None:
+def remove_team_member(team_id, student_id):
     """
     Удаление участника из команды
     
@@ -260,11 +259,10 @@ def remove_team_member(team_id: int, student_id: int) -> None:
         DELETE FROM team_members
         WHERE team_id = %s AND student_id = %s
     """, (team_id, student_id))
-    
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def create_or_update_report(student_id: int, sprint_num: int, report_text: str) -> None:
+def create_or_update_report(student_id, sprint_num, report_text):
     """
     Создание нового отчёта или обновление существующего
     
@@ -298,11 +296,10 @@ def create_or_update_report(student_id: int, sprint_num: int, report_text: str) 
             INSERT INTO sprint_reports (student_id, sprint_num, report_text, report_date)
             VALUES (%s, %s, %s, NOW())
         """, (student_id, sprint_num, report_text))
-    
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def get_reports_by_student(student_id: int) -> List[Dict[str, Any]]:
+def get_reports_by_student(student_id):
     """
     Получение всех отчётов студента, упорядоченных по номеру спринта
     
@@ -327,7 +324,7 @@ def get_reports_by_student(student_id: int) -> List[Dict[str, Any]]:
     return result
 
 
-def delete_report(student_id: int, sprint_num: int) -> None:
+def delete_report(student_id, sprint_num):
     """
     Удаление отчёта студента по конкретному спринту
     
@@ -340,17 +337,16 @@ def delete_report(student_id: int, sprint_num: int) -> None:
         DELETE FROM sprint_reports
         WHERE student_id = %s AND sprint_num = %s
     """, (student_id, sprint_num))
-    
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
 def create_rating(
-    assessor_student_id: int,
-    assessored_student_id: int,
-    overall_rating: int,
-    advantages: str,
-    disadvantages: str
-) -> None:
+    assessor_student_id,
+    assessored_student_id,
+    overall_rating,
+    advantages,
+    disadvantages
+):
     """
     Создание новой оценки участника команды
     
@@ -370,11 +366,10 @@ def create_rating(
         overall_rating = %s, advantages = %s, disadvantages = %s, rate_date = NOW()
     """, (assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages,
           overall_rating, advantages, disadvantages))
-    
-    myconn.commit()
+    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def get_who_rated_me(student_id: int) -> List[Dict[str, Any]]:
+def get_who_rated_me(student_id):
     """
     Получение списка тех, кто оценил данного студента
     
@@ -400,7 +395,7 @@ def get_who_rated_me(student_id: int) -> List[Dict[str, Any]]:
     return result
 
 
-def get_ratings_given_by_student(student_id: int) -> List[Dict[str, Any]]:
+def get_ratings_given_by_student(student_id):
     """
     Получение списка оценок, которые поставил данный студент
     
