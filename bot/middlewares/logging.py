@@ -4,7 +4,8 @@ Middleware для логирования в боте.
 Логирует входящие сообщения и callback-запросы от пользователей.
 """
 
-from typing import Any, Awaitable, Callable, Dict
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import aiogram
 import aiogram.types
@@ -20,9 +21,9 @@ class LoggingMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: Dict[str, Any]
+        data: dict[str, Any]
     ) -> Any:
         # Логируем входящее обновление только для Update событий
         if isinstance(event, aiogram.types.Update):

@@ -76,4 +76,5 @@ async def main():
         await db_client.db_client.close()
         await bot.session.close()
 
+
 asyncio.run(main())

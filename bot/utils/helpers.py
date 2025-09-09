@@ -4,10 +4,9 @@
 Содержит утилиты для форматирования, валидации и обработки данных.
 """
 
-# import uuid  # noqa: F401
+# import uuid
 import secrets
 import string
-from typing import Optional
 
 
 def generate_invite_code(length: int = 8) -> str:
@@ -16,7 +15,7 @@ def generate_invite_code(length: int = 8) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-def format_team_info(team_data, members_data, invite_link_text: Optional[str] = None) -> str:
+def format_team_info(team_data, members_data, invite_link_text: str | None = None) -> str:
     """Форматирование информации о команде"""
     if not team_data:
         return "❌ Команда не найдена"
@@ -120,8 +119,8 @@ def format_datetime(dt) -> str:
     return dt.strftime("%d.%m.%Y %H:%M")
 
 
-async def get_team_display_data(student_id: Optional[str], tg_id: int,
-                                bot_username: Optional[str] = None):
+async def get_team_display_data(student_id: str | None, tg_id: int,
+                                bot_username: str | None = None):
     """Получение данных для отображения информации о команде"""
     import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
@@ -181,7 +180,7 @@ async def get_team_display_data(student_id: Optional[str], tg_id: int,
     }
 
 
-async def get_invite_link_text(team_name: str, invite_code: str, bot_username: Optional[str],
+async def get_invite_link_text(team_name: str, invite_code: str, bot_username: str | None,
                                show_instruction: bool = False) -> str:
     """Генерация текста с ссылкой-приглашением"""
     invite_url = f"https://t.me/{bot_username}?start={invite_code}"
