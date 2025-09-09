@@ -1,5 +1,4 @@
 aiogram
-# edgedb
 python-dotenv
 pydantic
 loguru

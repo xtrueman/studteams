@@ -3,7 +3,7 @@
 ## 📋 Требования
 
 - Python 3.11+
-- EdgeDB 5.0+
+- MySQL 8.0+
 - Telegram Bot Token
 
 ## 🚀 Установка и настройка
@@ -13,11 +13,10 @@
 pip install -r requirements.txt
 ```
 
-### 2. Настройка EdgeDB
+### 2. Настройка MySQL
 ```bash
-# Следуйте инструкциям в gel-setup.md
-gel project init
-gel migrate
+# Создайте базу данных согласно схеме в dbschema/mysql.sql
+# Импортируйте схему в вашу MySQL базу данных
 ```
 
 ### 3. Конфигурация
@@ -26,7 +25,7 @@ gel migrate
 cp .env.example .env
 
 # Отредактируйте config.py или .env файл
-# Укажите ваш BOT_TOKEN от @BotFather
+# Укажите ваш BOT_TOKEN от @BotFather и параметры MySQL
 ```
 
 ### 4. Запуск бота
@@ -39,7 +38,10 @@ python studhelper-bot.py
 ### В config.py:
 ```python
 BOT_TOKEN = "your_bot_token_here"
-EDGEDB_DSN = "edgedb://localhost:5656/studteams"
+MYSQL_HOST = "localhost"
+MYSQL_USER = "your_mysql_user"
+MYSQL_PASS = "your_mysql_password"
+MYSQL_BDNAME = "studteams"
 ENABLE_REVIEWS = True  # Включить/выключить систему оценок
 MAX_SPRINT_NUMBER = 6
 ```
@@ -47,7 +49,10 @@ MAX_SPRINT_NUMBER = 6
 ### Альтернативно через .env:
 ```bash
 BOT_TOKEN=your_bot_token_here
-EDGEDB_DSN=edgedb://localhost:5656/studteams
+MYSQL_HOST=localhost
+MYSQL_USER=your_mysql_user
+MYSQL_PASS=your_mysql_password
+MYSQL_BDNAME=studteams
 ENABLE_REVIEWS=true
 ```
 
@@ -84,7 +89,7 @@ bot/
 ├── handlers/          # Обработчики команд
 ├── states/           # FSM состояния
 ├── keyboards/        # Telegram клавиатуры
-├── database/         # EdgeDB интеграция
+├── db.py             # MySQL интеграция
 └── utils/           # Вспомогательные функции
 ```
 
@@ -93,14 +98,14 @@ bot/
 
 ## 🐛 Отладка
 
-### Проверка EdgeDB:
+### Проверка MySQL:
 ```bash
-gel ui  # Открыть веб-интерфейс EdgeDB
-gel     # Подключиться к БД через CLI
+mysql -u your_mysql_user -p studteams  # Подключиться к БД через CLI
 ```
 
 ### Тестовые запросы:
-```edgeql
-SELECT Student { name, tg_id };
-SELECT Team { team_name, admin: { name } };
+```sql
+SELECT * FROM students;
+SELECT * FROM teams;
+SELECT * FROM team_members;
 ```
