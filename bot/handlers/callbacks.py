@@ -21,7 +21,10 @@ import bot.utils.helpers as helpers
 
 
 @decorators.log_handler("callback_confirm_team_reg")
-async def callback_confirm_team_registration(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+async def callback_confirm_team_registration(
+    callback: aiogram.types.CallbackQuery,
+    state: aiogram.fsm.context.FSMContext
+):
     """Callback обработчик подтверждения регистрации команды"""
     data = await state.get_data()
 
@@ -62,7 +65,7 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
         bot_info = await callback.bot.get_me()
         bot_username = bot_info.username if bot_info else None
         if bot_username:
-            invite_link_text = await helpers.get_invite_link_text(
+            invite_link_text = helpers.get_invite_link_text(
                 data['team_name'], invite_code, bot_username, show_instruction=True
             )
         else:
@@ -92,7 +95,10 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
 
 
 @decorators.log_handler("callback_cancel_team_reg")
-async def callback_cancel_team_registration(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+async def callback_cancel_team_registration(
+    callback: aiogram.types.CallbackQuery,
+    state: aiogram.fsm.context.FSMContext
+):
     """Callback обработчик отмены регистрации команды"""
     await state.clear()
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
@@ -822,7 +828,10 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     dp.callback_query.register(callback_cancel_team_registration, F.data == "cancel_team_reg")
 
     # Role selection callbacks
-    dp.callback_query.register(callback_role_selection, F.data.in_(["role_po", "role_sm", "role_dev", "role_member", "cancel"]))
+    dp.callback_query.register(
+        callback_role_selection,
+        F.data.in_(["role_po", "role_sm", "role_dev", "role_member", "cancel"])
+    )
 
     # Join team callbacks
     dp.callback_query.register(callback_confirm_join_team, F.data == "confirm_join_team")

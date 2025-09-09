@@ -219,7 +219,13 @@ class ReportQueries:
 class RatingQueries:
 
     @staticmethod
-    async def create(assessor_id: uuid.UUID, assessed_id: uuid.UUID, overall_rating: int, advantages: str, disadvantages: str):
+    async def create(
+        assessor_id: uuid.UUID,
+        assessed_id: uuid.UUID,
+        overall_rating: int,
+        advantages: str,
+        disadvantages: str
+    ):
         client = await db_client.db_client.get_client()
         await client.execute(
             """

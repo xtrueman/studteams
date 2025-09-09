@@ -4,7 +4,6 @@
 Содержит утилиты для форматирования, валидации и обработки данных.
 """
 
-# import uuid
 import secrets
 import string
 
@@ -115,7 +114,7 @@ def format_datetime(dt) -> str:
     """Форматирование даты и времени"""
     import datetime
     if dt == 'now':
-        dt = datetime.datetime.now()
+        dt = datetime.datetime.now(datetime.UTC)
     return dt.strftime("%d.%m.%Y %H:%M")
 
 
@@ -154,7 +153,7 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
         teammate_memberships.append(MockMembership(teammate, role))
 
     # Формируем список участников включая текущего пользователя
-    all_members = teammate_memberships + [MockMembership(student, team_membership.role)]
+    all_members = [*teammate_memberships, MockMembership(student, team_membership.role)]
 
     # Проверяем права администратора
     is_admin = team.admin.id == student.id
@@ -162,7 +161,7 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     # Для админов генерируем ссылку-приглашение
     invite_link_text = None
     if is_admin and bot_username:
-        invite_link_text = await get_invite_link_text(team.team_name, team.invite_code, bot_username)
+        invite_link_text = get_invite_link_text(team.team_name, team.invite_code, bot_username)
 
     team_info = format_team_info(team, all_members, invite_link_text)
 
@@ -180,8 +179,8 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     }
 
 
-async def get_invite_link_text(team_name: str, invite_code: str, bot_username: str | None,
-                               show_instruction: bool = False) -> str:
+def get_invite_link_text(team_name: str, invite_code: str, bot_username: str | None,
+                         show_instruction: bool = False) -> str:
     """Генерация текста с ссылкой-приглашением"""
     invite_url = f"https://t.me/{bot_username}?start={invite_code}"
     base_text = (

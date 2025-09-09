@@ -10,7 +10,7 @@ import aiogram.types
 import loguru
 
 
-def log_handler(handler_name: str = None):
+def log_handler(handler_name: str | None = None):
     """Декоратор для логирования вызовов обработчиков"""
     def decorator(func):
         @functools.wraps(func)

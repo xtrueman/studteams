@@ -72,14 +72,13 @@ def get_ratings_inline_keyboard():
     row1 = []
     for i in range(config.MIN_RATING, 6):
         row1.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
-    keyboard.append(row1)
 
     # Вторая строка: 6-10
     row2 = []
     for i in range(6, config.MAX_RATING + 1):
         row2.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
-    keyboard.append(row2)
 
+    keyboard.extend([row1, row2])
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -124,7 +123,12 @@ def get_skip_cancel_inline_keyboard(skip_text: str = "⏭️ Пропустит�
 
 def get_team_registration_confirm_keyboard():
     """Клавиатура подтверждения регистрации команды"""
-    return get_confirmation_inline_keyboard("✅ Продолжить", "❌ Отмена", "confirm_team_reg", cancel_data="cancel_team_reg")
+    return get_confirmation_inline_keyboard(
+        "✅ Продолжить",
+        "❌ Отмена",
+        "confirm_team_reg",
+        cancel_data="cancel_team_reg"
+    )
 
 
 def get_join_team_confirm_keyboard():
