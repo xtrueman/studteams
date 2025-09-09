@@ -4,12 +4,10 @@
 Содержит функции для выполнения всех необходимых операций с базой данных.
 """
 
-import uuid
 import myconn
-from typing import Optional, List, Dict, Any
 
 
-def get_student_by_tg_id(tg_id):
+def student_get_by_tg_id(tg_id):
     """
     Получение студента по Telegram ID с информацией о команде
     
@@ -54,7 +52,7 @@ def get_student_by_tg_id(tg_id):
     return student
 
 
-def get_student_by_id(student_id):
+def student_get_by_id(student_id):
     """
     Получение студента по внутреннему ID
     
@@ -78,7 +76,7 @@ def get_student_by_id(student_id):
     return result
 
 
-def create_student(tg_id, name, group_num=None):
+def student_create(tg_id, name, group_num=None):
     """
     Создание нового студента в базе данных
     
@@ -97,7 +95,6 @@ def create_student(tg_id, name, group_num=None):
     """, (tg_id, name, group_num))
     
     student_id = cur.lastrowid
-    # Убран вызов myconn.commit() так как у нас включен autocommit
     
     return {
         'student_id': student_id,
@@ -107,7 +104,7 @@ def create_student(tg_id, name, group_num=None):
     }
 
 
-def get_teammates(student_id):
+def student_get_teammates(student_id):
     """
     Получение всех участников команды студента (кроме него самого)
     
@@ -137,7 +134,7 @@ def get_teammates(student_id):
     return result
 
 
-def get_teammates_not_rated(assessor_id):
+def student_get_teammates_not_rated(assessor_id):
     """
     Получение участников команды, которых ещё не оценил данный студент
     
@@ -172,7 +169,7 @@ def get_teammates_not_rated(assessor_id):
     return result
 
 
-def create_team(team_name, product_name, invite_code, admin_student_id):
+def team_create(team_name, product_name, invite_code, admin_student_id):
     """
     Создание новой команды с администратором
     
@@ -202,7 +199,7 @@ def create_team(team_name, product_name, invite_code, admin_student_id):
     }
 
 
-def get_team_by_invite_code(invite_code):
+def team_get_by_invite_code(invite_code):
     """
     Поиск команды по коду приглашения
     
@@ -228,7 +225,7 @@ def get_team_by_invite_code(invite_code):
     return result
 
 
-def add_team_member(team_id, student_id, role):
+def team_add_member(team_id, student_id, role):
     """
     Добавление участника в команду с указанной ролью
     
@@ -243,10 +240,9 @@ def add_team_member(team_id, student_id, role):
         VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE role = %s
     """, (team_id, student_id, role, role))
-    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def remove_team_member(team_id, student_id):
+def team_remove_member(team_id, student_id):
     """
     Удаление участника из команды
     
@@ -259,10 +255,9 @@ def remove_team_member(team_id, student_id):
         DELETE FROM team_members
         WHERE team_id = %s AND student_id = %s
     """, (team_id, student_id))
-    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def create_or_update_report(student_id, sprint_num, report_text):
+def report_create_or_update(student_id, sprint_num, report_text):
     """
     Создание нового отчёта или обновление существующего
     
@@ -296,10 +291,9 @@ def create_or_update_report(student_id, sprint_num, report_text):
             INSERT INTO sprint_reports (student_id, sprint_num, report_text, report_date)
             VALUES (%s, %s, %s, NOW())
         """, (student_id, sprint_num, report_text))
-    # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def get_reports_by_student(student_id):
+def report_get_by_student(student_id):
     """
     Получение всех отчётов студента, упорядоченных по номеру спринта
     
@@ -324,7 +318,7 @@ def get_reports_by_student(student_id):
     return result
 
 
-def delete_report(student_id, sprint_num):
+def report_delete(student_id, sprint_num):
     """
     Удаление отчёта студента по конкретному спринту
     
@@ -340,7 +334,7 @@ def delete_report(student_id, sprint_num):
     # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def create_rating(
+def rating_create(
     assessor_student_id,
     assessored_student_id,
     overall_rating,
@@ -369,7 +363,7 @@ def create_rating(
     # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def get_who_rated_me(student_id):
+def rating_get_who_rated_me(student_id):
     """
     Получение списка тех, кто оценил данного студента
     
@@ -395,7 +389,7 @@ def get_who_rated_me(student_id):
     return result
 
 
-def get_ratings_given_by_student(student_id):
+def rating_get_given_by_student(student_id):
     """
     Получение списка оценок, которые поставил данный студент
     

@@ -31,11 +31,11 @@ async def callback_confirm_team_registration(
 
     try:
         # Проверяем, есть ли уже пользователь в системе
-        student = db.get_student_by_tg_id(callback.from_user.id)
+        student = db.student_get_by_tg_id(callback.from_user.id)
 
         if not student:
             # Создаем нового пользователя только если его нет
-            student = db.create_student(
+            student = db.student_create(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
                 group_num=data['user_group'] if data['user_group'] != "0" else None
@@ -43,7 +43,7 @@ async def callback_confirm_team_registration(
 
         # Создаем команду
         invite_code = helpers.generate_invite_code()
-        team = db.create_team(
+        team = db.team_create(
             team_name=data['team_name'],
             product_name=data['product_name'],
             invite_code=invite_code,
@@ -51,7 +51,7 @@ async def callback_confirm_team_registration(
         )
 
         # Добавляем администратора в команду
-        db.add_team_member(
+        db.team_add_member(
             team_id=team['team_id'],
             student_id=student['student_id'],
             role="Scrum Master"
@@ -173,7 +173,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
 
     try:
         # Проверяем, есть ли пользователь в системе
-        student = db.get_student_by_tg_id(callback.from_user.id)
+        student = db.student_get_by_tg_id(callback.from_user.id)
 
         if not student:
             # Создаём нового пользователя - данные должны быть в state
@@ -181,14 +181,14 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
                 await callback.answer("❌ Ошибка: недостаточно данных")
                 return
 
-            student = db.create_student(
+            student = db.student_create(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
                 group_num=data['user_group'] if data['user_group'] != "0" else None
             )
 
         # Добавляем в команду
-        db.add_team_member(
+        db.team_add_member(
             team_id=data['team_id'],
             student_id=student['student_id'],
             role=data['user_role']
@@ -242,9 +242,9 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
     is_editing = data.get('editing', False)
 
     try:
-        student = db.get_student_by_tg_id(callback.from_user.id)
+        student = db.student_get_by_tg_id(callback.from_user.id)
 
-        db.create_or_update_report(
+        db.report_create_or_update(
             student_id=student['student_id'],
             sprint_num=data['sprint_num'],
             report_text=data['report_text']
@@ -270,7 +270,7 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
                 )
 
             # Переходим на страницу "Мои отчёты"
-            reports = db.get_reports_by_student(student['student_id'])
+            reports = db.report_get_by_student(student['student_id'])
             report_text = helpers.format_reports_list(reports)
             keyboard = inline_keyboards.get_report_management_keyboard(reports)
             await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -290,7 +290,7 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
 async def callback_cancel_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены отправки отчета"""
     await state.clear()
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
         await callback.message.edit_text("❌ Отправка отчета отменена.")
@@ -323,10 +323,10 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
         await callback.answer("❌ Неверные данные")
         return
 
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     # Получаем существующий отчет
-    reports = db.get_reports_by_student(student['student_id'])
+    reports = db.report_get_by_student(student['student_id'])
     report_to_edit = None
     for report in reports:
         if report['sprint_num'] == sprint_num:
@@ -372,7 +372,7 @@ async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, s
         await callback.answer("❌ Неверные данные")
         return
 
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     # Сохраняем данные в состоянии
     await state.update_data(
@@ -397,7 +397,7 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
     data = await state.get_data()
 
     try:
-        db.delete_report(
+        db.report_delete(
             student_id=data['student_id'],
             sprint_num=data['sprint_num']
         )
@@ -411,8 +411,8 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
             )
 
             # Переходим на страницу "Мои отчёты"
-            student = db.get_student_by_tg_id(callback.from_user.id)
-            reports = db.get_reports_by_student(student['student_id'])
+            student = db.student_get_by_tg_id(callback.from_user.id)
+            reports = db.report_get_by_student(student['student_id'])
             report_text = helpers.format_reports_list(reports)
             keyboard = inline_keyboards.get_report_management_keyboard(reports)
             await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -432,13 +432,13 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
 async def callback_cancel_delete_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления отчета"""
     await state.clear()
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
         await callback.message.edit_text("❌ Удаление отчета отменено.")
 
         # Переходим на страницу "Мои отчёты"
-        reports = db.get_reports_by_student(student['student_id'])
+        reports = db.report_get_by_student(student['student_id'])
         report_text = helpers.format_reports_list(reports)
         keyboard = inline_keyboards.get_report_management_keyboard(reports)
         await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -450,11 +450,11 @@ async def callback_cancel_delete_report(callback: aiogram.types.CallbackQuery, s
 async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик подтверждения отправки оценки"""
     if callback.data == "confirm_review":
-        student = db.get_student_by_tg_id(callback.from_user.id)
+        student = db.student_get_by_tg_id(callback.from_user.id)
         data = await state.get_data()
 
         try:
-            db.create_rating(
+            db.rating_create(
                 assessor_student_id=student['student_id'],
                 assessored_student_id=data['selected_teammate_id'],
                 overall_rating=data['overall_rating'],
@@ -474,7 +474,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
 
                 # Переходим на страницу "Оценить участников команды"
                 if config.ENABLE_REVIEWS:
-                    teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
+                    teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                     if not teammates_to_rate:
                         await callback.message.answer(
@@ -509,7 +509,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
 async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены отправки оценки"""
     await state.clear()
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
         await callback.message.edit_text("❌ Отправка оценки отменена.")
@@ -543,7 +543,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
         await callback.answer("❌ Неверные данные")
         return
 
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     # Проверяем, что пользователь является администратором команды
     if not student or 'team' not in student or student['team']['admin_student_id'] != student['student_id']:
@@ -553,7 +553,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
     team = student['team']
 
     # Получаем информацию об участнике
-    member_to_remove = db.get_student_by_id(member_id)
+    member_to_remove = db.student_get_by_id(member_id)
 
     if not member_to_remove:
         await callback.answer("❌ Участник не найден")
@@ -583,7 +583,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
     data = await state.get_data()
 
     try:
-        db.remove_team_member(
+        db.team_remove_member(
             team_id=data['team_id'],
             student_id=data['selected_member']['student_id']
         )
@@ -784,7 +784,7 @@ async def callback_edit_member(callback: aiogram.types.CallbackQuery, state: aio
 async def callback_cancel_action(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены действия (универсальный)"""
     await state.clear()
-    student = db.get_student_by_tg_id(callback.from_user.id)
+    student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
         await callback.message.edit_text("❌ Действие отменено.")

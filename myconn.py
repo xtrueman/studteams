@@ -13,7 +13,8 @@ DB_CREDENTIALS = {
     'database': config.MYSQL_BDNAME,
     'charset': 'utf8mb4',
     'collation': 'utf8mb4_unicode_ci',
-    'autocommit': True  # Автокоммит по умолчанию
+    'autocommit': True,  # Автокоммит по умолчанию
+    'consume_results': True  # Автоматически потребляем все результаты
 }
 
 # Глобальная переменная для хранения соединения с базой данных

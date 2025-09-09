@@ -21,13 +21,13 @@ import bot.utils.helpers as helpers
 @decorators.log_handler("my_reports")
 async def handle_my_reports(message: aiogram.types.Message):
     """Показать отчеты пользователя"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student:
         await message.answer("❌ Вы не зарегистрированы в системе.")
         return
 
-    reports = db.get_reports_by_student(student['student_id'])
+    reports = db.report_get_by_student(student['student_id'])
     report_text = helpers.format_reports_list(reports)
 
     # Создаем inline клавиатуру для управления отчетами
@@ -39,7 +39,7 @@ async def handle_my_reports(message: aiogram.types.Message):
 @decorators.log_handler("send_report")
 async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало создания отчета"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
@@ -109,12 +109,12 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
     await state.update_data(report_text=report_text)
 
     # Получаем данные и сохраняем отчет сразу
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
     data = await state.get_data()
     is_editing = data.get('editing', False)
 
     try:
-        db.create_or_update_report(
+        db.report_create_or_update(
             student_id=student['student_id'],
             sprint_num=data['sprint_num'],
             report_text=report_text
@@ -139,7 +139,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
             )
 
         # Переходим на страницу "Мои отчёты"
-        reports = db.get_reports_by_student(student['student_id'])
+        reports = db.report_get_by_student(student['student_id'])
         report_text = helpers.format_reports_list(reports)
         keyboard = inline_keyboards.get_report_management_keyboard(reports)
         await message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -152,7 +152,10 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         await state.clear()
 
 
-.register(handle_send_report, F.text == "Отправить отчёт")
+def register_reports_handlers(dp: aiogram.Dispatcher):
+    """Регистрация обработчиков отчетов"""
+    dp.message.register(handle_my_reports, F.text == "Мои отчёты")
+    dp.message.register(handle_send_report, F.text == "Отправить отчёт")
 
     # FSM для создания отчета
     dp.message.register(process_report_text, states.ReportCreation.report_text)

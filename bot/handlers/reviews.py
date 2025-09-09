@@ -25,14 +25,14 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
         return
 
     # Получаем участников команды, которых еще не оценил пользователь
-    teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
+    teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
     if not teammates_to_rate:
         await message.answer(
@@ -62,14 +62,14 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
         return
 
     # Получаем оценки пользователя
-    ratings = db.get_who_rated_me(student['student_id'])
+    ratings = db.rating_get_who_rated_me(student['student_id'])
 
     if not ratings:
         await message.answer(
@@ -80,7 +80,7 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         return
 
     # Получаем информацию о команде для статистики
-    teammates = db.get_teammates(student['student_id'])
+    teammates = db.student_get_teammates(student['student_id'])
     total_teammates = len(teammates)
     rated_count = len(ratings)
 
@@ -217,11 +217,11 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
 async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение отправки оценки"""
     if message.text == "Отправить":
-        student = db.get_student_by_tg_id(message.from_user.id)
+        student = db.student_get_by_tg_id(message.from_user.id)
         data = await state.get_data()
 
         try:
-            db.create_rating(
+            db.rating_create(
                 assessor_student_id=student['student_id'],
                 assessored_student_id=data['selected_teammate_id'],
                 overall_rating=data['overall_rating'],
@@ -240,7 +240,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
 
             # Переходим на страницу "Оценить участников команды"
             if config.ENABLE_REVIEWS:
-                teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
+                teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                 if not teammates_to_rate:
                     await message.answer(
@@ -275,7 +275,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
 async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена оценивания"""
     await state.clear()
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
         has_team = 'team' in student

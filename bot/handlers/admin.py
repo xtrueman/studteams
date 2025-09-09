@@ -37,7 +37,7 @@ async def handle_admin_panel(message: aiogram.types.Message):
 @decorators.log_handler("view_team_members")
 async def handle_view_team_members(message: aiogram.types.Message):
     """Просмотр участников команды"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
@@ -48,7 +48,7 @@ async def handle_view_team_members(message: aiogram.types.Message):
         await message.answer("❌ Недостаточно прав.")
         return
 
-    teammates = db.get_teammates(student['student_id'])
+    teammates = db.student_get_teammates(student['student_id'])
 
     if not teammates:
         await message.answer("👥 В команде нет других участников.")
@@ -68,7 +68,7 @@ async def handle_view_team_members(message: aiogram.types.Message):
 @decorators.log_handler("remove_team_member")
 async def handle_remove_team_member(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало удаления участника команды"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
@@ -79,7 +79,7 @@ async def handle_remove_team_member(message: aiogram.types.Message, state: aiogr
         await message.answer("❌ Недостаточно прав.")
         return
 
-    teammates = db.get_teammates(student['student_id'])
+    teammates = db.student_get_teammates(student['student_id'])
 
     if not teammates:
         await message.answer("👥 В команде нет других участников.")
@@ -143,7 +143,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
     if message.text == "Подтвердить":
         data = await state.get_data()
         selected_member = data.get('selected_member')
-        student = db.get_student_by_tg_id(message.from_user.id)
+        student = db.student_get_by_tg_id(message.from_user.id)
 
         if not selected_member or not student:
             await message.answer("❌ Ошибка данных.")
@@ -151,7 +151,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
             return
 
         try:
-            db.remove_team_member(
+            db.team_remove_member(
                 team_id=student['team']['team_id'],
                 student_id=selected_member['student_id']
             )
@@ -175,7 +175,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
 @decorators.log_handler("view_member_stats")
 async def handle_view_member_stats(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Просмотр статистики участника"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
@@ -186,7 +186,7 @@ async def handle_view_member_stats(message: aiogram.types.Message, state: aiogra
         await message.answer("❌ Недостаточно прав.")
         return
 
-    teammates = db.get_teammates(student['student_id'])
+    teammates = db.student_get_teammates(student['student_id'])
 
     if not teammates:
         await message.answer("👥 В команде нет других участников.")
@@ -230,9 +230,9 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
 
     # Получаем статистику участника
     try:
-        reports = db.get_reports_by_student(selected_member['student_id'])
-        ratings_given = db.get_ratings_given_by_student(selected_member['student_id'])
-        ratings_received = db.get_who_rated_me(selected_member['student_id'])
+        reports = db.report_get_by_student(selected_member['student_id'])
+        ratings_given = db.rating_get_given_by_student(selected_member['student_id'])
+        ratings_received = db.rating_get_who_rated_me(selected_member['student_id'])
 
         # Формируем текст статистики
         stats_text = f"📊 *Статистика участника: {selected_member['name']}*\n\n"
@@ -275,7 +275,7 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
 async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена административного действия"""
     await state.clear()
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
         has_team = 'team' in student

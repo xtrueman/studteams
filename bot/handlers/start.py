@@ -38,7 +38,7 @@ async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.F
 
 async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка обычного старта без кода"""
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
         # Пользователь уже зарегистрирован
@@ -65,7 +65,7 @@ async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fs
 async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext, invite_code: str):
     """Обработка присоединения к команде по коду"""
     # Проверяем код приглашения
-    team = db.get_team_by_invite_code(invite_code)
+    team = db.team_get_by_invite_code(invite_code)
 
     if not team:
         await message.answer(
@@ -74,7 +74,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
         return
 
     # Проверяем, не зарегистрирован ли уже пользователь
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student and 'team' in student:
         await message.answer(
@@ -121,7 +121,7 @@ async def handle_update_button(message: aiogram.types.Message, state: aiogram.fs
     """Обработчик кнопки Обновить"""
     await state.clear()
 
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
         has_team = 'team' in student

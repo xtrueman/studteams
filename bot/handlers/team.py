@@ -38,7 +38,7 @@ def is_valid_full_name(name):
 async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало регистрации команды"""
     # Проверяем, не зарегистрирован ли уже пользователь
-    student = db.get_student_by_tg_id(message.from_user.id)
+    student = db.student_get_by_tg_id(message.from_user.id)
 
     if student and 'team' in student:
         await message.answer(
@@ -184,11 +184,11 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
 
         try:
             # Проверяем, есть ли уже пользователь в системе
-            student = db.get_student_by_tg_id(message.from_user.id)
+            student = db.student_get_by_tg_id(message.from_user.id)
 
             if not student:
                 # Создаем нового пользователя только если его нет
-                student = db.create_student(
+                student = db.student_create(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
                     group_num=data['user_group'] if data['user_group'] != "0" else None
@@ -196,7 +196,7 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
 
             # Создаем команду
             invite_code = helpers.generate_invite_code()
-            team = db.create_team(
+            team = db.team_create(
                 team_name=data['team_name'],
                 product_name=data['product_name'],
                 invite_code=invite_code,
@@ -204,7 +204,7 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
             )
 
             # Добавляем администратора в команду
-            db.add_team_member(
+            db.team_add_member(
                 team_id=team['team_id'],
                 student_id=student['student_id'],
                 role="Scrum Master"
@@ -322,18 +322,18 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
 
         try:
             # Проверяем, есть ли пользователь в системе
-            student = db.get_student_by_tg_id(message.from_user.id)
+            student = db.student_get_by_tg_id(message.from_user.id)
 
             if not student:
                 # Создаем нового пользователя
-                student = db.create_student(
+                student = db.student_create(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
                     group_num=data['user_group'] if data['user_group'] != "0" else None
                 )
 
             # Добавляем в команду
-            db.add_team_member(
+            db.team_add_member(
                 team_id=data['team_id'],
                 student_id=student['student_id'],
                 role=data['user_role']
