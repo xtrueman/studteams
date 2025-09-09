@@ -7,6 +7,7 @@ Middleware для логирования в боте.
 import aiogram
 import aiogram.types
 from aiogram import BaseMiddleware
+from aiogram.types import TelegramObject
 import loguru
 from typing import Dict, Any, Callable, Awaitable
 
@@ -17,28 +18,29 @@ class LoggingMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[[aiogram.types.Update, Dict[str, Any]], Awaitable[Any]],
-        event: aiogram.types.Update,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
         data: Dict[str, Any]
     ) -> Any:
-        # Логируем входящее обновление
-        if event.message:
-            user_id = event.message.from_user.id
-            username = event.message.from_user.username or "None"
-            text = event.message.text or "[Non-text message]"
+        # Логируем входящее обновление только для Update событий
+        if isinstance(event, aiogram.types.Update):
+            if event.message:
+                user_id = event.message.from_user.id
+                username = event.message.from_user.username or "None"
+                text = event.message.text or "[Non-text message]"
+                
+                self.logger.info(
+                    f"Message from user_id={user_id} username=@{username} text='{text}'"
+                )
             
-            self.logger.info(
-                f"Message from user_id={user_id} username=@{username} text='{text}'"
-            )
-        
-        elif event.callback_query:
-            user_id = event.callback_query.from_user.id
-            username = event.callback_query.from_user.username or "None"
-            data_text = event.callback_query.data or "None"
-            
-            self.logger.info(
-                f"Callback from user_id={user_id} username=@{username} data='{data_text}'"
-            )
+            elif event.callback_query:
+                user_id = event.callback_query.from_user.id
+                username = event.callback_query.from_user.username or "None"
+                data_text = event.callback_query.data or "None"
+                
+                self.logger.info(
+                    f"Callback from user_id={user_id} username=@{username} data='{data_text}'"
+                )
         
         # Вызываем следующий middleware/handler
         try:
@@ -46,10 +48,13 @@ class LoggingMiddleware(BaseMiddleware):
             return result
         except Exception as e:
             # Логируем ошибки обработчиков
-            if event.message:
-                user_id = event.message.from_user.id
-            elif event.callback_query:
-                user_id = event.callback_query.from_user.id
+            if isinstance(event, aiogram.types.Update):
+                if event.message:
+                    user_id = event.message.from_user.id
+                elif event.callback_query:
+                    user_id = event.callback_query.from_user.id
+                else:
+                    user_id = "unknown"
             else:
                 user_id = "unknown"
                 

@@ -11,6 +11,7 @@ from aiogram.filters import Command
 from aiogram import F
 import bot.database.queries as queries
 import bot.keyboards.reply as keyboards
+import bot.keyboards.inline as inline_keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
 import config
@@ -86,7 +87,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
         await message.answer(
             f"👥 Присоединяемся к команде *{team.team_name}*\n\n"
             f"Выберите вашу роль в команде:",
-            reply_markup=keyboards.get_roles_keyboard(),
+            reply_markup=inline_keyboards.get_roles_inline_keyboard(),
             parse_mode="Markdown"
         )
     else:

@@ -161,3 +161,30 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                 ])
     
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_report_management_keyboard(reports):
+    """Клавиатура управления отчетами"""
+    keyboard = []
+    
+    if reports:
+        # Кнопки для каждого отчета
+        for report in reports:
+            # Обрезаем длинный текст отчета для отображения
+            preview_text = report.report_text[:30] if len(report.report_text) > 30 else report.report_text
+            if len(report.report_text) > 30:
+                preview_text += "..."
+            
+            sprint_text = f"Спринт №{report.sprint_num}"
+            
+            keyboard.append([
+                aiogram.types.InlineKeyboardButton(
+                    text=f"✏️ {sprint_text}",
+                    callback_data=f"edit_report_{report.sprint_num}"
+                ),
+                aiogram.types.InlineKeyboardButton(
+                    text=f"🗑️ Удалить",
+                    callback_data=f"delete_report_{report.sprint_num}"
+                )
+            ])
+    
+    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)

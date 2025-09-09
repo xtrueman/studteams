@@ -158,7 +158,11 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
         student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
         
         if not student:
-            # Создаем нового пользователя
+            # Создаём нового пользователя - данные должны быть в state
+            if 'user_name' not in data or 'user_group' not in data:
+                await callback.answer("❌ Ошибка: недостаточно данных")
+                return
+                
             student = await queries.StudentQueries.create(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
@@ -304,15 +308,6 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
         
         await state.clear()
         
-        # Возвращаем главное меню
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-        
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-        
         if callback.message:
             await callback.message.edit_text(
                 f"🗑 *Отчет удален*\n\n"
@@ -320,7 +315,11 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
                 parse_mode="Markdown"
             )
             
-            await callback.message.answer("Главное меню:", reply_markup=keyboard)
+            # Переходим на страницу "Мои отчёты"
+            reports = await queries.ReportQueries.get_by_student(student.id)
+            report_text = helpers.format_reports_list(reports)
+            keyboard = inline_keyboards.get_report_management_keyboard(reports)
+            await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
         
     except Exception as e:
         if callback.message:
@@ -662,6 +661,86 @@ async def callback_edit_member(callback: aiogram.types.CallbackQuery):
     # Пока что просто заглушка - в будущем можно добавить функционал редактирования роли
     await callback.answer("⚠️ Функция редактирования участников будет доступна в следующих версиях", show_alert=True)
 
+# Report Management Callbacks
+
+@decorators.log_handler("callback_edit_report")
+async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик редактирования отчета"""
+    if not callback.data.startswith("edit_report_"):
+        await callback.answer("❌ Неверный формат")
+        return
+    
+    sprint_num = int(callback.data.split("_")[2])
+    
+    # Получаем текущий отчет
+    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
+    
+    if not student:
+        await callback.answer("❌ Вы не зарегистрированы в системе")
+        return
+    
+    reports = await queries.ReportQueries.get_by_student(student.id)
+    current_report = None
+    
+    for report in reports:
+        if report.sprint_num == sprint_num:
+            current_report = report
+            break
+    
+    if not current_report:
+        await callback.answer("❌ Отчет не найден")
+        return
+    
+    # Сохраняем данные в состоянии для редактирования
+    await state.update_data(sprint_num=sprint_num, editing=True)
+    await state.set_state(states.ReportCreation.report_text)
+    
+    if callback.message:
+        await callback.message.edit_text(
+            f"✏️ *Редактирование отчета*\n\n"
+            f"📊 *Спринт №{sprint_num}:*\n"
+            f"_{current_report.report_text}_\n\n"
+            f"Введите новый текст отчета:",
+            parse_mode="Markdown"
+        )
+    await callback.answer()
+
+@decorators.log_handler("callback_delete_report_inline")
+async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик удаления отчета через inline кнопку"""
+    if not callback.data.startswith("delete_report_"):
+        await callback.answer("❌ Неверный формат")
+        return
+    
+    sprint_num = int(callback.data.split("_")[2])
+    
+    # Проверяем, что отчет существует
+    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
+    
+    if not student:
+        await callback.answer("❌ Вы не зарегистрированы в системе")
+        return
+    
+    reports = await queries.ReportQueries.get_by_student(student.id)
+    report_exists = any(report.sprint_num == sprint_num for report in reports)
+    
+    if not report_exists:
+        await callback.answer("❌ Отчет не найден")
+        return
+    
+    # Сохраняем данные в состоянии
+    await state.update_data(sprint_num=sprint_num)
+    
+    if callback.message:
+        await callback.message.edit_text(
+            f"⚠️ *Подтверждение удаления*\n\n"
+            f"Вы действительно хотите удалить отчет по спринту №{sprint_num}?\n\n"
+            f"*Это действие нельзя отменить!*",
+            reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
+            parse_mode="Markdown"
+        )
+    await callback.answer()
+
 @decorators.log_handler("callback_remove_member_inline")
 async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик удаления участника через inline кнопку"""
@@ -739,6 +818,10 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     # Team member management callbacks (inline)
     dp.callback_query.register(callback_edit_member, F.data.startswith("edit_member_"))
     dp.callback_query.register(callback_remove_member_inline, F.data.startswith("remove_member_"))
+    
+    # Report management callbacks (inline)
+    dp.callback_query.register(callback_edit_report, F.data.startswith("edit_report_"))
+    dp.callback_query.register(callback_delete_report_inline, F.data.startswith("delete_report_"))
     
     # Review callbacks
     dp.callback_query.register(callback_teammate_selection, F.data.startswith("teammate_") | (F.data == "cancel"))

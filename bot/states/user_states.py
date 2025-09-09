@@ -22,7 +22,6 @@ class JoinTeam(aiogram.fsm.state.StatesGroup):
 class ReportCreation(aiogram.fsm.state.StatesGroup):
     sprint_selection = aiogram.fsm.state.State()
     report_text = aiogram.fsm.state.State()
-    confirmation = aiogram.fsm.state.State()
 
 class ReportDeletion(aiogram.fsm.state.StatesGroup):
     sprint_selection = aiogram.fsm.state.State()

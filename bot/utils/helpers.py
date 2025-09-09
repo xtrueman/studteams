@@ -43,12 +43,10 @@ def format_reports_list(reports) -> str:
     if not reports:
         return "📋 У вас пока нет отчетов"
     
-    text = "📋 *Ваши отчеты:*\n\n"
+    text = "📋 *Отчёты о проделанной работе:*\n\n"
     for report in reports:
-        date_str = report.report_date.strftime("%d.%m.%Y %H:%M")
-        text += f"*Спринт №{report.sprint_num}*\n"
-        text += f"📅 {date_str}\n"
-        text += f"📝 {report.report_text[:100]}{'...' if len(report.report_text) > 100 else ''}\n\n"
+        text += f"*Спринт №{report.sprint_num}:*\n"
+        text += f"_{report.report_text}_\n\n"
     
     return text
 

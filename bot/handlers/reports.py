@@ -28,7 +28,10 @@ async def handle_my_reports(message: aiogram.types.Message):
     reports = await queries.ReportQueries.get_by_student(student.id)
     report_text = helpers.format_reports_list(reports)
     
-    await message.answer(report_text, parse_mode="Markdown")
+    # Создаем inline клавиатуру для управления отчетами
+    keyboard = inline_keyboards.get_report_management_keyboard(reports)
+    
+    await message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
 
 @decorators.log_handler("send_report")
 async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -97,66 +100,48 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         )
         return
     
-    await state.update_data(report_text=report_text)
-    await state.set_state(states.ReportCreation.confirmation)
-    
+    # Получаем данные и сохраняем отчет сразу
+    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
     data = await state.get_data()
+    is_editing = data.get('editing', False)
     
-    confirmation_text = (
-        "📋 *Проверьте отчет:*\n\n"
-        f"📊 Спринт: №{data['sprint_num']}\n"
-        f"📝 Отчет: {report_text[:200]}{'...' if len(report_text) > 200 else ''}\n\n"
-        f"Отправить отчет?"
-    )
-    
-    await message.answer(
-        confirmation_text,
-        reply_markup=inline_keyboards.get_report_confirm_keyboard(),
-        parse_mode="Markdown"
-    )
-
-@decorators.log_handler("confirm_report")
-async def confirm_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Подтверждение отправки отчета"""
-    if message.text == "Отправить":
-        student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-        data = await state.get_data()
+    try:
+        await queries.ReportQueries.create_or_update(
+            student_id=student.id,
+            sprint_num=data['sprint_num'],
+            report_text=report_text
+        )
         
-        try:
-            await queries.ReportQueries.create_or_update(
-                student_id=student.id,
-                sprint_num=data['sprint_num'],
-                report_text=data['report_text']
+        await state.clear()
+        
+        # Показываем сообщение об успешном сохранении
+        if is_editing:
+            await message.answer(
+                f"✅ *Отчет успешно обновлен!*\n\n"
+                f"📊 Спринт: №{data['sprint_num']}\n"
+                f"📅 Дата: {helpers.format_datetime('now')}",
+                parse_mode="Markdown"
             )
-            
-            await state.clear()
-            
-            # Возвращаем главное меню
-            has_team = bool(getattr(student, 'team_memberships', None))
-            is_admin = False
-            if has_team:
-                team_membership = student.team_memberships[0]
-                is_admin = team_membership.team.admin.id == student.id
-            
-            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-            
+        else:
             await message.answer(
                 f"✅ *Отчет успешно отправлен!*\n\n"
                 f"📊 Спринт: №{data['sprint_num']}\n"
                 f"📅 Дата: {helpers.format_datetime('now')}",
-                reply_markup=keyboard,
                 parse_mode="Markdown"
             )
-            
-        except Exception as e:
-            await message.answer(
-                f"❌ Ошибка при сохранении отчета: {str(e)}\n"
-                f"Попробуйте еще раз."
-            )
-            await state.clear()
-    
-    elif message.text == "Отмена":
-        await cancel_action(message, state)
+        
+        # Переходим на страницу "Мои отчёты"
+        reports = await queries.ReportQueries.get_by_student(student.id)
+        report_text = helpers.format_reports_list(reports)
+        keyboard = inline_keyboards.get_report_management_keyboard(reports)
+        await message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
+        
+    except Exception as e:
+        await message.answer(
+            f"❌ Ошибка при сохранении отчета: {str(e)}\n"
+            f"Попробуйте еще раз."
+        )
+        await state.clear()
 
 @decorators.log_handler("delete_report")
 async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -274,13 +259,12 @@ def register_reports_handlers(dp: aiogram.Dispatcher):
     # Основные команды
     dp.message.register(handle_my_reports, F.text == "Мои отчёты")
     dp.message.register(handle_send_report, F.text == "Отправить отчёт")
-    dp.message.register(handle_delete_report, F.text == "Удалить отчёт")
+    # Кнопка "Удалить отчёт" удалена из главного меню
     
     # FSM для создания отчета (только текстовые поля)
     # process_sprint_selection теперь обрабатывается через callback
     dp.message.register(process_report_text, states.ReportCreation.report_text)
-    # confirm_report теперь обрабатывается через callback
+    # confirm_report больше не нужен - отчет сохраняется сразу
     
-    # FSM для удаления отчета
-    dp.message.register(process_delete_sprint_selection, states.ReportDeletion.sprint_selection)
-    # confirm_delete_report теперь обрабатывается через callback
+    # FSM для удаления отчета теперь обрабатывается через inline кнопки
+    # handle_delete_report, process_delete_sprint_selection удалены из регистрации

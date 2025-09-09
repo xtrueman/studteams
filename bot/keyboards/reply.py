@@ -28,7 +28,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
             aiogram.types.KeyboardButton(text="Мои отчёты"),
             aiogram.types.KeyboardButton(text="Отправить отчёт")
         ]
-        row3 = [aiogram.types.KeyboardButton(text="Удалить отчёт")]
+
         
         if config.ENABLE_REVIEWS:
             row4 = [
@@ -43,7 +43,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
                 admin_row = [aiogram.types.KeyboardButton(text="Отчёт о команде")]
                 keyboard.keyboard.append(admin_row)
         
-        keyboard.keyboard.extend([row1, row2, row3])
+        keyboard.keyboard.extend([row1, row2])
         
         # Последняя строка - служебные кнопки
         last_row = [
