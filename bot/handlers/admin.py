@@ -8,9 +8,10 @@ import aiogram
 import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
+
 import bot.database.queries as queries
-import bot.keyboards.reply as keyboards
 import bot.keyboards.inline as inline_keyboards
+import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
 

@@ -4,12 +4,13 @@ Middleware для логирования в боте.
 Логирует входящие сообщения и callback-запросы от пользователей.
 """
 
+from typing import Any, Awaitable, Callable, Dict
+
 import aiogram
 import aiogram.types
+import loguru
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
-import loguru
-from typing import Dict, Any, Callable, Awaitable
 
 
 class LoggingMiddleware(BaseMiddleware):

@@ -4,10 +4,10 @@
 Содержит утилиты для форматирования, валидации и обработки данных.
 """
 
-from typing import Optional
 # import uuid  # noqa: F401
 import secrets
 import string
+from typing import Optional
 
 
 def generate_invite_code(length: int = 8) -> str:

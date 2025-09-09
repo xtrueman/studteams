@@ -5,8 +5,9 @@
 """
 
 import functools
-import loguru
+
 import aiogram.types
+import loguru
 
 
 def log_handler(handler_name: str = None):

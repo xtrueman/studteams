@@ -7,18 +7,19 @@ Telegram-бот для отслеживания прогресса студен�
 """
 
 import asyncio
+
 import aiogram
 import aiogram.fsm.storage.memory
-import loguru
-import config
 import bot.database.client as db_client
-import bot.handlers.start as start_handlers
-import bot.handlers.team as team_handlers
-import bot.handlers.reports as reports_handlers
-import bot.handlers.reviews as reviews_handlers
 import bot.handlers.admin as admin_handlers
 import bot.handlers.callbacks as callback_handlers
+import bot.handlers.reports as reports_handlers
+import bot.handlers.reviews as reviews_handlers
+import bot.handlers.start as start_handlers
+import bot.handlers.team as team_handlers
 import bot.middlewares.logging as logging_middleware
+import config
+import loguru
 
 # Настройка логирования с loguru
 loguru.logger.add(

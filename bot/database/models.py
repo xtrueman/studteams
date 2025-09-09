@@ -4,8 +4,9 @@
 Определяет Pydantic модели для объектов базы данных.
 """
 
-import uuid
 import datetime
+import uuid
+
 import pydantic
 
 

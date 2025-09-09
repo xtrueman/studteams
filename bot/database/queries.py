@@ -5,6 +5,7 @@
 """
 
 import uuid
+
 import bot.database.client as db_client
 
 
