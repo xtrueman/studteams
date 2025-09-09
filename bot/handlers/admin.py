@@ -116,7 +116,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при удалении участника: {str(e)}\n"
+                f"❌ Ошибка при удалении участника: {e!s}\n"
                 f"Попробуйте еще раз."
             )
             await state.clear()
@@ -184,7 +184,7 @@ async def handle_team_report(message: aiogram.types.Message):
 
     except Exception as e:
         await message.answer(
-            f"❌ Ошибка при формировании отчета: {str(e)}\n"
+            f"❌ Ошибка при формировании отчета: {e!s}\n"
             f"Попробуйте еще раз."
         )
 

@@ -142,7 +142,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
 
     except Exception as e:
         await message.answer(
-            f"❌ Ошибка при сохранении отчета: {str(e)}\n"
+            f"❌ Ошибка при сохранении отчета: {e!s}\n"
             f"Попробуйте еще раз."
         )
         await state.clear()
@@ -234,7 +234,7 @@ async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.f
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при удалении отчета: {str(e)}\n"
+                f"❌ Ошибка при удалении отчета: {e!s}\n"
                 f"Попробуйте еще раз."
             )
             await state.clear()

@@ -83,7 +83,7 @@ async def callback_confirm_team_registration(callback: aiogram.types.CallbackQue
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при создании команды: {str(e)}\n"
+                f"❌ Ошибка при создании команды: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору."
             )
         await state.clear()
@@ -202,7 +202,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при присоединении к команде: {str(e)}\n"
+                f"❌ Ошибка при присоединении к команде: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору."
             )
         await state.clear()
@@ -291,7 +291,7 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при сохранении отчета: {str(e)}\n"
+                f"❌ Ошибка при сохранении отчета: {e!s}\n"
                 f"Попробуйте еще раз."
             )
         await state.clear()
@@ -335,7 +335,7 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при удалении отчета: {str(e)}\n"
+                f"❌ Ошибка при удалении отчета: {e!s}\n"
                 f"Попробуйте еще раз."
             )
         await state.clear()
@@ -430,7 +430,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при удалении участника: {str(e)}\n"
+                f"❌ Ошибка при удалении участника: {e!s}\n"
                 f"Попробуйте еще раз."
             )
         await state.clear()
@@ -606,7 +606,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
-                f"❌ Ошибка при сохранении оценки: {str(e)}\n"
+                f"❌ Ошибка при сохранении оценки: {e!s}\n"
                 f"Попробуйте еще раз."
             )
         await state.clear()

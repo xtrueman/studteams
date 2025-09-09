@@ -260,7 +260,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при сохранении оценки: {str(e)}\n"
+                f"❌ Ошибка при сохранении оценки: {e!s}\n"
                 f"Попробуйте еще раз."
             )
             await state.clear()

@@ -31,7 +31,7 @@ def log_handler(handler_name: str = None):
                 return result
             except Exception as e:
                 loguru.logger.error(
-                    f"Handler '{name}' failed for user_id={user_id}: {type(e).__name__}: {str(e)}"
+                    f"Handler '{name}' failed for user_id={user_id}: {type(e).__name__}: {e!s}"
                 )
                 raise
 

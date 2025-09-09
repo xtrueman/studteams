@@ -226,7 +226,7 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при создании команды: {str(e)}\n"
+                f"❌ Ошибка при создании команды: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору."
             )
             await state.clear()
@@ -355,7 +355,7 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при присоединении к команде: {str(e)}\n"
+                f"❌ Ошибка при присоединении к команде: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору."
             )
             await state.clear()

@@ -60,6 +60,6 @@ class LoggingMiddleware(BaseMiddleware):
             else:
                 user_id = "unknown"
             self.logger.error(
-                f"Handler error for user_id={user_id}: {type(e).__name__}: {str(e)}"
+                f"Handler error for user_id={user_id}: {type(e).__name__}: {e!s}"
             )
             raise
