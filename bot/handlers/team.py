@@ -11,7 +11,8 @@ import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
-import bot.database.queries as queries
+# import bot.database.queries as queries
+import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
@@ -37,9 +38,9 @@ def is_valid_full_name(name):
 async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало регистрации команды"""
     # Проверяем, не зарегистрирован ли уже пользователь
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
-    if student and getattr(student, 'team_memberships', None):
+    if student and 'team' in student:
         await message.answer(
             "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь."
         )
@@ -183,29 +184,29 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
 
         try:
             # Проверяем, есть ли уже пользователь в системе
-            student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+            student = db.get_student_by_tg_id(message.from_user.id)
 
             if not student:
                 # Создаем нового пользователя только если его нет
-                student = await queries.StudentQueries.create(
+                student = db.create_student(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
-                    group_num=data['user_group']
+                    group_num=data['user_group'] if data['user_group'] != "0" else None
                 )
 
             # Создаем команду
             invite_code = helpers.generate_invite_code()
-            team = await queries.TeamQueries.create(
+            team = db.create_team(
                 team_name=data['team_name'],
                 product_name=data['product_name'],
                 invite_code=invite_code,
-                admin_id=student.id
+                admin_student_id=student['student_id']
             )
 
             # Добавляем администратора в команду
-            await queries.TeamQueries.add_member(
-                team_id=team.id,
-                student_id=student.id,
+            db.add_team_member(
+                team_id=team['team_id'],
+                student_id=student['student_id'],
                 role="Scrum Master"
             )
 
@@ -321,20 +322,20 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
 
         try:
             # Проверяем, есть ли пользователь в системе
-            student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+            student = db.get_student_by_tg_id(message.from_user.id)
 
             if not student:
                 # Создаем нового пользователя
-                student = await queries.StudentQueries.create(
+                student = db.create_student(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
-                    group_num=data['user_group']
+                    group_num=data['user_group'] if data['user_group'] != "0" else None
                 )
 
             # Добавляем в команду
-            await queries.TeamQueries.add_member(
+            db.add_team_member(
                 team_id=data['team_id'],
-                student_id=student.id,
+                student_id=student['student_id'],
                 role=data['user_role']
             )
 

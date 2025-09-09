@@ -1,129 +1,139 @@
 """
-Вспомогательные функции для бота.
+Вспомогательные функции для бота StudHelper.
 
-Содержит утилиты для форматирования, валидации и обработки данных.
+Содержит вспомогательные утилиты для форматирования, валидации и других общих задач.
 """
 
-import secrets
+import datetime
+import random
 import string
 
-
-def generate_invite_code(length: int = 8) -> str:
-    """Генерация случайного кода приглашения"""
-    alphabet = string.ascii_uppercase + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
-
-def format_team_info(team_data, members_data, invite_link_text: str | None = None) -> str:
-    """Форматирование информации о команде"""
-    if not team_data:
-        return "❌ Команда не найдена"
-
-    text = f"👥 *{team_data.team_name}*\n"
-    text += f"📱 Продукт: {team_data.product_name}\n"
-    text += f"👑 Администратор: {team_data.admin.name}\n"
-
-    # Добавляем ссылку-приглашение перед списком участников
-    if invite_link_text:
-        text += invite_link_text
-    text += "\n"
-
-    if members_data:
-        text += "*Участники команды:*\n"
-        for i, member in enumerate(members_data, 1):
-            role_icon = "👑" if member.student.id == team_data.admin.id else "👤"
-            text += f"{i}. {role_icon} {member.student.name} — {member.role}\n"
-    else:
-        text += "Участников пока нет\n"
-
-    return text
-
-
-def format_reports_list(reports) -> str:
-    """Форматирование списка отчетов"""
-    if not reports:
-        return "📋 У вас пока нет отчетов"
-
-    text = "📋 *Отчёты о проделанной работе:*\n\n"
-    for report in reports:
-        text += f"*Спринт №{report.sprint_num}:*\n"
-        text += f"_{report.report_text}_\n\n"
-
-    return text
-
-
-# ... existing code ...
-
-
-def extract_sprint_number(text: str) -> int | None:
-    """Извлечение номера спринта из текста кнопки"""
-    try:
-        if "Спринт №" in text:
-            return int(text.split("№")[1])
-    except (ValueError, IndexError):
-        pass
-    return None
-
-
-def validate_rating(text: str) -> int | None:
-    """Валидация оценки"""
-    try:
-        rating = int(text)
-        if 1 <= rating <= 10:
-            return rating
-    except ValueError:
-        pass
-    return None
-
-
-# ... existing code ...
+# import bot.database.queries as queries
+import bot.db as db
+import config
 
 
 def is_valid_team_name(name: str) -> bool:
-    """Проверка валидности названия команды"""
-    return len(name.strip()) >= 3 and len(name.strip()) <= 64
+    """Проверяет валидность названия команды"""
+    return 3 <= len(name) <= 64
 
 
 def is_valid_product_name(name: str) -> bool:
-    """Проверка валидности названия продукта"""
-    return len(name.strip()) >= 3 and len(name.strip()) <= 100
+    """Проверяет валидность названия продукта"""
+    return 3 <= len(name) <= 100
 
 
 def is_valid_group_number(group: str) -> bool:
-    """Проверка валидности номера группы"""
-    return len(group.strip()) >= 2 and len(group.strip()) <= 16
+    """Проверяет валидность номера группы"""
+    return 2 <= len(group) <= 16
 
 
-def format_datetime(dt) -> str:
-    """Форматирование даты и времени"""
-    import datetime
-    if dt == 'now':
-        dt = datetime.datetime.now(datetime.UTC)
+def extract_sprint_number(text: str) -> int | None:
+    """Извлекает номер спринта из текста"""
+    if text.startswith("Спринт №"):
+        try:
+            return int(text.split("№")[1])
+        except (ValueError, IndexError):
+            return None
+    return None
+
+
+def generate_invite_code(length: int = 8) -> str:
+    """Генерирует случайный код приглашения"""
+    characters = string.ascii_uppercase + string.digits
+    # Исключаем похожие символы: 0, O, I, l
+    characters = characters.replace('0', '').replace('O', '').replace('I', '').replace('l', '')
+    return ''.join(random.choice(characters) for _ in range(length))
+
+
+def format_datetime(dt: str | datetime.datetime) -> str:
+    """Форматирует дату и время для отображения"""
+    if dt == "now":
+        dt = datetime.datetime.now()
+    elif isinstance(dt, str):
+        # Пытаемся распарсить строку в datetime
+        try:
+            dt = datetime.datetime.fromisoformat(dt)
+        except ValueError:
+            return dt  # Возвращаем как есть если не удалось распарсить
     return dt.strftime("%d.%m.%Y %H:%M")
+
+
+def format_reports_list(reports: list) -> str:
+    """Форматирует список отчетов для отображения"""
+    if not reports:
+        return "📝 У вас пока нет отчетов."
+
+    text = "*Мои отчёты:*\n\n"
+    for report in reports:
+        # For MySQL version, dates might be strings, so we handle them appropriately
+        date_str = report.get('report_date', 'Неизвестно')
+        if isinstance(date_str, datetime.datetime):
+            date_str = format_datetime(date_str)
+        
+        text += f"📊 Спринт №{report['sprint_num']} ({date_str})\n"
+        # Truncate report text for preview
+        preview = report['report_text'][:100] + "..." if len(report['report_text']) > 100 else report['report_text']
+        text += f"{preview}\n\n"
+
+    return text
+
+
+def format_team_info(team: dict, all_members: list, invite_link_text: str | None = None) -> str:
+    """Форматирует информацию о команде для отображения"""
+    team_info = (
+        f"👥 *Команда: {team['team_name']}*\n"
+        f"📱 Продукт: {team['product_name']}\n"
+        f"🔗 Код приглашения: `{team['invite_code']}`\n\n"
+    )
+
+    if invite_link_text:
+        team_info += invite_link_text + "\n"
+
+    team_info += "*Участники команды:*\n"
+    for member in all_members:
+        # Handle both object attributes and dictionary access
+        if hasattr(member, 'role'):
+            role = member.role
+        elif isinstance(member, dict) and 'role' in member:
+            role = member['role']
+        else:
+            role = 'Участник команды'
+            
+        # Handle student name access
+        if hasattr(member, 'student') and hasattr(member.student, 'name'):
+            name = member.student.name
+        elif isinstance(member, dict) and 'name' in member:
+            name = member['name']
+        else:
+            name = 'Неизвестно'
+            
+        team_info += f"• {name} ({role})\n"
+
+    return team_info
 
 
 async def get_team_display_data(student_id: str | None, tg_id: int,
                                 bot_username: str | None = None):
     """Получение данных для отображения информации о команде"""
-    import bot.database.queries as queries
+    # import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
 
-    student = await queries.StudentQueries.get_by_tg_id(tg_id)
+    student = db.get_student_by_tg_id(tg_id)
 
-    if not student or not getattr(student, 'team_memberships', None):
+    if not student or 'team' not in student:
         return None
 
-    team_membership = student.team_memberships[0]
-    team = team_membership.team
+    team = student['team']
 
     # Получаем всех участников команды
-    teammates = await queries.StudentQueries.get_teammates(student.id)
+    teammates = db.get_teammates(student['student_id'])
 
     # Создаем объект для текущего пользователя
     class MockStudent:
         def __init__(self, student_obj):
-            self.id = student_obj.id
-            self.name = student_obj.name
+            self.id = student_obj['student_id']
+            self.name = student_obj['name']
 
     class MockMembership:
         def __init__(self, student_obj, role):
@@ -133,25 +143,27 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     # Преобразуем teammate объекты в единую структуру
     teammate_memberships = []
     for teammate in teammates:
-        role = teammate.team_memberships[0].role if teammate.team_memberships else "Участник команды"
+        role = teammate.get('role', 'Участник команды')
         teammate_memberships.append(MockMembership(teammate, role))
 
     # Формируем список участников включая текущего пользователя
-    all_members = [*teammate_memberships, MockMembership(student, team_membership.role)]
+    # Для текущего пользователя мы берем роль из team_memberships если она есть
+    current_user_role = 'Scrum Master' if team['admin_student_id'] == student['student_id'] else 'Участник команды'
+    all_members = [*teammate_memberships, MockMembership(student, current_user_role)]
 
     # Проверяем права администратора
-    is_admin = team.admin.id == student.id
+    is_admin = team['admin_student_id'] == student['student_id']
 
     # Для админов генерируем ссылку-приглашение
     invite_link_text = None
     if is_admin and bot_username:
-        invite_link_text = get_invite_link_text(team.team_name, team.invite_code, bot_username)
+        invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'], bot_username)
 
     team_info = format_team_info(team, all_members, invite_link_text)
 
     # Добавляем inline клавиатуру для управления участниками (только для админов)
     keyboard = inline_keyboards.get_team_member_management_keyboard(
-        all_members, student.id, is_admin
+        all_members, student['student_id'], is_admin
     )
 
     return {

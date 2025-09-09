@@ -10,7 +10,8 @@ import aiogram.fsm.context
 import config
 from aiogram import F
 
-import bot.database.queries as queries
+# import bot.database.queries as queries
+import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
@@ -30,29 +31,29 @@ async def callback_confirm_team_registration(
 
     try:
         # Проверяем, есть ли уже пользователь в системе
-        student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
+        student = db.get_student_by_tg_id(callback.from_user.id)
 
         if not student:
             # Создаем нового пользователя только если его нет
-            student = await queries.StudentQueries.create(
+            student = db.create_student(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
-                group_num=data['user_group']
+                group_num=data['user_group'] if data['user_group'] != "0" else None
             )
 
         # Создаем команду
         invite_code = helpers.generate_invite_code()
-        team = await queries.TeamQueries.create(
+        team = db.create_team(
             team_name=data['team_name'],
             product_name=data['product_name'],
             invite_code=invite_code,
-            admin_id=student.id
+            admin_student_id=student['student_id']
         )
 
         # Добавляем администратора в команду
-        await queries.TeamQueries.add_member(
-            team_id=team.id,
-            student_id=student.id,
+        db.add_team_member(
+            team_id=team['team_id'],
+            student_id=student['student_id'],
             role="Scrum Master"
         )
 
@@ -172,7 +173,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
 
     try:
         # Проверяем, есть ли пользователь в системе
-        student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
+        student = db.get_student_by_tg_id(callback.from_user.id)
 
         if not student:
             # Создаём нового пользователя - данные должны быть в state
@@ -180,16 +181,16 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
                 await callback.answer("❌ Ошибка: недостаточно данных")
                 return
 
-            student = await queries.StudentQueries.create(
+            student = db.create_student(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
-                group_num=data['user_group']
+                group_num=data['user_group'] if data['user_group'] != "0" else None
             )
 
         # Добавляем в команду
-        await queries.TeamQueries.add_member(
+        db.add_team_member(
             team_id=data['team_id'],
-            student_id=student.id,
+            student_id=student['student_id'],
             role=data['user_role']
         )
 
@@ -232,72 +233,47 @@ async def callback_cancel_join_team(callback: aiogram.types.CallbackQuery, state
         await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
-# Sprint Selection Callbacks
 
-
-@decorators.log_handler("callback_sprint_selection")
-async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Обработчик callback выбора спринта"""
-    if not callback.data:
-        await callback.answer("❌ Неверные данные")
-        return
-
-    if callback.data == "cancel":
-        await callback_cancel_action(callback, state)
-        return
-
-    if not callback.data.startswith("sprint_"):
-        await callback.answer("❌ Неверный формат")
-        return
-
-    sprint_num = int(callback.data.split("_")[1])
-
-    await state.update_data(sprint_num=sprint_num)
-    await state.set_state(states.ReportCreation.report_text)
-
-    if callback.message:
-        await callback.message.edit_text(
-            f"✅ Спринт №{sprint_num}\n\n"
-            f"📝 Введите текст отчета о проделанной работе:"
-        )
-    await callback.answer()
-
-# Reports Callbacks
-
-
+# Report Callbacks
 @decorators.log_handler("callback_confirm_report")
 async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик подтверждения отправки отчета"""
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
     data = await state.get_data()
+    is_editing = data.get('editing', False)
 
     try:
-        await queries.ReportQueries.create_or_update(
-            student_id=student.id,
+        student = db.get_student_by_tg_id(callback.from_user.id)
+
+        db.create_or_update_report(
+            student_id=student['student_id'],
             sprint_num=data['sprint_num'],
             report_text=data['report_text']
         )
 
         await state.clear()
 
-        # Возвращаем главное меню
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-
+        # Показываем сообщение об успешном сохранении
         if callback.message:
-            await callback.message.edit_text(
-                f"✅ *Отчет успешно отправлен!*\n\n"
-                f"📊 Спринт: №{data['sprint_num']}\n"
-                f"📅 Дата: {helpers.format_datetime('now')}",
-                parse_mode="Markdown"
-            )
+            if is_editing:
+                await callback.message.edit_text(
+                    f"✅ *Отчет успешно обновлен!*\n\n"
+                    f"📊 Спринт: №{data['sprint_num']}\n"
+                    f"📅 Дата: {helpers.format_datetime('now')}",
+                    parse_mode="Markdown"
+                )
+            else:
+                await callback.message.edit_text(
+                    f"✅ *Отчет успешно отправлен!*\n\n"
+                    f"📊 Спринт: №{data['sprint_num']}\n"
+                    f"📅 Дата: {helpers.format_datetime('now')}",
+                    parse_mode="Markdown"
+                )
 
-            await callback.message.answer("Главное меню:", reply_markup=keyboard)
+            # Переходим на страницу "Мои отчёты"
+            reports = db.get_reports_by_student(student['student_id'])
+            report_text = helpers.format_reports_list(reports)
+            keyboard = inline_keyboards.get_report_management_keyboard(reports)
+            await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
 
     except Exception as e:
         if callback.message:
@@ -313,18 +289,116 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
 @decorators.log_handler("callback_cancel_report")
 async def callback_cancel_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены отправки отчета"""
-    await callback_cancel_action(callback, state)
+    await state.clear()
+    student = db.get_student_by_tg_id(callback.from_user.id)
+
+    if callback.message:
+        await callback.message.edit_text("❌ Отправка отчета отменена.")
+
+        if student:
+            has_team = 'team' in student
+            is_admin = False
+            if has_team:
+                is_admin = student['team']['admin_student_id'] == student['student_id']
+
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+        else:
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    await callback.answer()
+
+
+@decorators.log_handler("callback_edit_report")
+async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик редактирования отчета"""
+    if not callback.data or not callback.data.startswith("edit_report_"):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    # Извлекаем номер спринта из callback_data
+    try:
+        sprint_num = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    student = db.get_student_by_tg_id(callback.from_user.id)
+
+    # Получаем существующий отчет
+    reports = db.get_reports_by_student(student['student_id'])
+    report_to_edit = None
+    for report in reports:
+        if report['sprint_num'] == sprint_num:
+            report_to_edit = report
+            break
+
+    if not report_to_edit:
+        await callback.answer("❌ Отчет не найден")
+        return
+
+    # Сохраняем данные в состоянии
+    await state.update_data(
+        sprint_num=sprint_num,
+        report_text=report_to_edit['report_text'],
+        editing=True
+    )
+
+    await state.set_state(states.ReportCreation.report_text)
+
+    if callback.message:
+        await callback.message.edit_text(
+            f"📝 *Редактирование отчета*\n\n"
+            f"📊 Спринт: №{sprint_num}\n\n"
+            f"Текущий текст отчета:\n{report_to_edit['report_text'][:200]}{'...' if len(report_to_edit['report_text']) > 200 else ''}\n\n"
+            f"Введите новый текст отчета:",
+            reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
+            parse_mode="Markdown"
+        )
+    await callback.answer()
+
+
+@decorators.log_handler("callback_delete_report_inline")
+async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик удаления отчета (из inline клавиатуры)"""
+    if not callback.data or not callback.data.startswith("delete_report_"):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    # Извлекаем номер спринта из callback_data
+    try:
+        sprint_num = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    student = db.get_student_by_tg_id(callback.from_user.id)
+
+    # Сохраняем данные в состоянии
+    await state.update_data(
+        sprint_num=sprint_num,
+        student_id=student['student_id']
+    )
+
+    if callback.message:
+        await callback.message.edit_text(
+            f"⚠️ *Подтверждение удаления*\n\n"
+            f"Вы действительно хотите удалить отчет за *Спринт №{sprint_num}*?\n\n"
+            f"*Это действие нельзя отменить!*",
+            reply_markup=inline_keyboards.get_report_deletion_confirm_keyboard(),
+            parse_mode="Markdown"
+        )
+    await callback.answer()
 
 
 @decorators.log_handler("callback_confirm_delete_report")
 async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик подтверждения удаления отчета"""
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
     data = await state.get_data()
 
     try:
-        await queries.ReportQueries.delete_report(
-            student_id=student.id,
+        db.delete_report(
+            student_id=data['student_id'],
             sprint_num=data['sprint_num']
         )
 
@@ -332,13 +406,13 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
 
         if callback.message:
             await callback.message.edit_text(
-                f"🗑 *Отчет удален*\n\n"
-                f"📊 Спринт №{data['sprint_num']} - отчет успешно удален",
+                f"✅ *Отчет за Спринт №{data['sprint_num']} успешно удален!*",
                 parse_mode="Markdown"
             )
 
             # Переходим на страницу "Мои отчёты"
-            reports = await queries.ReportQueries.get_by_student(student.id)
+            student = db.get_student_by_tg_id(callback.from_user.id)
+            reports = db.get_reports_by_student(student['student_id'])
             report_text = helpers.format_reports_list(reports)
             keyboard = inline_keyboards.get_report_management_keyboard(reports)
             await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -357,43 +431,144 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
 @decorators.log_handler("callback_cancel_delete_report")
 async def callback_cancel_delete_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления отчета"""
-    await callback_cancel_action(callback, state)
+    await state.clear()
+    student = db.get_student_by_tg_id(callback.from_user.id)
 
-# Member Selection Callbacks
+    if callback.message:
+        await callback.message.edit_text("❌ Удаление отчета отменено.")
+
+        # Переходим на страницу "Мои отчёты"
+        reports = db.get_reports_by_student(student['student_id'])
+        report_text = helpers.format_reports_list(reports)
+        keyboard = inline_keyboards.get_report_management_keyboard(reports)
+        await callback.message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
+    await callback.answer()
 
 
-@decorators.log_handler("callback_member_selection")
-async def callback_member_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Обработчик callback выбора участника для удаления"""
-    if not callback.data:
+# Review Callbacks
+@decorators.log_handler("callback_confirm_review")
+async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик подтверждения отправки оценки"""
+    if callback.data == "confirm_review":
+        student = db.get_student_by_tg_id(callback.from_user.id)
+        data = await state.get_data()
+
+        try:
+            db.create_rating(
+                assessor_student_id=student['student_id'],
+                assessored_student_id=data['selected_teammate_id'],
+                overall_rating=data['overall_rating'],
+                advantages=data['advantages'],
+                disadvantages=data['disadvantages']
+            )
+
+            await state.clear()
+
+            if callback.message:
+                await callback.message.edit_text(
+                    f"✅ *Оценка успешно отправлена!*\n\n"
+                    f"👤 Участник: {data['teammate_name']}\n"
+                    f"⭐ Оценка: {data['overall_rating']}/10",
+                    parse_mode="Markdown"
+                )
+
+                # Переходим на страницу "Оценить участников команды"
+                if config.ENABLE_REVIEWS:
+                    teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
+
+                    if not teammates_to_rate:
+                        await callback.message.answer(
+                            "✅ Вы уже оценили всех участников команды!\n\n"
+                            "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки."
+                        )
+                    else:
+                        # Создаем список имен для выбора
+                        teammate_names = [teammate['name'] for teammate in teammates_to_rate]
+
+                        await state.set_state(states.ReviewProcess.teammate_selection)
+
+                        await callback.message.answer(
+                            "⭐ *Оценивание участников команды*\n\n"
+                            "Выберите участника для оценки:",
+                            reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
+                            parse_mode="Markdown"
+                        )
+
+        except Exception as e:
+            if callback.message:
+                await callback.message.edit_text(
+                    f"❌ Ошибка при отправке оценки: {e!s}\n"
+                    f"Попробуйте еще раз."
+                )
+            await state.clear()
+
+    await callback.answer()
+
+
+@decorators.log_handler("callback_cancel_review")
+async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик отмены отправки оценки"""
+    await state.clear()
+    student = db.get_student_by_tg_id(callback.from_user.id)
+
+    if callback.message:
+        await callback.message.edit_text("❌ Отправка оценки отменена.")
+
+        if student:
+            has_team = 'team' in student
+            is_admin = False
+            if has_team:
+                is_admin = student['team']['admin_student_id'] == student['student_id']
+
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+        else:
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+
+        await callback.message.answer("Главное меню:", reply_markup=keyboard)
+    await callback.answer()
+
+
+# Team Member Management Callbacks
+@decorators.log_handler("callback_remove_member_inline")
+async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик удаления участника команды (из inline клавиатуры)"""
+    if not callback.data or not callback.data.startswith("remove_member_"):
         await callback.answer("❌ Неверные данные")
         return
 
-    if callback.data == "cancel":
-        await callback_cancel_admin_action(callback, state)
+    # Извлекаем ID участника из callback_data
+    try:
+        member_id = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
         return
 
-    if not callback.data.startswith("member_"):
-        await callback.answer("❌ Неверный формат")
+    student = db.get_student_by_tg_id(callback.from_user.id)
+
+    # Проверяем, что пользователь является администратором команды
+    if not student or 'team' not in student or student['team']['admin_student_id'] != student['student_id']:
+        await callback.answer("❌ Недостаточно прав")
         return
 
-    member_index = int(callback.data.split("_")[1])
-    data = await state.get_data()
-    teammates = data.get('teammates', [])
+    team = student['team']
 
-    if member_index >= len(teammates):
+    # Получаем информацию об участнике
+    member_to_remove = db.get_student_by_id(member_id)
+
+    if not member_to_remove:
         await callback.answer("❌ Участник не найден")
         return
 
-    selected_member = teammates[member_index]
-
-    await state.update_data(selected_member=selected_member)
-    await state.set_state(states.MemberRemoval.confirmation)
+    # Сохраняем данные в состоянии
+    await state.update_data(
+        selected_member=member_to_remove,
+        team_id=team['team_id']
+    )
 
     if callback.message:
         await callback.message.edit_text(
             f"⚠️ *Подтверждение удаления*\n\n"
-            f"Вы действительно хотите удалить *{selected_member.name}* из команды?\n\n"
+            f"Вы действительно хотите удалить *{member_to_remove['name']}* из команды?\n\n"
             f"*Это действие нельзя отменить!*\n"
             f"Участник потеряет доступ ко всем функциям команды.",
             reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
@@ -406,37 +581,27 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
 async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик подтверждения удаления участника"""
     data = await state.get_data()
-    selected_member = data['selected_member']
-    team_id = data['team_id']
 
     try:
-        await queries.TeamQueries.remove_member(
-            team_id=team_id,
-            student_id=selected_member.id
+        db.remove_team_member(
+            team_id=data['team_id'],
+            student_id=data['selected_member']['student_id']
         )
 
         await state.clear()
 
-        # Получаем обновленную информацию о команде
-        bot_info = await callback.bot.get_me()
-        bot_username = bot_info.username if bot_info else None
-        team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
-
         if callback.message:
+            await callback.message.edit_text(
+                f"✅ *Участник {data['selected_member']['name']} успешно удален из команды!*",
+                parse_mode="Markdown"
+            )
+
+            # Обновляем информацию о команде
+            bot_username = (await callback.bot.get_me()).username if callback.bot else None
+            team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
+
             if team_data:
-                await callback.message.edit_text(
-                    f"🗑 *Участник удален*\n\n"
-                    f"👤 {selected_member.name} исключен из команды\n\n"
-                    f"{team_data['team_info']}",
-                    reply_markup=team_data['keyboard'],
-                    parse_mode="Markdown"
-                )
-            else:
-                await callback.message.edit_text(
-                    f"🗑 *Участник удален*\n\n"
-                    f"👤 {selected_member.name} исключен из команды",
-                    parse_mode="Markdown"
-                )
+                await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
 
     except Exception as e:
         if callback.message:
@@ -452,73 +617,150 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
 @decorators.log_handler("callback_cancel_remove_member")
 async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления участника"""
-    await callback_cancel_admin_action(callback, state)
+    await state.clear()
+    
+    if callback.message:
+        await callback.message.edit_text("❌ Удаление участника отменено.")
 
-# Teammate Selection Callbacks (for reviews)
+        # Обновляем информацию о команде
+        bot_username = (await callback.bot.get_me()).username if callback.bot else None
+        team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
+
+        if team_data:
+            await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+    await callback.answer()
+
+
+# Dynamic Callbacks (pattern-based)
+@decorators.log_handler("callback_sprint_selection")
+async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик выбора спринта"""
+    if not callback.data or not callback.data.startswith("sprint_"):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    # Извлекаем номер спринта из callback_data
+    try:
+        sprint_num = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    await state.update_data(sprint_num=sprint_num)
+    await state.set_state(states.ReportCreation.report_text)
+
+    if callback.message:
+        await callback.message.edit_text(
+            f"✅ Спринт №{sprint_num}\n\n"
+            f"📝 Введите текст отчета о проделанной работе:",
+            reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
+            parse_mode="Markdown"
+        )
+    await callback.answer()
+
+
+@decorators.log_handler("callback_member_selection")
+async def callback_member_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик выбора участника команды"""
+    if not callback.data or not callback.data.startswith("member_"):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    # Извлекаем имя участника из callback_data
+    member_name = callback.data.split("_", 1)[1]
+
+    data = await state.get_data()
+    teammates = data.get('teammates_to_rate', [])
+
+    # Находим выбранного участника
+    selected_teammate = None
+    for teammate in teammates:
+        if teammate['name'] == member_name:
+            selected_teammate = teammate
+            break
+
+    if not selected_teammate:
+        await callback.answer("❌ Участник не найден")
+        return
+
+    # Сохраняем выбранного участника в состоянии
+    await state.update_data(
+        selected_teammate_id=selected_teammate['student_id'],
+        teammate_name=member_name
+    )
+
+    await state.set_state(states.ReviewProcess.rating_input)
+
+    if callback.message:
+        await callback.message.edit_text(
+            f"⭐ *Оценка участника: {member_name}*\n\n"
+            f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
+            reply_markup=inline_keyboards.get_rating_inline_keyboard(config.MIN_RATING, config.MAX_RATING),
+            parse_mode="Markdown"
+        )
+    await callback.answer()
 
 
 @decorators.log_handler("callback_teammate_selection")
 async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик выбора участника для оценки"""
-    if callback.data == "cancel":
-        # Проверяем текущее состояние
-        current_state = await state.get_state()
-        if current_state and "ReviewProcess" in str(current_state):
-            await callback_cancel_review(callback, state)
-        else:
-            await callback_cancel_action(callback, state)
+    if not callback.data or not callback.data.startswith("teammate_"):
+        await callback.answer("❌ Неверные данные")
         return
 
-    if not callback.data.startswith("teammate_"):
-        await callback.answer("❌ Неверный формат")
-        return
+    # Извлекаем имя участника из callback_data
+    teammate_name = callback.data.split("_", 1)[1]
 
-    teammate_index = int(callback.data.split("_")[1])
     data = await state.get_data()
-    teammates_to_rate = data.get('teammates_to_rate', [])
+    teammates = data.get('teammates_to_rate', [])
 
-    if teammate_index >= len(teammates_to_rate):
+    # Находим выбранного участника
+    selected_teammate = None
+    for teammate in teammates:
+        if teammate['name'] == teammate_name:
+            selected_teammate = teammate
+            break
+
+    if not selected_teammate:
         await callback.answer("❌ Участник не найден")
         return
 
-    selected_teammate = teammates_to_rate[teammate_index]
-
+    # Сохраняем выбранного участника в состоянии
     await state.update_data(
-        selected_teammate=selected_teammate,
-        teammate_name=selected_teammate.name
+        selected_teammate_id=selected_teammate['student_id'],
+        teammate_name=teammate_name
     )
+
     await state.set_state(states.ReviewProcess.rating_input)
 
     if callback.message:
         await callback.message.edit_text(
-            f"⭐ *Оценивание: {selected_teammate.name}*\n\n"
-            f"Поставьте общую оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-            reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
+            f"⭐ *Оценка участника: {teammate_name}*\n\n"
+            f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
+            reply_markup=inline_keyboards.get_rating_inline_keyboard(config.MIN_RATING, config.MAX_RATING),
             parse_mode="Markdown"
         )
     await callback.answer()
-
-# Rating Selection Callbacks
 
 
 @decorators.log_handler("callback_rating_selection")
 async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик выбора оценки"""
-    if callback.data == "cancel":
-        await callback_cancel_review(callback, state)
+    if not callback.data or not callback.data.startswith("rating_"):
+        await callback.answer("❌ Неверные данные")
         return
 
-    if not callback.data.startswith("rating_"):
-        await callback.answer("❌ Неверный формат")
+    # Извлекаем оценку из callback_data
+    try:
+        rating = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
         return
-
-    rating = int(callback.data.split("_")[1])
 
     if rating < config.MIN_RATING or rating > config.MAX_RATING:
-        await callback.answer("❌ Неверная оценка")
+        await callback.answer(f"❌ Оценка должна быть от {config.MIN_RATING} до {config.MAX_RATING}")
         return
 
-    data = await state.get_data()
     await state.update_data(overall_rating=rating)
     await state.set_state(states.ReviewProcess.advantages_input)
 
@@ -526,262 +768,38 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
         await callback.message.edit_text(
             f"✅ Оценка: {rating}/10\n\n"
             f"👍 *Положительные качества*\n"
-            f"Напишите, что вам нравится в работе {data['teammate_name']}:",
+            f"Напишите положительные качества участника:",
             parse_mode="Markdown"
         )
     await callback.answer()
 
-# Skip/Cancel Callbacks (for reviews)
 
-# Review Confirm Callbacks
-
-
-@decorators.log_handler("callback_confirm_review")
-async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик подтверждения отправки оценки"""
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-    data = await state.get_data()
-
-    try:
-        await queries.RatingQueries.create(
-            assessor_id=student.id,
-            assessed_id=data['selected_teammate'].id,
-            overall_rating=data['overall_rating'],
-            advantages=data['advantages'],
-            disadvantages=data['disadvantages']
-        )
-
-        await state.clear()
-
-        # Возвращаем главное меню
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-
-        if callback.message:
-            await callback.message.edit_text(
-                f"✅ *Оценка отправлена!*\n\n"
-                f"👤 {data['teammate_name']}\n"
-                f"⭐ Оценка: {data['overall_rating']}/10\n\n"
-                f"Спасибо за обратную связь!",
-                parse_mode="Markdown"
-            )
-
-            await callback.message.answer("Главное меню:", reply_markup=keyboard)
-
-    except Exception as e:
-        if callback.message:
-            await callback.message.edit_text(
-                f"❌ Ошибка при сохранении оценки: {e!s}\n"
-                f"Попробуйте еще раз."
-            )
-        await state.clear()
-
-    await callback.answer()
-
-
-@decorators.log_handler("callback_cancel_review")
-async def callback_cancel_review(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик отмены оценивания"""
-    await state.clear()
-
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-
-    if student:
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-    else:
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
-
-    if callback.message:
-        await callback.message.edit_text("❌ Оценивание отменено.")
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
-    await callback.answer()
-
-# General Cancel Callbacks
+@decorators.log_handler("callback_edit_member")
+async def callback_edit_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
+    """Callback обработчик редактирования участника команды"""
+    await callback.answer("❌ Функция редактирования участника пока не реализована")
 
 
 @decorators.log_handler("callback_cancel_action")
 async def callback_cancel_action(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик общей отмены действия"""
+    """Callback обработчик отмены действия (универсальный)"""
     await state.clear()
-
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-
-    if student:
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-    else:
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+    student = db.get_student_by_tg_id(callback.from_user.id)
 
     if callback.message:
         await callback.message.edit_text("❌ Действие отменено.")
+
+        if student:
+            has_team = 'team' in student
+            is_admin = False
+            if has_team:
+                is_admin = student['team']['admin_student_id'] == student['student_id']
+
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+        else:
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+
         await callback.message.answer("Главное меню:", reply_markup=keyboard)
-    await callback.answer()
-
-
-@decorators.log_handler("callback_cancel_admin_action")
-async def callback_cancel_admin_action(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик отмены админского действия"""
-    await state.clear()
-    keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
-
-    if callback.message:
-        await callback.message.edit_text("❌ Действие отменено.")
-        await callback.message.answer("Главное меню:", reply_markup=keyboard)
-    await callback.answer()
-
-# Team Member Management Callbacks
-
-
-@decorators.log_handler("callback_edit_member")
-async def callback_edit_member(callback: aiogram.types.CallbackQuery):
-    """Callback обработчик редактирования участника"""
-    # Пока что просто заглушка - в будущем можно добавить функционал редактирования роли
-    await callback.answer("⚠️ Функция редактирования участников будет доступна в следующих версиях", show_alert=True)
-
-# Report Management Callbacks
-
-
-@decorators.log_handler("callback_edit_report")
-async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик редактирования отчета"""
-    if not callback.data.startswith("edit_report_"):
-        await callback.answer("❌ Неверный формат")
-        return
-
-    sprint_num = int(callback.data.split("_")[2])
-
-    # Получаем текущий отчет
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-
-    if not student:
-        await callback.answer("❌ Вы не зарегистрированы в системе")
-        return
-
-    reports = await queries.ReportQueries.get_by_student(student.id)
-    current_report = None
-
-    for report in reports:
-        if report.sprint_num == sprint_num:
-            current_report = report
-            break
-
-    if not current_report:
-        await callback.answer("❌ Отчет не найден")
-        return
-
-    # Сохраняем данные в состоянии для редактирования
-    await state.update_data(sprint_num=sprint_num, editing=True)
-    await state.set_state(states.ReportCreation.report_text)
-
-    if callback.message:
-        await callback.message.edit_text(
-            f"✏️ *Редактирование отчета*\n\n"
-            f"📊 *Спринт №{sprint_num}:*\n"
-            f"_{current_report.report_text}_\n\n"
-            f"Введите новый текст отчета:",
-            parse_mode="Markdown"
-        )
-    await callback.answer()
-
-
-@decorators.log_handler("callback_delete_report_inline")
-async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик удаления отчета через inline кнопку"""
-    if not callback.data.startswith("delete_report_"):
-        await callback.answer("❌ Неверный формат")
-        return
-
-    sprint_num = int(callback.data.split("_")[2])
-
-    # Проверяем, что отчет существует
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-
-    if not student:
-        await callback.answer("❌ Вы не зарегистрированы в системе")
-        return
-
-    reports = await queries.ReportQueries.get_by_student(student.id)
-    report_exists = any(report.sprint_num == sprint_num for report in reports)
-
-    if not report_exists:
-        await callback.answer("❌ Отчет не найден")
-        return
-
-    # Сохраняем данные в состоянии
-    await state.update_data(sprint_num=sprint_num)
-
-    if callback.message:
-        await callback.message.edit_text(
-            f"⚠️ *Подтверждение удаления*\n\n"
-            f"Вы действительно хотите удалить отчет по спринту №{sprint_num}?\n\n"
-            f"*Это действие нельзя отменить!*",
-            reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
-            parse_mode="Markdown"
-        )
-    await callback.answer()
-
-
-@decorators.log_handler("callback_remove_member_inline")
-async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик удаления участника через inline кнопку"""
-    if not callback.data.startswith("remove_member_"):
-        await callback.answer("❌ Неверный формат")
-        return
-
-    member_id = callback.data.split("_")[2]
-
-    # Проверяем права администратора
-    student = await queries.StudentQueries.get_by_tg_id(callback.from_user.id)
-
-    if not student or not getattr(student, 'team_memberships', None):
-        await callback.answer("❌ Вы не состоите в команде")
-        return
-
-    team_membership = student.team_memberships[0]
-    team = team_membership.team
-
-    if team.admin.id != student.id:
-        await callback.answer("❌ Удалять участников может только администратор команды")
-        return
-
-    # Получаем информацию об участнике
-    member_to_remove = await queries.StudentQueries.get_by_id(member_id)
-
-    if not member_to_remove:
-        await callback.answer("❌ Участник не найден")
-        return
-
-    # Сохраняем данные в состоянии
-    await state.update_data(
-        selected_member=member_to_remove,
-        team_id=team.id
-    )
-
-    if callback.message:
-        await callback.message.edit_text(
-            f"⚠️ *Подтверждение удаления*\n\n"
-            f"Вы действительно хотите удалить *{member_to_remove.name}* из команды?\n\n"
-            f"*Это действие нельзя отменить!*\n"
-            f"Участник потеряет доступ ко всем функциям команды.",
-            reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
-            parse_mode="Markdown"
-        )
     await callback.answer()
 
 

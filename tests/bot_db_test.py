@@ -14,30 +14,49 @@ from bot import db
 
 def setup_function():
     """Подготовка перед каждым тестом"""
-    # Очищаем тестовые данные если есть
+    # Ничего не нужно делать перед каждым тестом
     pass
 
 
 def teardown_function():
-    """Очистка после каждого теста"""
+    """Очистка после каждого теста - удаляем тестовые данные"""
     # Не закрываем соединение между тестами, пусть myconn управляет этим
-    pass
+    # Но очищаем тестовые данные
+    cleanup_test_data()
+
+
+def cleanup_test_data():
+    """Удаление тестовых данных из базы"""
+    try:
+        cur = myconn.cursors.cur
+        # Удаляем тестовые данные, созданные тестами
+        # Удаляем в правильном порядке из-за внешних ключей
+        cur.execute("DELETE FROM team_members_ratings WHERE assessor_student_id IN (123456789, 123456790, 123456791, 123456792, 123456793, 123456794, 123456795, 123456796, 123456797, 123456798, 999999999, 888888888)")
+        cur.execute("DELETE FROM sprint_reports WHERE student_id IN (123456789, 123456790, 123456791, 123456792, 123456793, 123456794, 123456795, 123456796, 123456797, 123456798, 999999999, 888888888)")
+        cur.execute("DELETE FROM team_members WHERE team_id IN (SELECT team_id FROM teams WHERE invite_code IN ('INV123', 'INV456', 'INV789', 'TEST123'))")
+        cur.execute("DELETE FROM teams WHERE invite_code IN ('INV123', 'INV456', 'INV789', 'TEST123')")
+        cur.execute("DELETE FROM students WHERE tg_id IN (123456789, 123456790, 123456791, 123456792, 123456793, 123456794, 123456795, 123456796, 123456797, 123456798, 999999999, 888888888)")
+        # Убран вызов myconn.commit() так как у нас включен autocommit
+    except Exception as e:
+        print(f"Ошибка при очистке тестовых данных: {e}")
+        pass
 
 
 def test_create_and_get_student():
     """Тест создания и получения студента"""
-    # Создаем тестового студента
-    student = db.create_student(123456789, "Иван Иванов", "ГРП-01")
+    # Создаем тестового студента с уникальным ID
+    unique_id = 123456789
+    student = db.create_student(unique_id, "Иван Иванов", "ГРП-01")
     
     assert student is not None
-    assert student['tg_id'] == 123456789
+    assert student['tg_id'] == unique_id
     assert student['name'] == "Иван Иванов"
     assert student['group_num'] == "ГРП-01"
     
     # Получаем студента по tg_id
-    retrieved_student = db.get_student_by_tg_id(123456789)
+    retrieved_student = db.get_student_by_tg_id(unique_id)
     assert retrieved_student is not None
-    assert retrieved_student['tg_id'] == 123456789
+    assert retrieved_student['tg_id'] == unique_id
     assert retrieved_student['name'] == "Иван Иванов"
     assert retrieved_student['group_num'] == "ГРП-01"
     
@@ -45,16 +64,17 @@ def test_create_and_get_student():
     retrieved_by_id = db.get_student_by_id(student['student_id'])
     assert retrieved_by_id is not None
     assert retrieved_by_id['student_id'] == student['student_id']
-    assert retrieved_by_id['tg_id'] == 123456789
+    assert retrieved_by_id['tg_id'] == unique_id
 
 
 def test_get_nonexistent_student():
     """Тест получения несуществующего студента"""
-    # Пытаемся получить несуществующего студента
-    student = db.get_student_by_tg_id(999999999)
+    # Пытаемся получить несуществующего студента с уникальным ID
+    unique_id = 999999999
+    student = db.get_student_by_tg_id(unique_id)
     assert student is None
     
-    student = db.get_student_by_id(999999999)
+    student = db.get_student_by_id(unique_id)
     assert student is None
 
 

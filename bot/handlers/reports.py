@@ -9,7 +9,8 @@ import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
-import bot.database.queries as queries
+# import bot.database.queries as queries
+import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
@@ -20,13 +21,13 @@ import bot.utils.helpers as helpers
 @decorators.log_handler("my_reports")
 async def handle_my_reports(message: aiogram.types.Message):
     """Показать отчеты пользователя"""
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
     if not student:
         await message.answer("❌ Вы не зарегистрированы в системе.")
         return
 
-    reports = await queries.ReportQueries.get_by_student(student.id)
+    reports = db.get_reports_by_student(student['student_id'])
     report_text = helpers.format_reports_list(reports)
 
     # Создаем inline клавиатуру для управления отчетами
@@ -38,9 +39,9 @@ async def handle_my_reports(message: aiogram.types.Message):
 @decorators.log_handler("send_report")
 async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало создания отчета"""
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
-    if not student or not getattr(student, 'team_memberships', None):
+    if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
         return
 
@@ -104,14 +105,17 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         )
         return
 
+    # Сохраняем текст отчета в состоянии
+    await state.update_data(report_text=report_text)
+
     # Получаем данные и сохраняем отчет сразу
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
     data = await state.get_data()
     is_editing = data.get('editing', False)
 
     try:
-        await queries.ReportQueries.create_or_update(
-            student_id=student.id,
+        db.create_or_update_report(
+            student_id=student['student_id'],
             sprint_num=data['sprint_num'],
             report_text=report_text
         )
@@ -135,7 +139,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
             )
 
         # Переходим на страницу "Мои отчёты"
-        reports = await queries.ReportQueries.get_by_student(student.id)
+        reports = db.get_reports_by_student(student['student_id'])
         report_text = helpers.format_reports_list(reports)
         keyboard = inline_keyboards.get_report_management_keyboard(reports)
         await message.answer(report_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -148,34 +152,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         await state.clear()
 
 
-# ... existing code ...
-
-
-async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Отмена текущего действия"""
-    await state.clear()
-
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-
-    if student:
-        has_team = bool(getattr(student, 'team_memberships', []))
-        is_admin = False
-        if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-    else:
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
-
-    await message.answer("❌ Действие отменено.", reply_markup=keyboard)
-
-
-def register_reports_handlers(dp: aiogram.Dispatcher):
-    """Регистрация обработчиков отчетов"""
-    # Основные команды
-    dp.message.register(handle_my_reports, F.text == "Мои отчёты")
-    dp.message.register(handle_send_report, F.text == "Отправить отчёт")
+.register(handle_send_report, F.text == "Отправить отчёт")
 
     # FSM для создания отчета
     dp.message.register(process_report_text, states.ReportCreation.report_text)

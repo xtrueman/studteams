@@ -10,7 +10,8 @@ import aiogram.fsm.context
 import config
 from aiogram import F
 
-import bot.database.queries as queries
+# import bot.database.queries as queries
+import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
@@ -24,14 +25,14 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
-    if not student or not getattr(student, 'team_memberships', None):
+    if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
         return
 
     # Получаем участников команды, которых еще не оценил пользователь
-    teammates_to_rate = await queries.StudentQueries.get_teammates_not_rated(student.id)
+    teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
 
     if not teammates_to_rate:
         await message.answer(
@@ -41,7 +42,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         return
 
     # Создаем список имен для выбора
-    teammate_names = [teammate.name for teammate in teammates_to_rate]
+    teammate_names = [teammate['name'] for teammate in teammates_to_rate]
 
     await state.update_data(teammates_to_rate=teammates_to_rate)
     await state.set_state(states.ReviewProcess.teammate_selection)
@@ -61,14 +62,14 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
-    if not student or not getattr(student, 'team_memberships', None):
+    if not student or 'team' not in student:
         await message.answer("❌ Вы не состоите в команде.")
         return
 
     # Получаем оценки пользователя
-    ratings = await queries.RatingQueries.get_who_rated_me(student.id)
+    ratings = db.get_who_rated_me(student['student_id'])
 
     if not ratings:
         await message.answer(
@@ -79,7 +80,7 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         return
 
     # Получаем информацию о команде для статистики
-    teammates = await queries.StudentQueries.get_teammates(student.id)
+    teammates = db.get_teammates(student['student_id'])
     total_teammates = len(teammates)
     rated_count = len(ratings)
 
@@ -89,8 +90,10 @@ async def handle_who_rated_me(message: aiogram.types.Message):
     else:
         ratings_text = "*Меня оценили:*\n"
         for rating in ratings:
-            date_str = rating.rate_date.strftime("%d.%m.%Y")
-            ratings_text += f"• {rating.assessor.name} ({date_str})\n"
+            # For MySQL version, we don't have datetime objects, so we need to handle this differently
+            # Let's assume the date is already formatted as a string
+            date_str = rating.get('rate_date', 'Неизвестно')
+            ratings_text += f"• {rating['assessor_name']} ({date_str})\n"
 
     status_text = (
         f"*Статус оценок:*\n"
@@ -104,7 +107,36 @@ async def handle_who_rated_me(message: aiogram.types.Message):
     await message.answer(full_text, parse_mode="Markdown")
 
 
-# ... existing code ...
+@decorators.log_handler("process_rating_input")
+async def process_rating_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+    """Обработка ввода оценки"""
+    if message.text == "Отмена":
+        await cancel_review(message, state)
+        return
+
+    try:
+        rating = int(message.text.strip())
+    except ValueError:
+        await message.answer(
+            f"❌ Введите число от {config.MIN_RATING} до {config.MAX_RATING}:"
+        )
+        return
+
+    if rating < config.MIN_RATING or rating > config.MAX_RATING:
+        await message.answer(
+            f"❌ Оценка должна быть от {config.MIN_RATING} до {config.MAX_RATING}. Попробуйте еще раз:"
+        )
+        return
+
+    await state.update_data(overall_rating=rating)
+    await state.set_state(states.ReviewProcess.advantages_input)
+
+    await message.answer(
+        f"✅ Оценка: {rating}/10\n\n"
+        f"👍 *Положительные качества*\n"
+        f"Напишите положительные качества участника:",
+        parse_mode="Markdown"
+    )
 
 
 @decorators.log_handler("process_advantages_input")
@@ -185,13 +217,13 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
 async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Подтверждение отправки оценки"""
     if message.text == "Отправить":
-        student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+        student = db.get_student_by_tg_id(message.from_user.id)
         data = await state.get_data()
 
         try:
-            await queries.RatingQueries.create(
-                assessor_id=student.id,
-                assessed_id=data['selected_teammate'].id,
+            db.create_rating(
+                assessor_student_id=student['student_id'],
+                assessored_student_id=data['selected_teammate_id'],
                 overall_rating=data['overall_rating'],
                 advantages=data['advantages'],
                 disadvantages=data['disadvantages']
@@ -199,27 +231,39 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
 
             await state.clear()
 
-            # Возвращаем главное меню
-            has_team = bool(getattr(student, 'team_memberships', []))
-            is_admin = False
-            if has_team:
-                team_membership = student.team_memberships[0]
-                is_admin = team_membership.team.admin.id == student.id
-
-            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-
             await message.answer(
-                f"✅ *Оценка отправлена!*\n\n"
-                f"👤 {data['teammate_name']}\n"
-                f"⭐ Оценка: {data['overall_rating']}/10\n\n"
-                f"Спасибо за обратную связь!",
-                reply_markup=keyboard,
+                f"✅ *Оценка успешно отправлена!*\n\n"
+                f"👤 Участник: {data['teammate_name']}\n"
+                f"⭐ Оценка: {data['overall_rating']}/10",
                 parse_mode="Markdown"
             )
 
+            # Переходим на страницу "Оценить участников команды"
+            if config.ENABLE_REVIEWS:
+                teammates_to_rate = db.get_teammates_not_rated(student['student_id'])
+
+                if not teammates_to_rate:
+                    await message.answer(
+                        "✅ Вы уже оценили всех участников команды!\n\n"
+                        "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки."
+                    )
+                else:
+                    # Создаем список имен для выбора
+                    teammate_names = [teammate['name'] for teammate in teammates_to_rate]
+
+                    await state.update_data(teammates_to_rate=teammates_to_rate)
+                    await state.set_state(states.ReviewProcess.teammate_selection)
+
+                    await message.answer(
+                        "⭐ *Оценивание участников команды*\n\n"
+                        "Выберите участника для оценки:",
+                        reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
+                        parse_mode="Markdown"
+                    )
+
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при сохранении оценки: {e!s}\n"
+                f"❌ Ошибка при отправке оценки: {e!s}\n"
                 f"Попробуйте еще раз."
             )
             await state.clear()
@@ -229,17 +273,15 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
 
 
 async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Отмена процесса оценивания"""
+    """Отмена оценивания"""
     await state.clear()
-
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
+    student = db.get_student_by_tg_id(message.from_user.id)
 
     if student:
-        has_team = bool(getattr(student, 'team_memberships', []))
+        has_team = 'team' in student
         is_admin = False
         if has_team:
-            team_membership = student.team_memberships[0]
-            is_admin = team_membership.team.admin.id == student.id
+            is_admin = student['team']['admin_student_id'] == student['student_id']
 
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
     else:
@@ -249,14 +291,10 @@ async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.conte
 
 
 def register_reviews_handlers(dp: aiogram.Dispatcher):
-    """Регистрация обработчиков оценок"""
-    if not config.ENABLE_REVIEWS:
-        return
-
-    # Основные команды
+    """Регистрация обработчиков оценивания"""
     dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
     dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
-
-    # FSM для процесса оценивания (только текстовые поля)
+    dp.message.register(process_rating_input, states.ReviewProcess.rating_input)
     dp.message.register(process_advantages_input, states.ReviewProcess.advantages_input)
     dp.message.register(process_disadvantages_input, states.ReviewProcess.disadvantages_input)
+    dp.message.register(confirm_review, states.ReviewProcess.confirmation)

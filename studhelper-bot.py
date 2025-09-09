@@ -10,7 +10,7 @@ import asyncio
 
 import aiogram
 import aiogram.fsm.storage.memory
-import bot.database.client as db_client
+# import bot.database.client as db_client
 import bot.handlers.admin as admin_handlers
 import bot.handlers.callbacks as callback_handlers
 import bot.handlers.reports as reports_handlers
@@ -58,10 +58,6 @@ async def main():
     logger.info("StudHelper Bot starting...")
 
     try:
-        # Проверяем подключение к EdgeDB
-        client = await db_client.db_client.get_client()  # noqa: F841
-        logger.info("EdgeDB connection established")
-
         # Удаляем webhook если он активен
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook deleted (if it was active)")
@@ -72,8 +68,6 @@ async def main():
     except Exception as e:
         logger.error(f"Bot startup error: {e}")
     finally:
-        # Закрываем соединение с БД
-        await db_client.db_client.close()
         await bot.session.close()
 
 
