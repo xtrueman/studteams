@@ -76,9 +76,7 @@ def validate_rating(text: str) -> int | None:
     return None
 
 
-def is_valid_name(name: str) -> bool:
-    """Проверка валидности имени"""
-    return len(name.strip()) >= 2 and len(name.strip()) <= 64
+# ... existing code ...
 
 
 def is_valid_team_name(name: str) -> bool:

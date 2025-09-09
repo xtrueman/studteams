@@ -105,66 +105,7 @@ async def handle_who_rated_me(message: aiogram.types.Message):
     await message.answer(full_text, parse_mode="Markdown")
 
 
-@decorators.log_handler("process_teammate_selection")
-async def process_teammate_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Обработка выбора участника для оценки"""
-    if message.text == "Отмена":
-        await cancel_review(message, state)
-        return
-
-    data = await state.get_data()
-    teammates_to_rate = data.get('teammates_to_rate', [])
-
-    # Находим выбранного участника
-    selected_teammate = None
-    for teammate in teammates_to_rate:
-        if teammate.name == message.text:
-            selected_teammate = teammate
-            break
-
-    if not selected_teammate:
-        await message.answer("❌ Участник не найден. Выберите из предложенного списка:")
-        return
-
-    await state.update_data(
-        selected_teammate=selected_teammate,
-        teammate_name=selected_teammate.name
-    )
-    await state.set_state(states.ReviewProcess.rating_input)
-
-    await message.answer(
-        f"⭐ *Оценивание: {selected_teammate.name}*\n\n"
-        f"Поставьте общую оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-        reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
-        parse_mode="Markdown"
-    )
-
-
-@decorators.log_handler("process_rating_input")
-async def process_rating_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Обработка ввода оценки"""
-    if message.text == "Отмена":
-        await cancel_review(message, state)
-        return
-
-    rating = helpers.validate_rating(message.text)
-
-    if rating is None:
-        await message.answer(
-            f"❌ Неверная оценка. Введите число от {config.MIN_RATING} до {config.MAX_RATING}:"
-        )
-        return
-
-    data = await state.get_data()
-    await state.update_data(overall_rating=rating)
-    await state.set_state(states.ReviewProcess.advantages_input)
-
-    await message.answer(
-        f"✅ Оценка: {rating}/10\n\n"
-        f"👍 *Положительные качества*\n"
-        f"Напишите, что вам нравится в работе {data['teammate_name']}:",
-        parse_mode="Markdown"
-    )
+# ... existing code ...
 
 
 @decorators.log_handler("process_advantages_input")
@@ -318,6 +259,5 @@ def register_reviews_handlers(dp: aiogram.Dispatcher):
     dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
 
     # FSM для процесса оценивания (только текстовые поля)
-    # process_teammate_selection, process_rating_input, confirm_review теперь обрабатываются через callback
     dp.message.register(process_advantages_input, states.ReviewProcess.advantages_input)
     dp.message.register(process_disadvantages_input, states.ReviewProcess.disadvantages_input)

@@ -148,99 +148,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         await state.clear()
 
 
-@decorators.log_handler("delete_report")
-async def handle_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Начало удаления отчета"""
-    student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-
-    if not student:
-        await message.answer("❌ Вы не зарегистрированы в системе.")
-        return
-
-    # Получаем отчеты пользователя
-    reports = await queries.ReportQueries.get_by_student(student.id)
-
-    if not reports:
-        await message.answer("📋 У вас нет отчетов для удаления.")
-        return
-
-    # Создаем список спринтов с отчетами
-    sprint_options = [f"Спринт №{report.sprint_num}" for report in reports]
-
-    await state.set_state(states.ReportDeletion.sprint_selection)
-    await message.answer(
-        "🗑 *Удаление отчета*\n\n"
-        "Выберите спринт для удаления отчета:",
-        reply_markup=keyboards.get_dynamic_keyboard(sprint_options, columns=3),
-        parse_mode="Markdown"
-    )
-
-
-@decorators.log_handler("process_delete_sprint_selection")
-async def process_delete_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Обработка выбора спринта для удаления"""
-    if message.text == "Отмена":
-        await cancel_action(message, state)
-        return
-
-    sprint_num = helpers.extract_sprint_number(message.text)
-
-    if sprint_num is None:
-        await message.answer("❌ Неверный формат. Выберите спринт из списка:")
-        return
-
-    await state.update_data(sprint_num=sprint_num)
-    await state.set_state(states.ReportDeletion.confirmation)
-
-    await message.answer(
-        f"⚠️ *Подтверждение удаления*\n\n"
-        f"Вы действительно хотите удалить отчет по спринту №{sprint_num}?\n\n"
-        f"*Это действие нельзя отменить!*",
-        reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
-        parse_mode="Markdown"
-    )
-
-
-@decorators.log_handler("confirm_delete_report")
-async def confirm_delete_report(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
-    """Подтверждение удаления отчета"""
-    if message.text == "Удалить":
-        student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-        data = await state.get_data()
-
-        try:
-            await queries.ReportQueries.delete_report(
-                student_id=student.id,
-                sprint_num=data['sprint_num']
-            )
-
-            await state.clear()
-
-            # Возвращаем главное меню
-            has_team = bool(getattr(student, 'team_memberships', None))
-            is_admin = False
-            if has_team:
-                team_membership = student.team_memberships[0]
-                is_admin = team_membership.team.admin.id == student.id
-
-            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-
-            await message.answer(
-                f"🗑 *Отчет удален*\n\n"
-                f"📊 Спринт №{data['sprint_num']} - отчет успешно удален",
-                reply_markup=keyboard,
-                parse_mode="Markdown"
-            )
-
-        except Exception as e:
-            await message.answer(
-                f"❌ Ошибка при удалении отчета: {e!s}\n"
-                f"Попробуйте еще раз."
-            )
-            await state.clear()
-
-    elif message.text == "Отмена":
-        await cancel_action(message, state)
+# ... existing code ...
 
 
 async def cancel_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
@@ -268,11 +176,6 @@ def register_reports_handlers(dp: aiogram.Dispatcher):
     # Основные команды
     dp.message.register(handle_my_reports, F.text == "Мои отчёты")
     dp.message.register(handle_send_report, F.text == "Отправить отчёт")
-    # Кнопка "Удалить отчёт" удалена из главного меню
 
-    # FSM для создания отчета (только текстовые поля)
-    # process_sprint_selection теперь обрабатывается через callback
+    # FSM для создания отчета
     dp.message.register(process_report_text, states.ReportCreation.report_text)
-    # confirm_report больше не нужен - отчет сохраняется сразу
-
-    # handle_delete_report, process_delete_sprint_selection удалены из регистрации

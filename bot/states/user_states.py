@@ -27,14 +27,7 @@ class ReportCreation(aiogram.fsm.state.StatesGroup):
     report_text = aiogram.fsm.state.State()
 
 
-class ReportDeletion(aiogram.fsm.state.StatesGroup):
-    sprint_selection = aiogram.fsm.state.State()
-    confirmation = aiogram.fsm.state.State()
-
-
-class MemberRemoval(aiogram.fsm.state.StatesGroup):
-    member_selection = aiogram.fsm.state.State()
-    confirmation = aiogram.fsm.state.State()
+# ... existing code ...
 
 
 class ReviewProcess(aiogram.fsm.state.StatesGroup):
