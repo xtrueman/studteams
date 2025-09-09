@@ -103,8 +103,8 @@ class StudentQueries:
             )
             AND .id != <uuid>$assessor_id
             AND .id NOT IN (
-                SELECT TeamMemberRating.assessed.id
-                FILTER TeamMemberRating.assessor.id = <uuid>$assessor_id
+                SELECT (DETACHED TeamMemberRating).assessed.id
+                FILTER (DETACHED TeamMemberRating).assessor.id = <uuid>$assessor_id
             )
         """, assessor_id=assessor_id)
 
@@ -247,9 +247,6 @@ class RatingQueries:
         return await client.query("""
             SELECT TeamMemberRating {
                 assessor: { name },
-                overall_rating,
-                advantages,
-                disadvantages,
                 rate_date
             }
             FILTER .assessed.id = <uuid>$student_id

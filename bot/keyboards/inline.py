@@ -79,7 +79,6 @@ def get_ratings_inline_keyboard():
         row2.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
 
     keyboard.extend([row1, row2])
-    keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
@@ -107,16 +106,7 @@ def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns:
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-def get_skip_cancel_inline_keyboard(skip_text: str = "⏭️ Пропустить", cancel_text: str = "❌ Отмена"):
-    """Inline клавиатура с кнопками Пропустить/Отмена"""
-    return aiogram.types.InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                aiogram.types.InlineKeyboardButton(text=skip_text, callback_data="skip"),
-                aiogram.types.InlineKeyboardButton(text=cancel_text, callback_data="cancel")
-            ]
-        ]
-    )
+# Удалено: get_skip_cancel_inline_keyboard - больше не используется
 
 # Специфичные клавиатуры для различных действий
 

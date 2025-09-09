@@ -25,6 +25,11 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
     else:
         # Участники команды
         row1 = [aiogram.types.KeyboardButton(text="Моя команда")]
+        
+        # Добавляем кнопку "Отчёт о команде" справа от "Моя команда" для админов при включенных отзывах
+        if is_admin and config.ENABLE_REVIEWS:
+            row1.append(aiogram.types.KeyboardButton(text="Отчёт о команде"))
+            
         row2 = [
             aiogram.types.KeyboardButton(text="Мои отчёты"),
             aiogram.types.KeyboardButton(text="Отправить отчёт")
@@ -36,12 +41,6 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
                 aiogram.types.KeyboardButton(text="Кто меня оценил?")
             ]
             keyboard.keyboard.append(row4)
-
-        if is_admin:
-            # Кнопка "Отчёт о команде" только если включены отзывы
-            if config.ENABLE_REVIEWS:
-                admin_row = [aiogram.types.KeyboardButton(text="Отчёт о команде")]
-                keyboard.keyboard.append(admin_row)
 
         keyboard.keyboard.extend([row1, row2])
 

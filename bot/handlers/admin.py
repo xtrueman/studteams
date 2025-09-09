@@ -155,7 +155,7 @@ async def handle_team_report(message: aiogram.types.Message):
         # Формируем список всех участников включая админа
         all_members = [*list(teammates), MockStudent(student)]
 
-        report_text = f"📊 *Отчет о команде: {team.team_name}*\\n\\n"
+        report_text = f"📊 *Отчет о команде «{team.team_name}»:*\n\n"
 
         for member in all_members:
             # Получаем отчеты участника

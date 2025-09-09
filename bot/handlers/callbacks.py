@@ -527,57 +527,11 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
             f"✅ Оценка: {rating}/10\n\n"
             f"👍 *Положительные качества*\n"
             f"Напишите, что вам нравится в работе {data['teammate_name']}:",
-            reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
             parse_mode="Markdown"
         )
     await callback.answer()
 
 # Skip/Cancel Callbacks (for reviews)
-
-
-@decorators.log_handler("callback_skip")
-async def callback_skip(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
-    """Callback обработчик пропуска ввода"""
-    current_state = await state.get_state()
-
-    if current_state == states.ReviewProcess.advantages_input:
-        data = await state.get_data()
-        await state.update_data(advantages="Не указано")
-        await state.set_state(states.ReviewProcess.disadvantages_input)
-
-        if callback.message:
-            await callback.message.edit_text(
-                f"✅ Положительные качества записаны\n\n"
-                f"📈 *Области для улучшения*\n"
-                f"Напишите, что {data['teammate_name']} мог бы улучшить:",
-                reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
-                parse_mode="Markdown"
-            )
-
-    elif current_state == states.ReviewProcess.disadvantages_input:
-        await state.update_data(disadvantages="Не указано")
-        await state.set_state(states.ReviewProcess.confirmation)
-
-        # Показываем итоговую оценку
-        data = await state.get_data()
-
-        confirmation_text = (
-            f"📋 *Проверьте оценку:*\n\n"
-            f"👤 Участник: {data['teammate_name']}\n"
-            f"⭐ Оценка: {data['overall_rating']}/10\n"
-            f"👍 Плюсы: {data['advantages'][:100]}{'...' if len(data['advantages']) > 100 else ''}\n"
-            f"📈 Что улучшить: {data['disadvantages'][:100]}{'...' if len(data['disadvantages']) > 100 else ''}\n\n"
-            f"Отправить оценку?"
-        )
-
-        if callback.message:
-            await callback.message.edit_text(
-                confirmation_text,
-                reply_markup=inline_keyboards.get_review_confirm_keyboard(),
-                parse_mode="Markdown"
-            )
-
-    await callback.answer()
 
 # Review Confirm Callbacks
 
@@ -591,7 +545,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
     try:
         await queries.RatingQueries.create(
             assessor_id=student.id,
-            assessed_id=data['selected_teammate']['id'],
+            assessed_id=data['selected_teammate'].id,
             overall_rating=data['overall_rating'],
             advantages=data['advantages'],
             disadvantages=data['disadvantages']
@@ -850,7 +804,6 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     # Review callbacks - specific callbacks first
     dp.callback_query.register(callback_confirm_review, F.data == "confirm_review")
     dp.callback_query.register(callback_cancel_review, F.data == "cancel_review")
-    dp.callback_query.register(callback_skip, F.data == "skip")
 
     # Member management callbacks - specific callbacks first
     dp.callback_query.register(callback_confirm_remove_member, F.data == "confirm_remove_member")

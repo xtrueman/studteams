@@ -84,10 +84,17 @@ async def handle_who_rated_me(message: aiogram.types.Message):
     total_teammates = len(teammates)
     rated_count = len(ratings)
 
-    ratings_text = helpers.format_ratings_list(ratings)
+    # Формируем текст со списком оценивших
+    if not ratings:
+        ratings_text = "⭐ Вас пока никто не оценил"
+    else:
+        ratings_text = "*Меня оценили:*\n"
+        for rating in ratings:
+            date_str = rating.rate_date.strftime("%d.%m.%Y")
+            ratings_text += f"• {rating.assessor.name} ({date_str})\n"
 
     status_text = (
-        f"📊 *Статус оценок:*\n"
+        f"*Статус оценок:*\n"
         f"✅ Оценили: {rated_count}\n"
         f"⏳ Осталось: {total_teammates - rated_count}\n"
         f"👥 Всего участников: {total_teammates}\n\n"
@@ -156,7 +163,6 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         f"✅ Оценка: {rating}/10\n\n"
         f"👍 *Положительные качества*\n"
         f"Напишите, что вам нравится в работе {data['teammate_name']}:",
-        reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
         parse_mode="Markdown"
     )
 
@@ -168,7 +174,14 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
         await cancel_review(message, state)
         return
 
-    advantages = "Не указано" if message.text == "Пропустить" else message.text.strip()
+    advantages = message.text.strip() if message.text and message.text.strip() else ""
+
+    if len(advantages) < 15:
+        await message.answer(
+            "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
+            "👍 Напишите положительные качества ещё раз:"
+        )
+        return
 
     if len(advantages) > 1000:
         await message.answer("❌ Текст слишком длинный. Максимум 1000 символов:")
@@ -182,7 +195,6 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
         f"✅ Положительные качества записаны\n\n"
         f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
-        reply_markup=inline_keyboards.get_skip_cancel_inline_keyboard("Пропустить", "Отмена"),
         parse_mode="Markdown"
     )
 
@@ -194,7 +206,14 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
         await cancel_review(message, state)
         return
 
-    disadvantages = "Не указано" if message.text == "Пропустить" else message.text.strip()
+    disadvantages = message.text.strip() if message.text and message.text.strip() else ""
+
+    if len(disadvantages) < 15:
+        await message.answer(
+            "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
+            "📈 Напишите области для улучшения ещё раз:"
+        )
+        return
 
     if len(disadvantages) > 1000:
         await message.answer("❌ Текст слишком длинный. Максимум 1000 символов:")

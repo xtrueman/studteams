@@ -92,9 +92,9 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
 
     report_text = message.text.strip()
 
-    if len(report_text) < 10:
+    if len(report_text) < 20:
         await message.answer(
-            "❌ Отчет слишком короткий. Минимум 10 символов. Попробуйте еще раз:"
+            "❌ Отчет слишком короткий. Минимум 20 символов. Попробуйте еще раз:"
         )
         return
 

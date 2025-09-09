@@ -52,21 +52,7 @@ def format_reports_list(reports) -> str:
     return text
 
 
-def format_ratings_list(ratings) -> str:
-    """Форматирование списка оценок"""
-    if not ratings:
-        return "⭐ Вас пока никто не оценил"
-
-    text = "⭐ *Ваши оценки:*\n\n"
-    for rating in ratings:
-        date_str = rating.rate_date.strftime("%d.%m.%Y")
-        text += f"👤 *{rating.assessor.name}*\n"
-        text += f"⭐ Оценка: {rating.overall_rating}/10\n"
-        text += f"✅ Плюсы: {rating.advantages}\n"
-        text += f"📈 Что улучшить: {rating.disadvantages}\n"
-        text += f"📅 {date_str}\n\n"
-
-    return text
+# ... existing code ...
 
 
 def extract_sprint_number(text: str) -> int | None:
