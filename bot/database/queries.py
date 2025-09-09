@@ -5,7 +5,6 @@
 """
 
 import uuid
-
 import bot.database.client as db_client
 
 
@@ -221,7 +220,8 @@ class RatingQueries:
     @staticmethod
     async def create(assessor_id: uuid.UUID, assessed_id: uuid.UUID, overall_rating: int, advantages: str, disadvantages: str):
         client = await db_client.db_client.get_client()
-        await client.execute("""
+        await client.execute(
+            """
             INSERT TeamMemberRating {
                 assessor := (SELECT Student FILTER .id = <uuid>$assessor_id),
                 assessed := (SELECT Student FILTER .id = <uuid>$assessed_id),
@@ -230,9 +230,9 @@ class RatingQueries:
                 disadvantages := <str>$disadvantages
             }
         """,
-                    assessor_id=assessor_id, assessed_id=assessed_id,
-                    overall_rating=overall_rating, advantages=advantages,
-                    disadvantages=disadvantages)
+            assessor_id=assessor_id, assessed_id=assessed_id,
+            overall_rating=overall_rating, advantages=advantages,
+            disadvantages=disadvantages)
     
     @staticmethod
     async def get_who_rated_me(student_id: uuid.UUID):
