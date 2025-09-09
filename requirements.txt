@@ -3,3 +3,5 @@ edgedb
 python-dotenv
 pydantic
 loguru
+mysql-connector-python
+pytest
