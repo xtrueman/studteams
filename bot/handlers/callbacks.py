@@ -122,7 +122,12 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
     }
 
     if callback.data == "cancel":
-        await callback_cancel_join_team(callback, state)
+        # Проверяем текущее состояние, чтобы понять контекст отмены
+        current_state = await state.get_state()
+        if current_state and "JoinTeam" in str(current_state):
+            await callback_cancel_join_team(callback, state)
+        else:
+            await callback_cancel_action(callback, state)
         return
 
     if not callback.data:
@@ -456,7 +461,12 @@ async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, s
 async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик выбора участника для оценки"""
     if callback.data == "cancel":
-        await callback_cancel_review(callback, state)
+        # Проверяем текущее состояние
+        current_state = await state.get_state()
+        if current_state and "ReviewProcess" in str(current_state):
+            await callback_cancel_review(callback, state)
+        else:
+            await callback_cancel_action(callback, state)
         return
 
     if not callback.data.startswith("teammate_"):
@@ -827,29 +837,31 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     dp.callback_query.register(callback_confirm_team_registration, F.data == "confirm_team_reg")
     dp.callback_query.register(callback_cancel_team_registration, F.data == "cancel_team_reg")
 
-    # Role selection callbacks
-    dp.callback_query.register(
-        callback_role_selection,
-        F.data.in_(["role_po", "role_sm", "role_dev", "role_member", "cancel"])
-    )
-
     # Join team callbacks
     dp.callback_query.register(callback_confirm_join_team, F.data == "confirm_join_team")
     dp.callback_query.register(callback_cancel_join_team, F.data == "cancel_join_team")
 
-    # Sprint selection callbacks
-    dp.callback_query.register(callback_sprint_selection, F.data.startswith("sprint_") | (F.data == "cancel"))
-
-    # Report callbacks
+    # Report callbacks - specific callbacks first
     dp.callback_query.register(callback_confirm_report, F.data == "confirm_report")
     dp.callback_query.register(callback_cancel_report, F.data == "cancel_report")
     dp.callback_query.register(callback_confirm_delete_report, F.data == "confirm_delete_report")
     dp.callback_query.register(callback_cancel_delete_report, F.data == "cancel_delete_report")
 
-    # Member selection callbacks
-    dp.callback_query.register(callback_member_selection, F.data.startswith("member_") | (F.data == "cancel"))
+    # Review callbacks - specific callbacks first
+    dp.callback_query.register(callback_confirm_review, F.data == "confirm_review")
+    dp.callback_query.register(callback_cancel_review, F.data == "cancel_review")
+    dp.callback_query.register(callback_skip, F.data == "skip")
+
+    # Member management callbacks - specific callbacks first
     dp.callback_query.register(callback_confirm_remove_member, F.data == "confirm_remove_member")
     dp.callback_query.register(callback_cancel_remove_member, F.data == "cancel_remove_member")
+
+    # Pattern-based callbacks with mixed patterns - more specific first
+    dp.callback_query.register(callback_role_selection, F.data.in_(["role_po", "role_sm", "role_dev", "role_member"]))
+    dp.callback_query.register(callback_sprint_selection, F.data.startswith("sprint_"))
+    dp.callback_query.register(callback_member_selection, F.data.startswith("member_"))
+    dp.callback_query.register(callback_teammate_selection, F.data.startswith("teammate_"))
+    dp.callback_query.register(callback_rating_selection, F.data.startswith("rating_"))
 
     # Team member management callbacks (inline)
     dp.callback_query.register(callback_edit_member, F.data.startswith("edit_member_"))
@@ -859,12 +871,5 @@ def register_callback_handlers(dp: aiogram.Dispatcher):
     dp.callback_query.register(callback_edit_report, F.data.startswith("edit_report_"))
     dp.callback_query.register(callback_delete_report_inline, F.data.startswith("delete_report_"))
 
-    # Review callbacks
-    dp.callback_query.register(callback_teammate_selection, F.data.startswith("teammate_") | (F.data == "cancel"))
-    dp.callback_query.register(callback_rating_selection, F.data.startswith("rating_") | (F.data == "cancel"))
-    dp.callback_query.register(callback_skip, F.data == "skip")
-    dp.callback_query.register(callback_confirm_review, F.data == "confirm_review")
-    dp.callback_query.register(callback_cancel_review, F.data == "cancel_review")
-
-    # General cancel callback (fallback)
+    # General cancel callback (fallback) - MUST BE LAST
     dp.callback_query.register(callback_cancel_action, F.data == "cancel")
