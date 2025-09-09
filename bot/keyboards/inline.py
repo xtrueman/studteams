@@ -181,20 +181,20 @@ def get_report_management_keyboard(reports):
         # Кнопки для каждого отчета
         for report in reports:
             # Обрезаем длинный текст отчета для отображения
-            preview_text = report.report_text[:30] if len(report.report_text) > 30 else report.report_text
-            if len(report.report_text) > 30:
+            preview_text = report['report_text'][:30] if len(report['report_text']) > 30 else report['report_text']
+            if len(report['report_text']) > 30:
                 preview_text += "..."
 
-            sprint_text = f"Спринт №{report.sprint_num}"
+            sprint_text = f"Спринт №{report['sprint_num']}"
 
             keyboard.append([
                 aiogram.types.InlineKeyboardButton(
                     text=f"✏️ {sprint_text}",
-                    callback_data=f"edit_report_{report.sprint_num}"
+                    callback_data=f"edit_report_{report['sprint_num']}"
                 ),
                 aiogram.types.InlineKeyboardButton(
                     text="🗑️ Удалить",
-                    callback_data=f"delete_report_{report.sprint_num}"
+                    callback_data=f"delete_report_{report['sprint_num']}"
                 )
             ])
 

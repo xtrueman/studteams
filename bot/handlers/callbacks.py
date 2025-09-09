@@ -352,7 +352,7 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
             f"📊 Спринт: №{sprint_num}\n\n"
             f"Текущий текст отчета:\n{report_to_edit['report_text'][:200]}{'...' if len(report_to_edit['report_text']) > 200 else ''}\n\n"
             f"Введите новый текст отчета:",
-            reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
+            reply_markup=inline_keyboards.get_confirmation_inline_keyboard("Отмена", "Назад", "cancel", "back"),
             parse_mode="Markdown"
         )
     await callback.answer()
@@ -385,7 +385,7 @@ async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, s
             f"⚠️ *Подтверждение удаления*\n\n"
             f"Вы действительно хотите удалить отчет за *Спринт №{sprint_num}*?\n\n"
             f"*Это действие нельзя отменить!*",
-            reply_markup=inline_keyboards.get_report_deletion_confirm_keyboard(),
+            reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
             parse_mode="Markdown"
         )
     await callback.answer()
@@ -653,7 +653,7 @@ async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state
         await callback.message.edit_text(
             f"✅ Спринт №{sprint_num}\n\n"
             f"📝 Введите текст отчета о проделанной работе:",
-            reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
+            reply_markup=inline_keyboards.get_confirmation_inline_keyboard("Отмена", "Назад", "cancel", "back"),
             parse_mode="Markdown"
         )
     await callback.answer()

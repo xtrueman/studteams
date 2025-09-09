@@ -27,12 +27,15 @@ class ReportCreation(aiogram.fsm.state.StatesGroup):
     report_text = aiogram.fsm.state.State()
 
 
-# ... existing code ...
-
-
 class ReviewProcess(aiogram.fsm.state.StatesGroup):
     teammate_selection = aiogram.fsm.state.State()
     rating_input = aiogram.fsm.state.State()
     advantages_input = aiogram.fsm.state.State()
     disadvantages_input = aiogram.fsm.state.State()
     confirmation = aiogram.fsm.state.State()
+
+
+class AdminActions(aiogram.fsm.state.StatesGroup):
+    select_member = aiogram.fsm.state.State()
+    confirm_removal = aiogram.fsm.state.State()
+    select_member_stats = aiogram.fsm.state.State()

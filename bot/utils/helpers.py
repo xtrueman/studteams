@@ -119,7 +119,7 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     # import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
 
-    student = db.get_student_by_tg_id(tg_id)
+    student = db.student_get_by_tg_id(tg_id)
 
     if not student or 'team' not in student:
         return None
@@ -127,7 +127,7 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     team = student['team']
 
     # Получаем всех участников команды
-    teammates = db.get_teammates(student['student_id'])
+    teammates = db.student_get_teammates(student['student_id'])
 
     # Создаем объект для текущего пользователя
     class MockStudent:
