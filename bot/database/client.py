@@ -5,6 +5,7 @@
 """
 
 import edgedb
+import config
 
 
 class EdgeDBClient:
@@ -13,8 +14,12 @@ class EdgeDBClient:
 
     async def get_client(self):
         if self._client is None:
-            # Простое решение - используем стандартные переменные окружения EdgeDB
-            self._client = edgedb.create_async_client()
+            # Используем DSN из конфигурации с отключенной проверкой SSL
+            kwargs = {}
+            if config.EDGEDB_DSN:
+                kwargs["dsn"] = config.EDGEDB_DSN
+
+            self._client = edgedb.create_async_client(**kwargs)
         return self._client
 
     async def close(self):
