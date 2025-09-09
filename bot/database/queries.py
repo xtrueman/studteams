@@ -6,8 +6,6 @@
 
 import uuid
 
-import bot.database.client as db_client
-
 
 class StudentQueries:
     """Запросы для работы с студентами"""

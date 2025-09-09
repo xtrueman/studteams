@@ -15,7 +15,6 @@ import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
-import bot.utils.helpers as helpers
 
 
 @decorators.log_handler("rate_teammates")
