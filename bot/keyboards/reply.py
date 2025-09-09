@@ -15,7 +15,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
         resize_keyboard=True,
         one_time_keyboard=False
     )
-    
+
     if not has_team:
         # Незарегистрированные пользователи
         keyboard.keyboard.append([
@@ -36,15 +36,15 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
                 aiogram.types.KeyboardButton(text="Кто меня оценил?")
             ]
             keyboard.keyboard.append(row4)
-        
+
         if is_admin:
             # Кнопка "Отчёт о команде" только если включены отзывы
             if config.ENABLE_REVIEWS:
                 admin_row = [aiogram.types.KeyboardButton(text="Отчёт о команде")]
                 keyboard.keyboard.append(admin_row)
-        
+
         keyboard.keyboard.extend([row1, row2])
-        
+
         # Последняя строка - служебные кнопки
         last_row = [
             aiogram.types.KeyboardButton(text="Помощь"),
@@ -77,13 +77,13 @@ def get_roles_keyboard():
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    
+
     for i in range(0, len(roles), 2):
         row = [aiogram.types.KeyboardButton(text=roles[i])]
         if i + 1 < len(roles):
             row.append(aiogram.types.KeyboardButton(text=roles[i + 1]))
         keyboard.keyboard.append(row)
-    
+
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
 
@@ -95,16 +95,16 @@ def get_sprints_keyboard():
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    
+
     sprints = [f"Спринт №{i}" for i in range(1, config.MAX_SPRINT_NUMBER + 1)]
-    
+
     for i in range(0, len(sprints), 3):
         row = []
         for j in range(3):
             if i + j < len(sprints):
                 row.append(aiogram.types.KeyboardButton(text=sprints[i + j]))
         keyboard.keyboard.append(row)
-    
+
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
 
@@ -116,12 +116,12 @@ def get_ratings_keyboard():
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    
+
     # Первая строка: 1-5
     row1 = [aiogram.types.KeyboardButton(text=str(i)) for i in range(config.MIN_RATING, 6)]
     # Вторая строка: 6-10
     row2 = [aiogram.types.KeyboardButton(text=str(i)) for i in range(6, config.MAX_RATING + 1)]
-    
+
     keyboard.keyboard.extend([row1, row2])
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
@@ -134,13 +134,13 @@ def get_dynamic_keyboard(items: list[str], columns: int = 2):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    
+
     for i in range(0, len(items), columns):
         row = []
         for j in range(columns):
             if i + j < len(items):
                 row.append(aiogram.types.KeyboardButton(text=items[i + j]))
         keyboard.keyboard.append(row)
-    
+
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard

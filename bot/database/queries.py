@@ -5,11 +5,12 @@
 """
 
 import uuid
+
 import bot.database.client as db_client
 
 
 class StudentQueries:
-    
+
     @staticmethod
     async def get_by_tg_id(tg_id: int):
         client = await db_client.db_client.get_client()
@@ -32,7 +33,7 @@ class StudentQueries:
             }
             FILTER .tg_id = <int64>$tg_id
         """, tg_id=tg_id)
-    
+
     @staticmethod
     async def get_by_id(student_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -45,7 +46,7 @@ class StudentQueries:
             }
             FILTER .id = <uuid>$student_id
         """, student_id=student_id)
-    
+
     @staticmethod
     async def create(tg_id: int, name: str, group_num: str | None = None):
         client = await db_client.db_client.get_client()
@@ -63,7 +64,7 @@ class StudentQueries:
                 group_num
             }
         """, tg_id=tg_id, name=name, group_num=group_num)
-    
+
     @staticmethod
     async def get_teammates(student_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -84,7 +85,7 @@ class StudentQueries:
             )
             AND .id != <uuid>$student_id
         """, student_id=student_id)
-    
+
     @staticmethod
     async def get_teammates_not_rated(assessor_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -109,7 +110,7 @@ class StudentQueries:
 
 
 class TeamQueries:
-    
+
     @staticmethod
     async def create(team_name: str, product_name: str, invite_code: str, admin_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -128,7 +129,7 @@ class TeamQueries:
                 invite_code
             }
         """, team_name=team_name, product_name=product_name, invite_code=invite_code, admin_id=admin_id)
-    
+
     @staticmethod
     async def get_by_invite_code(invite_code: str):
         client = await db_client.db_client.get_client()
@@ -142,7 +143,7 @@ class TeamQueries:
             }
             FILTER .invite_code = <str>$invite_code
         """, invite_code=invite_code)
-    
+
     @staticmethod
     async def add_member(team_id: uuid.UUID, student_id: uuid.UUID, role: str):
         client = await db_client.db_client.get_client()
@@ -153,7 +154,7 @@ class TeamQueries:
                 role := <str>$role
             }
         """, team_id=team_id, student_id=student_id, role=role)
-    
+
     @staticmethod
     async def remove_member(team_id: uuid.UUID, student_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -164,7 +165,7 @@ class TeamQueries:
 
 
 class ReportQueries:
-    
+
     @staticmethod
     async def create_or_update(student_id: uuid.UUID, sprint_num: int, report_text: str):
         client = await db_client.db_client.get_client()
@@ -173,7 +174,7 @@ class ReportQueries:
             SELECT SprintReport { id }
             FILTER .student.id = <uuid>$student_id AND .sprint_num = <int32>$sprint_num
         """, student_id=student_id, sprint_num=sprint_num)
-        
+
         if existing:
             await client.execute("""
                 UPDATE SprintReport
@@ -191,7 +192,7 @@ class ReportQueries:
                     report_text := <str>$report_text
                 }
             """, student_id=student_id, sprint_num=sprint_num, report_text=report_text)
-    
+
     @staticmethod
     async def get_by_student(student_id: uuid.UUID):
         client = await db_client.db_client.get_client()
@@ -205,7 +206,7 @@ class ReportQueries:
             FILTER .student.id = <uuid>$student_id
             ORDER BY .sprint_num
         """, student_id=student_id)
-    
+
     @staticmethod
     async def delete_report(student_id: uuid.UUID, sprint_num: int):
         client = await db_client.db_client.get_client()
@@ -216,7 +217,7 @@ class ReportQueries:
 
 
 class RatingQueries:
-    
+
     @staticmethod
     async def create(assessor_id: uuid.UUID, assessed_id: uuid.UUID, overall_rating: int, advantages: str, disadvantages: str):
         client = await db_client.db_client.get_client()
@@ -233,7 +234,7 @@ class RatingQueries:
             assessor_id=assessor_id, assessed_id=assessed_id,
             overall_rating=overall_rating, advantages=advantages,
             disadvantages=disadvantages)
-    
+
     @staticmethod
     async def get_who_rated_me(student_id: uuid.UUID):
         client = await db_client.db_client.get_client()

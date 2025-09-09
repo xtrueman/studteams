@@ -22,10 +22,10 @@ import bot.utils.decorators as decorators
 async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработчик команды /start"""
     await state.clear()
-    
+
     # Проверяем, есть ли код приглашения в команде
     args = message.text.split()[1:] if len(message.text.split()) > 1 else []
-    
+
     if args:
         # /start с кодом приглашения
         invite_code = args[0]
@@ -38,16 +38,16 @@ async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.F
 async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка обычного старта без кода"""
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-    
+
     if student:
         # Пользователь уже зарегистрирован
         has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
-        
+
         if has_team:
             team_membership = student.team_memberships[0]
             is_admin = team_membership.team.admin.id == student.id
-        
+
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         await message.answer(tgtexts.WELCOME_MESSAGE, reply_markup=keyboard, parse_mode="Markdown")
     else:
@@ -65,25 +65,25 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
     """Обработка присоединения к команде по коду"""
     # Проверяем код приглашения
     team = await queries.TeamQueries.get_by_invite_code(invite_code)
-    
+
     if not team:
         await message.answer(
             "❌ Неверный код приглашения. Обратитесь к администратору команды за новой ссылкой."
         )
         return
-    
+
     # Проверяем, не зарегистрирован ли уже пользователь
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-    
+
     if student and getattr(student, 'team_memberships', None):
         await message.answer(
             "❌ Вы уже состоите в команде. Для смены команды обратитесь к администратору."
         )
         return
-    
+
     # Сохраняем данные команды в состояние
     await state.update_data(team_id=team.id, team_name=team.team_name)
-    
+
     if student:
         # Пользователь есть в системе, но не в команде - сразу выбираем роль
         await state.set_state(states.JoinTeam.user_role)
@@ -119,17 +119,17 @@ async def handle_help_button(message: aiogram.types.Message):
 async def handle_update_button(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработчик кнопки Обновить"""
     await state.clear()
-    
+
     student = await queries.StudentQueries.get_by_tg_id(message.from_user.id)
-    
+
     if student:
         has_team = bool(getattr(student, 'team_memberships', []))
         is_admin = False
-        
+
         if has_team:
             team_membership = student.team_memberships[0]
             is_admin = team_membership.team.admin.id == student.id
-        
+
         keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         await message.answer("🔄 Меню обновлено", reply_markup=keyboard)
     else:

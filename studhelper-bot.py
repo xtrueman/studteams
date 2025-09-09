@@ -38,15 +38,15 @@ async def main():
     if not config.BOT_TOKEN:
         logger.error("BOT_TOKEN not set in config.py")
         return
-    
+
     # Создаем бота и диспетчер
     bot = aiogram.Bot(token=config.BOT_TOKEN)
     storage = aiogram.fsm.storage.memory.MemoryStorage()
     dp = aiogram.Dispatcher(storage=storage)
-    
+
     # Регистрируем middleware для логирования
     dp.update.middleware(logging_middleware.LoggingMiddleware())
-    
+
     # Регистрируем обработчики
     start_handlers.register_start_handlers(dp)
     team_handlers.register_team_handlers(dp)
@@ -54,21 +54,21 @@ async def main():
     reviews_handlers.register_reviews_handlers(dp)
     admin_handlers.register_admin_handlers(dp)
     callback_handlers.register_callback_handlers(dp)
-    
+
     logger.info("StudHelper Bot starting...")
-    
+
     try:
         # Проверяем подключение к EdgeDB
         client = await db_client.db_client.get_client()  # noqa: F841
         logger.info("EdgeDB connection established")
-        
+
         # Удаляем webhook если он активен
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook deleted (if it was active)")
-        
+
         # Запускаем polling
         await dp.start_polling(bot)
-        
+
     except Exception as e:
         logger.error(f"Bot startup error: {e}")
     finally:

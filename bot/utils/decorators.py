@@ -18,11 +18,11 @@ def log_handler(handler_name: str = None):
             name = handler_name or func.__name__
             user_id = message.from_user.id
             username = message.from_user.username or "None"
-            
+
             loguru.logger.info(
                 f"Handler '{name}' called by user_id={user_id} username=@{username}"
             )
-            
+
             try:
                 result = await func(message, *args, **kwargs)
                 loguru.logger.debug(
@@ -34,6 +34,6 @@ def log_handler(handler_name: str = None):
                     f"Handler '{name}' failed for user_id={user_id}: {type(e).__name__}: {str(e)}"
                 )
                 raise
-        
+
         return wrapper
     return decorator

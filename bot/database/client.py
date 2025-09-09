@@ -10,7 +10,7 @@ import edgedb
 class EdgeDBClient:
     def __init__(self):
         self._client = None
-    
+
     async def get_client(self):
         if self._client is None:
             # Простое решение - используем стандартные переменные окружения EdgeDB

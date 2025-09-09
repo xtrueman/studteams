@@ -31,16 +31,16 @@ def get_roles_inline_keyboard():
         ("💻 Разработчик", "role_dev"),
         ("👥 Участник команды", "role_member")
     ]
-    
+
     keyboard = []
     for i in range(0, len(roles), 2):
         row = [aiogram.types.InlineKeyboardButton(text=roles[i][0], callback_data=roles[i][1])]
         if i + 1 < len(roles):
             row.append(aiogram.types.InlineKeyboardButton(text=roles[i + 1][0], callback_data=roles[i + 1][1]))
         keyboard.append(row)
-    
+
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-    
+
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
@@ -48,7 +48,7 @@ def get_sprints_inline_keyboard():
     """Inline клавиатура выбора спринта"""
     keyboard = []
     sprints = [f"Спринт №{i}" for i in range(1, config.MAX_SPRINT_NUMBER + 1)]
-    
+
     for i in range(0, len(sprints), 3):
         row = []
         for j in range(3):
@@ -59,7 +59,7 @@ def get_sprints_inline_keyboard():
                     callback_data=f"sprint_{sprint_num}"
                 ))
         keyboard.append(row)
-    
+
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -67,19 +67,19 @@ def get_sprints_inline_keyboard():
 def get_ratings_inline_keyboard():
     """Inline клавиатура выбора оценки"""
     keyboard = []
-    
+
     # Первая строка: 1-5
     row1 = []
     for i in range(config.MIN_RATING, 6):
         row1.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
     keyboard.append(row1)
-    
+
     # Вторая строка: 6-10
     row2 = []
     for i in range(6, config.MAX_RATING + 1):
         row2.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
     keyboard.append(row2)
-    
+
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -87,7 +87,7 @@ def get_ratings_inline_keyboard():
 def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns: int = 2):
     """Динамическая inline клавиатура для списков (участники, отчеты и т.д.)"""
     keyboard = []
-    
+
     for i in range(0, len(items), columns):
         row = []
         for j in range(columns):
@@ -97,13 +97,13 @@ def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns:
                 item_text = items[item_index]
                 if len(item_text) > 20:
                     item_text = item_text[:17] + "..."
-                    
+
                 row.append(aiogram.types.InlineKeyboardButton(
                     text=item_text,
                     callback_data=f"{callback_prefix}_{item_index}"
                 ))
         keyboard.append(row)
-    
+
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
@@ -155,7 +155,7 @@ def get_review_confirm_keyboard():
 def get_team_member_management_keyboard(members, current_user_id, is_admin=False):
     """Клавиатура управления участниками команды"""
     keyboard = []
-    
+
     if is_admin and len(members) > 1:  # Можно удалять только если есть кого удалять
         # Кнопки для каждого участника (кроме самого админа)
         for member in members:
@@ -164,7 +164,7 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                 name = member.student.name
                 if len(name) > 15:
                     name = name[:12] + "..."
-                
+
                 keyboard.append([
                     aiogram.types.InlineKeyboardButton(
                         text=f"✏️ {name}",
@@ -175,14 +175,14 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                         callback_data=f"remove_member_{member.student.id}"
                     )
                 ])
-    
+
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
 def get_report_management_keyboard(reports):
     """Клавиатура управления отчетами"""
     keyboard = []
-    
+
     if reports:
         # Кнопки для каждого отчета
         for report in reports:
@@ -190,9 +190,9 @@ def get_report_management_keyboard(reports):
             preview_text = report.report_text[:30] if len(report.report_text) > 30 else report.report_text
             if len(report.report_text) > 30:
                 preview_text += "..."
-            
+
             sprint_text = f"Спринт №{report.sprint_num}"
-            
+
             keyboard.append([
                 aiogram.types.InlineKeyboardButton(
                     text=f"✏️ {sprint_text}",

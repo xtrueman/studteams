@@ -20,16 +20,16 @@ def format_team_info(team_data, members_data, invite_link_text: Optional[str] = 
     """Форматирование информации о команде"""
     if not team_data:
         return "❌ Команда не найдена"
-    
+
     text = f"👥 *{team_data.team_name}*\n"
     text += f"📱 Продукт: {team_data.product_name}\n"
     text += f"👑 Администратор: {team_data.admin.name}\n"
-    
+
     # Добавляем ссылку-приглашение перед списком участников
     if invite_link_text:
         text += invite_link_text
     text += "\n"
-    
+
     if members_data:
         text += "*Участники команды:*\n"
         for i, member in enumerate(members_data, 1):
@@ -37,7 +37,7 @@ def format_team_info(team_data, members_data, invite_link_text: Optional[str] = 
             text += f"{i}. {role_icon} {member.student.name} — {member.role}\n"
     else:
         text += "Участников пока нет\n"
-    
+
     return text
 
 
@@ -45,12 +45,12 @@ def format_reports_list(reports) -> str:
     """Форматирование списка отчетов"""
     if not reports:
         return "📋 У вас пока нет отчетов"
-    
+
     text = "📋 *Отчёты о проделанной работе:*\n\n"
     for report in reports:
         text += f"*Спринт №{report.sprint_num}:*\n"
         text += f"_{report.report_text}_\n\n"
-    
+
     return text
 
 
@@ -58,7 +58,7 @@ def format_ratings_list(ratings) -> str:
     """Форматирование списка оценок"""
     if not ratings:
         return "⭐ Вас пока никто не оценил"
-    
+
     text = "⭐ *Ваши оценки:*\n\n"
     for rating in ratings:
         date_str = rating.rate_date.strftime("%d.%m.%Y")
@@ -67,7 +67,7 @@ def format_ratings_list(ratings) -> str:
         text += f"✅ Плюсы: {rating.advantages}\n"
         text += f"📈 Что улучшить: {rating.disadvantages}\n"
         text += f"📅 {date_str}\n\n"
-    
+
     return text
 
 
@@ -125,53 +125,53 @@ async def get_team_display_data(student_id: Optional[str], tg_id: int,
     """Получение данных для отображения информации о команде"""
     import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
-    
+
     student = await queries.StudentQueries.get_by_tg_id(tg_id)
-    
+
     if not student or not getattr(student, 'team_memberships', None):
         return None
-    
+
     team_membership = student.team_memberships[0]
     team = team_membership.team
-    
+
     # Получаем всех участников команды
     teammates = await queries.StudentQueries.get_teammates(student.id)
-    
+
     # Создаем объект для текущего пользователя
     class MockStudent:
         def __init__(self, student_obj):
             self.id = student_obj.id
             self.name = student_obj.name
-    
+
     class MockMembership:
         def __init__(self, student_obj, role):
             self.student = MockStudent(student_obj)
             self.role = role
-    
+
     # Преобразуем teammate объекты в единую структуру
     teammate_memberships = []
     for teammate in teammates:
         role = teammate.team_memberships[0].role if teammate.team_memberships else "Участник команды"
         teammate_memberships.append(MockMembership(teammate, role))
-    
+
     # Формируем список участников включая текущего пользователя
     all_members = teammate_memberships + [MockMembership(student, team_membership.role)]
-    
+
     # Проверяем права администратора
     is_admin = team.admin.id == student.id
-    
+
     # Для админов генерируем ссылку-приглашение
     invite_link_text = None
     if is_admin and bot_username:
         invite_link_text = await get_invite_link_text(team.team_name, team.invite_code, bot_username)
-    
+
     team_info = format_team_info(team, all_members, invite_link_text)
-    
+
     # Добавляем inline клавиатуру для управления участниками (только для админов)
     keyboard = inline_keyboards.get_team_member_management_keyboard(
         all_members, student.id, is_admin
     )
-    
+
     return {
         'team_info': team_info,
         'keyboard': keyboard,
@@ -189,8 +189,8 @@ async def get_invite_link_text(team_name: str, invite_code: str, bot_username: O
         f"\n🔗 *Ссылка-приглашение:*\n"
         f"`{invite_url}`\n"
     )
-    
+
     if show_instruction:
         base_text += "\n\n📤 Отправьте эту ссылку участникам команды для присоединения."
-    
+
     return base_text
