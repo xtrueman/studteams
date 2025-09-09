@@ -1,0 +1,10 @@
+/* Пользовательские стили для сайта StudTeams */
+
+main {
+  min-height: 70vh;
+}
+
+.accordion-button .bi {
+  transform: translateY(-1px);
+}
+

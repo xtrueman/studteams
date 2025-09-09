@@ -1,0 +1,256 @@
+{% extends "base.jinja" %}
+{% block title %}Инструкция к боту StudHelper{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary">
+                    Инструкция для бота StudHelper
+                </h1>
+                <p class="lead text-muted">
+                    Подробное руководство по использованию Telegram-бота для отслеживания прогресса студенческих команд
+                </p>
+            </div>
+
+            <div class="accordion" id="faqAccordion">
+                <!-- Регистрация команды -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                            <i class="bi bi-plus-circle-fill text-success me-2"></i>
+                            <strong>Регистрация команды</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для того чтобы начать работу с ботом, необходимо, чтобы <strong>ScrumMaster</strong> (важно!) зарегистрировал команду.</p>
+                            <p>Это можно сделать нажатием кнопки <kbd>Регистрация команды</kbd>.</p>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Затем необходимо ввести название команды, а также название разрабатываемого продукта.
+                            </div>
+                            <p>Следующим шагом, необходимо, чтобы администратор команды ввел данные о себе.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Приглашение других участников команды -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                            <i class="bi bi-person-plus-fill text-primary me-2"></i>
+                            <strong>Приглашение других участников команды</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для того, чтобы другие участники команды могли пользоваться ботом и их данные интерпретировались верно, администратор команды (ScrumMaster) должен разослать ссылку-приглашение.</p>
+                            <p>Сделать это необходимо, нажав кнопку <kbd>Ссылка-приглашение</kbd>.</p>
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i>
+                                После перехода по ней, участник автоматически будет добавлен в команду и ему будет необходимо, также, как и администратору ранее, ввести имя, фамилию, группу и дополнительно выбрать свою роль.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Удаление участников команды -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                            <i class="bi bi-person-dash-fill text-danger me-2"></i>
+                            <strong>Удаление участников команды (доступно только для ScrumMaster)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Чтобы удалить участника команды, необходимо нажать на кнопку <kbd>Удалить участника</kbd>.</p>
+                            <p>Затем, выбрать пользователя из предложенного списка.</p>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Эта функция доступна только администраторам команды (ScrumMaster).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вступление в команду -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                            <i class="bi bi-box-arrow-in-right text-info me-2"></i>
+                            <strong>Вступление в команду</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Чтобы вступить в команду, необходимо перейти по ссылке, которую Вам должен прислать администратор команды (ScrumMaster).</p>
+                            <p>Команда определяется автоматически.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Отправка отчета по проделанной работе -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+                            <i class="bi bi-file-earmark-text-fill text-success me-2"></i>
+                            <strong>Отправка отчета по проделанной работе</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для отправки отчета о проделанной работе необходимо нажать кнопку <kbd>Отправить отчёт</kbd> (доступно как администратору, так и обычному члену команды).</p>
+                            <p>Затем выбрать спринт, отчет по которому Вы хотите отправить, а затем ввести текст отчета.</p>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-clock"></i>
+                                Отправлять отчет о проделанной работе необходимо только после окончания спринта или достижения даты ревью сервиса.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Оценивание членов команд -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
+                            <i class="bi bi-star-fill text-warning me-2"></i>
+                            <strong>Оценивание членов команд</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                Возможность оценки сокомандников изначально отключена. Преподаватель имеет возможность в любой момент включать данную функцию.
+                            </div>
+                            <p>После включения данной функции, Вам придет уведомление от бота, после которого необходимо написать ему <kbd>Обновить</kbd>, чтобы произошла актуализация меню кнопок.</p>
+                            <p>После этого нажать на кнопку <kbd>Оценить участников команды</kbd>.</p>
+                            <p>Затем, необходимо выбрать участника, которого Вы хотите оценить, и следовать инструкциям бота.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Список команды -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSeven">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven">
+                            <i class="bi bi-people-fill text-primary me-2"></i>
+                            <strong>Список команды</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseSeven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для получения списка команды необходимо нажать кнопку <kbd>Моя команда</kbd>.</p>
+                            <p>Бот пришлет Вам список команды с именами и ролями членов Вашей команды.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Список отправленных отчётов -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingEight">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight">
+                            <i class="bi bi-journal-text text-info me-2"></i>
+                            <strong>Список отправленных отчётов</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseEight" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для получения списка отправленных Вами отчётов необходимо нажать кнопку <kbd>Мои отчёты</kbd>.</p>
+                            <p>Бот пришлет список отправленных Вами отчётов о проделанной работе.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Удаление отчёта по проделанной работе -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingNine">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine">
+                            <i class="bi bi-trash-fill text-danger me-2"></i>
+                            <strong>Удаление отчёта по проделанной работе</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseNine" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для удаления отчёта по проделанной работе, необходимо нажать на кнопку <kbd>Удалить отчёт</kbd>.</p>
+                            <p>Затем, необходимо выбрать спринт, отчёт по которому Вы хотите удалить.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Изменение отчёта по проделанной работе -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTen">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTen">
+                            <i class="bi bi-pencil-square text-secondary me-2"></i>
+                            <strong>Изменение отчёта по проделанной работе</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseTen" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Изменение информации отчёта по проделанной работе происходит во время отправки нового.</p>
+                            <div class="alert alert-info">
+                                <i class="bi bi-lightbulb"></i>
+                                Например, чтобы изменить отчёт по спринту №1, необходимо начать отправлять отчёт по нему, и дать согласие на перезапись данного отчёта.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Как посмотреть, кто меня оценил? -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingEleven">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEleven">
+                            <i class="bi bi-eye-fill text-info me-2"></i>
+                            <strong>Как посмотреть, кто меня оценил?</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseEleven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Чтобы получить список членов команды, которые Вас оценили, необходимо нажать на кнопку <kbd>Кто меня оценил?</kbd>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Отчет о команде (доступно только для ScrumMaster) -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwelve">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwelve">
+                            <i class="bi bi-graph-up text-success me-2"></i>
+                            <strong>Отчет о команде (доступно только для ScrumMaster)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseTwelve" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>Для получения отчёта о команде, необходимо нажать кнопку <kbd>Отчёт о команде</kbd>, которая доступна только для ScrumMaster.</p>
+                            <div class="alert alert-success">
+                                <i class="bi bi-bar-chart"></i>
+                                После этого, бот пришлет информацию о количестве отчётов, отправленных каждым членом команды, а также информацию о количестве поставленных ими оценок.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <div class="alert alert-light border">
+                    <h5 class="mb-3">
+                        <i class="bi bi-question-circle text-primary"></i>
+                        Остались вопросы?
+                    </h5>
+                    <p class="mb-0">
+                        Если у вас возникли дополнительные вопросы по использованию бота, обратитесь к преподавателю или администратору системы.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/faq.js"></script>
+{% endblock %}

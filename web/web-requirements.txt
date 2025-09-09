@@ -1,0 +1,5 @@
+# Web dependencies for StudTeams FastAPI application
+fastapi
+jinja2
+python-multipart
+uvicorn[standard]
