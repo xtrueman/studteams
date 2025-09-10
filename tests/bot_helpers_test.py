@@ -146,7 +146,7 @@ def test_format_team_info():
         {'name': 'Петр Петров', 'role': 'Разработчик'}
     ]
     
-    result = helpers.format_team_info(team, members)
+    result = helpers.format_team_info(team, members, None)
     
     assert "*Команда: Команда А*" in result
     assert "📱 Продукт: Продукт Б" in result
@@ -159,18 +159,13 @@ def test_format_team_info():
 def test_get_invite_link_text():
     """Тест генерации текста с ссылкой-приглашением"""
     # Без инструкции
-    result = helpers.get_invite_link_text("Команда А", "INV123", "test_bot")
+    result = helpers.get_invite_link_text("Команда А", "INV123")
     assert "🔗 *Ссылка-приглашение:*" in result
-    assert "`https://t.me/test_bot?start=INV123`" in result
+    assert "`https://t.me/@SSAU_SoftDevMgmt_bot?start=INV123`" in result
     assert "📤 Отправьте эту ссылку" not in result
     
     # С инструкцией
-    result = helpers.get_invite_link_text("Команда А", "INV123", "test_bot", True)
+    result = helpers.get_invite_link_text("Команда А", "INV123", True)
     assert "🔗 *Ссылка-приглашение:*" in result
-    assert "`https://t.me/test_bot?start=INV123`" in result
+    assert "`https://t.me/@SSAU_SoftDevMgmt_bot?start=INV123`" in result
     assert "📤 Отправьте эту ссылку" in result
-    
-    # Без имени бота
-    result = helpers.get_invite_link_text("Команда А", "INV123", None)
-    assert "🔗 *Ссылка-приглашение:*" in result
-    assert "`https://t.me/None?start=INV123`" in result

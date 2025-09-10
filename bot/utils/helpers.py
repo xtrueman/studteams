@@ -67,7 +67,7 @@ def format_reports_list(reports: list) -> str:
     text = "*Мои отчёты:*\n\n"
     for report in reports:
         # For MySQL version, dates might be strings, so we handle them appropriately
-        date_str = report.get('report_date', 'Неизвестно')
+        date_str = report['report_date']
         if isinstance(date_str, datetime.datetime):
             date_str = format_datetime(date_str)
         
@@ -79,7 +79,7 @@ def format_reports_list(reports: list) -> str:
     return text
 
 
-def format_team_info(team: dict, all_members: list, invite_link_text: str | None = None) -> str:
+def format_team_info(team: dict, all_members: list, invite_link_text: str) -> str:
     """Форматирует информацию о команде для отображения"""
     team_info = (
         f"👥 *Команда: {team['team_name']}*\n"
@@ -92,72 +92,41 @@ def format_team_info(team: dict, all_members: list, invite_link_text: str | None
 
     team_info += "*Участники команды:*\n"
     for member in all_members:
-        # Handle both object attributes and dictionary access
-        if hasattr(member, 'role'):
-            role = member.role
-        elif isinstance(member, dict) and 'role' in member:
-            role = member['role']
-        else:
-            role = 'Участник команды'
-            
-        # Handle student name access
-        if hasattr(member, 'student') and hasattr(member.student, 'name'):
-            name = member.student.name
-        elif isinstance(member, dict) and 'name' in member:
-            name = member['name']
-        else:
-            name = 'Неизвестно'
+        # Direct dictionary access for MySQL data
+        name = member['name']
+        role = member['role']
             
         team_info += f"• {name} ({role})\n"
 
     return team_info
 
 
-async def get_team_display_data(student_id: str | None, tg_id: int,
-                                bot_username: str | None = None):
+def get_team_display_data(student_id: str, tg_id: int):
     """Получение данных для отображения информации о команде"""
     # import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
 
     student = db.student_get_by_tg_id(tg_id)
 
-    if not student or 'team' not in student:
+    if not student:
+        return None
+
+    # Check if student is in a team
+    if 'team' not in student:
         return None
 
     team = student['team']
 
-    # Получаем всех участников команды
-    teammates = db.student_get_teammates(student['student_id'])
-
-    # Создаем объект для текущего пользователя
-    class MockStudent:
-        def __init__(self, student_obj):
-            self.id = student_obj['student_id']
-            self.name = student_obj['name']
-
-    class MockMembership:
-        def __init__(self, student_obj, role):
-            self.student = MockStudent(student_obj)
-            self.role = role
-
-    # Преобразуем teammate объекты в единую структуру
-    teammate_memberships = []
-    for teammate in teammates:
-        role = teammate.get('role', 'Участник команды')
-        teammate_memberships.append(MockMembership(teammate, role))
-
-    # Формируем список участников включая текущего пользователя
-    # Для текущего пользователя мы берем роль из team_memberships если она есть
-    current_user_role = 'Scrum Master' if team['admin_student_id'] == student['student_id'] else 'Участник команды'
-    all_members = [*teammate_memberships, MockMembership(student, current_user_role)]
+    # Получаем всех участников команды, включая администратора
+    all_members = db.team_get_all_members(team['team_id'])
 
     # Проверяем права администратора
     is_admin = team['admin_student_id'] == student['student_id']
 
     # Для админов генерируем ссылку-приглашение
     invite_link_text = None
-    if is_admin and bot_username:
-        invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'], bot_username)
+    if is_admin:
+        invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'])
 
     team_info = format_team_info(team, all_members, invite_link_text)
 
@@ -175,10 +144,9 @@ async def get_team_display_data(student_id: str | None, tg_id: int,
     }
 
 
-def get_invite_link_text(team_name: str, invite_code: str, bot_username: str | None,
-                         show_instruction: bool = False) -> str:
+def get_invite_link_text(team_name: str, invite_code: str, show_instruction: bool = False) -> str:
     """Генерация текста с ссылкой-приглашением"""
-    invite_url = f"https://t.me/{bot_username}?start={invite_code}"
+    invite_url = f"https://t.me/{config.BOT_USERNAME}?start={invite_code}"
     base_text = (
         f"\n🔗 *Ссылка-приглашение:*\n"
         f"`{invite_url}`\n"

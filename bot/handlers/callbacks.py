@@ -67,7 +67,7 @@ async def callback_confirm_team_registration(
         bot_username = bot_info.username if bot_info else None
         if bot_username:
             invite_link_text = helpers.get_invite_link_text(
-                data['team_name'], invite_code, bot_username, show_instruction=True
+                data['team_name'], invite_code, show_instruction=True
             )
         else:
             invite_link_text = ""
@@ -597,8 +597,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
             )
 
             # Обновляем информацию о команде
-            bot_username = (await callback.bot.get_me()).username if callback.bot else None
-            team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
+            team_data = helpers.get_team_display_data(None, callback.from_user.id)
 
             if team_data:
                 await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
@@ -623,8 +622,7 @@ async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, s
         await callback.message.edit_text("❌ Удаление участника отменено.")
 
         # Обновляем информацию о команде
-        bot_username = (await callback.bot.get_me()).username if callback.bot else None
-        team_data = await helpers.get_team_display_data(None, callback.from_user.id, bot_username)
+        team_data = helpers.get_team_display_data(None, callback.from_user.id)
 
         if team_data:
             await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])

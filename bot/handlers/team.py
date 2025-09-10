@@ -57,8 +57,7 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
 @decorators.log_handler("my_team")
 async def handle_my_team(message: aiogram.types.Message):
     """Показать информацию о команде"""
-    bot_username = (await message.bot.get_me()).username
-    team_data = await helpers.get_team_display_data(None, message.from_user.id, bot_username)
+    team_data = helpers.get_team_display_data(None, message.from_user.id)
 
     if not team_data:
         await message.answer("❌ Вы не состоите в команде.")
@@ -321,7 +320,7 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
         data = await state.get_data()
 
         try:
-            # Проверяем, есть ли пользователь в системе
+            # Проверяем, есть пользователь в системе
             student = db.student_get_by_tg_id(message.from_user.id)
 
             if not student:
