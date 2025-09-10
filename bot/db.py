@@ -7,15 +7,15 @@
 import myconn
 
 
-def student_get_by_tg_id(tg_id):
+def student_get_by_tg_id(tg_id: int):
     """
-    Получение студента по Telegram ID с информацией о команде
+    Получение студента по Telegram ID
     
     Args:
         tg_id: Telegram ID студента
         
     Returns:
-        Словарь с информацией о студенте и команде или None если не найден
+        Словарь с информацией о студенте или None если не найден
     """
     dict_cur = myconn.cursors.dict_cur
     # Получаем студента
@@ -26,8 +26,6 @@ def student_get_by_tg_id(tg_id):
     """, (tg_id,))
     
     student = dict_cur.fetchone()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     if not student:
         return None
@@ -43,8 +41,6 @@ def student_get_by_tg_id(tg_id):
     """, (student['student_id'],))
     
     team_info = dict_cur.fetchone()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     if team_info:
         student['team'] = team_info
@@ -52,7 +48,7 @@ def student_get_by_tg_id(tg_id):
     return student
 
 
-def student_get_by_id(student_id):
+def student_get_by_id(student_id: int):
     """
     Получение студента по внутреннему ID
     
@@ -70,13 +66,11 @@ def student_get_by_id(student_id):
     """, (student_id,))
     
     result = dict_cur.fetchone()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def student_create(tg_id, name, group_num=None):
+def student_create(tg_id: int, name: str, group_num: str = None):
     """
     Создание нового студента в базе данных
     
@@ -104,7 +98,7 @@ def student_create(tg_id, name, group_num=None):
     }
 
 
-def student_get_teammates(student_id):
+def student_get_teammates(student_id: int):
     """
     Получение всех участников команды студента (кроме него самого)
     
@@ -127,14 +121,13 @@ def student_get_teammates(student_id):
         AND s.student_id != %s
     """, (student_id, student_id))
     
+    
     result = dict_cur.fetchall()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def student_get_teammates_not_rated(assessor_id):
+def student_get_teammates_not_rated(assessor_id: int):
     """
     Получение участников команды, которых ещё не оценил данный студент
     
@@ -163,13 +156,11 @@ def student_get_teammates_not_rated(assessor_id):
     """, (assessor_id, assessor_id, assessor_id))
     
     result = dict_cur.fetchall()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def team_create(team_name, product_name, invite_code, admin_student_id):
+def team_create(team_name: str, product_name: str, invite_code: str, admin_student_id: int):
     """
     Создание новой команды с администратором
     
@@ -199,7 +190,7 @@ def team_create(team_name, product_name, invite_code, admin_student_id):
     }
 
 
-def team_get_by_invite_code(invite_code):
+def team_get_by_invite_code(invite_code: str):
     """
     Поиск команды по коду приглашения
     
@@ -219,13 +210,11 @@ def team_get_by_invite_code(invite_code):
     """, (invite_code,))
     
     result = dict_cur.fetchone()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def team_add_member(team_id, student_id, role):
+def team_add_member(team_id: int, student_id: int, role: str):
     """
     Добавление участника в команду с указанной ролью
     
@@ -242,7 +231,7 @@ def team_add_member(team_id, student_id, role):
     """, (team_id, student_id, role, role))
 
 
-def team_remove_member(team_id, student_id):
+def team_remove_member(team_id: int, student_id: int):
     """
     Удаление участника из команды
     
@@ -257,7 +246,35 @@ def team_remove_member(team_id, student_id):
     """, (team_id, student_id))
 
 
-def report_create_or_update(student_id, sprint_num, report_text):
+def team_get_all_members(team_id: int):
+    """
+    Получение всех участников команды, включая администратора
+    
+    Args:
+        team_id: ID команды
+        
+    Returns:
+        Список словарей с информацией о всех участниках команды, включая администратора
+    """
+    dict_cur = myconn.cursors.dict_cur
+    dict_cur.execute("""
+        SELECT DISTINCT s.student_id, s.name, 
+            CASE 
+                WHEN t.admin_student_id = s.student_id THEN 'Scrum Master'
+                ELSE tm.role
+            END as role
+        FROM students s
+        LEFT JOIN team_members tm ON s.student_id = tm.student_id AND tm.team_id = %s
+        JOIN teams t ON t.team_id = %s
+        WHERE tm.team_id = %s OR s.student_id = t.admin_student_id
+    """, (team_id, team_id, team_id))
+    
+    result = dict_cur.fetchall()
+    
+    return result
+
+
+def report_create_or_update(student_id: int, sprint_num: int, report_text: str):
     """
     Создание нового отчёта или обновление существующего
     
@@ -275,8 +292,6 @@ def report_create_or_update(student_id, sprint_num, report_text):
     """, (student_id, sprint_num))
     
     result = cur.fetchone()
-    # Убедимся, что все результаты потреблены
-    cur.fetchall()
     
     if result[0] > 0:
         # Обновляем существующий отчет
@@ -293,32 +308,30 @@ def report_create_or_update(student_id, sprint_num, report_text):
         """, (student_id, sprint_num, report_text))
 
 
-def report_get_by_student(student_id):
+def report_get_by_student(student_id: int):
     """
-    Получение всех отчётов студента, упорядоченных по номеру спринта
+    Получение всех отчётов студента
     
     Args:
         student_id: ID студента
         
     Returns:
-        Список словарей с отчетами студента
+        Список словарей с отчётами студента
     """
     dict_cur = myconn.cursors.dict_cur
     dict_cur.execute("""
-        SELECT student_id, sprint_num, report_text, report_date
+        SELECT *
         FROM sprint_reports
         WHERE student_id = %s
         ORDER BY sprint_num
     """, (student_id,))
     
     result = dict_cur.fetchall()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def report_delete(student_id, sprint_num):
+def report_delete(student_id: int, sprint_num: int):
     """
     Удаление отчёта студента по конкретному спринту
     
@@ -335,11 +348,11 @@ def report_delete(student_id, sprint_num):
 
 
 def rating_create(
-    assessor_student_id,
-    assessored_student_id,
-    overall_rating,
-    advantages,
-    disadvantages
+    assessor_student_id: int,
+    assessored_student_id: int,
+    overall_rating: int,
+    advantages: str,
+    disadvantages: str
 ):
     """
     Создание новой оценки участника команды
@@ -363,7 +376,7 @@ def rating_create(
     # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
-def rating_get_who_rated_me(student_id):
+def rating_get_who_rated_me(student_id: int):
     """
     Получение списка тех, кто оценил данного студента
     
@@ -383,13 +396,11 @@ def rating_get_who_rated_me(student_id):
     """, (student_id,))
     
     result = dict_cur.fetchall()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result
 
 
-def rating_get_given_by_student(student_id):
+def rating_get_given_by_student(student_id: int):
     """
     Получение списка оценок, которые поставил данный студент
     
@@ -410,7 +421,5 @@ def rating_get_given_by_student(student_id):
     """, (student_id,))
     
     result = dict_cur.fetchall()
-    # Убедимся, что все результаты потреблены
-    dict_cur.fetchall()
     
     return result

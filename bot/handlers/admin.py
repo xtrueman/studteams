@@ -56,7 +56,14 @@ async def handle_view_team_members(message: aiogram.types.Message):
 
     members_text = "*Участники команды:*\n\n"
     for teammate in teammates:
-        members_text += f"• {teammate['name']} ({teammate['role']})\n"
+        # Ensure teammate is a dictionary
+        if isinstance(teammate, dict):
+            members_text += f"• {teammate['name']} ({teammate['role']})\n"
+        else:
+            # Handle case where teammate might be a different type
+            name = getattr(teammate, 'name', 'Неизвестно')
+            role = getattr(teammate, 'role', 'Участник')
+            members_text += f"• {name} ({role})\n"
 
     await message.answer(
         members_text,
@@ -90,7 +97,16 @@ async def handle_remove_team_member(message: aiogram.types.Message, state: aiogr
     await state.set_state(states.AdminActions.select_member)
 
     # Создаем клавиатуру с выбором участников
-    keyboard = inline_keyboards.get_team_members_inline_keyboard(teammates)
+    teammate_names = []
+    for teammate in teammates:
+        # Ensure teammate is a dictionary
+        if isinstance(teammate, dict):
+            teammate_names.append(teammate['name'])
+        else:
+            # Handle case where teammate might be a different type
+            teammate_names.append(getattr(teammate, 'name', 'Неизвестно'))
+
+    keyboard = inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "member", columns=2)
 
     await message.answer(
         "🗑️ *Удаление участника команды*\n\n"
@@ -113,9 +129,16 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
     # Находим выбранного участника
     selected_member = None
     for teammate in teammates:
-        if teammate['name'] == message.text:
-            selected_member = teammate
-            break
+        # Ensure teammate is a dictionary
+        if isinstance(teammate, dict):
+            if teammate['name'] == message.text:
+                selected_member = teammate
+                break
+        else:
+            # Handle case where teammate might be a different type
+            if getattr(teammate, 'name', '') == message.text:
+                selected_member = teammate
+                break
 
     if not selected_member:
         await message.answer("❌ Участник не найден. Выберите участника из списка:")
@@ -128,9 +151,16 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
     # Подтверждение удаления
     keyboard = keyboards.get_confirmation_keyboard("Подтвердить", "Отмена")
 
+    # Get name safely
+    member_name = ""
+    if isinstance(selected_member, dict):
+        member_name = selected_member['name']
+    else:
+        member_name = getattr(selected_member, 'name', 'Неизвестно')
+
     await message.answer(
         f"⚠️ *Подтверждение удаления*\n\n"
-        f"Вы действительно хотите удалить *{selected_member['name']}* из команды?\n\n"
+        f"Вы действительно хотите удалить *{member_name}* из команды?\n\n"
         f"*Это действие нельзя отменить!*",
         reply_markup=keyboard,
         parse_mode="Markdown"
@@ -151,13 +181,34 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
             return
 
         try:
+            # Get IDs safely
+            team_id = ""
+            student_id = ""
+            
+            if isinstance(student, dict) and 'team' in student:
+                team_id = student['team']['team_id']
+            elif hasattr(student, 'team'):
+                team_id = getattr(student['team'], 'team_id', '')
+                
+            if isinstance(selected_member, dict):
+                student_id = selected_member['student_id']
+            else:
+                student_id = getattr(selected_member, 'student_id', '')
+
             db.team_remove_member(
-                team_id=student['team']['team_id'],
-                student_id=selected_member['student_id']
+                team_id=team_id,
+                student_id=student_id
             )
 
+            # Get name safely
+            member_name = ""
+            if isinstance(selected_member, dict):
+                member_name = selected_member['name']
+            else:
+                member_name = getattr(selected_member, 'name', 'Неизвестно')
+
             await message.answer(
-                f"✅ Участник *{selected_member['name']}* успешно удален из команды!",
+                f"✅ Участник *{member_name}* успешно удален из команды!",
                 parse_mode="Markdown"
             )
 
@@ -197,7 +248,16 @@ async def handle_view_member_stats(message: aiogram.types.Message, state: aiogra
     await state.set_state(states.AdminActions.select_member_stats)
 
     # Создаем клавиатуру с выбором участников
-    keyboard = inline_keyboards.get_team_members_inline_keyboard(teammates)
+    teammate_names = []
+    for teammate in teammates:
+        # Ensure teammate is a dictionary
+        if isinstance(teammate, dict):
+            teammate_names.append(teammate['name'])
+        else:
+            # Handle case where teammate might be a different type
+            teammate_names.append(getattr(teammate, 'name', 'Неизвестно'))
+
+    keyboard = inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "member", columns=2)
 
     await message.answer(
         "📊 *Статистика участника*\n\n"
@@ -220,9 +280,16 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
     # Находим выбранного участника
     selected_member = None
     for teammate in teammates:
-        if teammate['name'] == message.text:
-            selected_member = teammate
-            break
+        # Ensure teammate is a dictionary
+        if isinstance(teammate, dict):
+            if teammate['name'] == message.text:
+                selected_member = teammate
+                break
+        else:
+            # Handle case where teammate might be a different type
+            if getattr(teammate, 'name', '') == message.text:
+                selected_member = teammate
+                break
 
     if not selected_member:
         await message.answer("❌ Участник не найден. Выберите участника из списка:")
@@ -230,18 +297,37 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
 
     # Получаем статистику участника
     try:
-        reports = db.report_get_by_student(selected_member['student_id'])
-        ratings_given = db.rating_get_given_by_student(selected_member['student_id'])
-        ratings_received = db.rating_get_who_rated_me(selected_member['student_id'])
+        # Get ID safely
+        member_id = ""
+        if isinstance(selected_member, dict):
+            member_id = selected_member['student_id']
+        else:
+            member_id = getattr(selected_member, 'student_id', '')
+
+        reports = db.report_get_by_student(member_id)
+        ratings_given = db.rating_get_given_by_student(member_id)
+        ratings_received = db.rating_get_who_rated_me(member_id)
+
+        # Get name safely
+        member_name = ""
+        if isinstance(selected_member, dict):
+            member_name = selected_member['name']
+        else:
+            member_name = getattr(selected_member, 'name', 'Неизвестно')
 
         # Формируем текст статистики
-        stats_text = f"📊 *Статистика участника: {selected_member['name']}*\n\n"
+        stats_text = f"📊 *Статистика участника: {member_name}*\n\n"
 
         # Отчеты
         stats_text += f"📝 *Отчеты:*\n"
         if reports:
             stats_text += f"Отправлено: {len(reports)}\n"
-            sprint_numbers = [str(report['sprint_num']) for report in reports]
+            sprint_numbers = []
+            for report in reports:
+                if isinstance(report, dict):
+                    sprint_numbers.append(str(report['sprint_num']))
+                else:
+                    sprint_numbers.append(str(getattr(report, 'sprint_num', '')))
             stats_text += f"Спринты: {', '.join(sprint_numbers)}\n\n"
         else:
             stats_text += "Нет отчетов\n\n"
@@ -250,8 +336,18 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         stats_text += f"⭐ *Оценки, данные другими:*\n"
         if ratings_received:
             stats_text += f"Получено: {len(ratings_received)}\n"
-            avg_rating = sum(rating['overall_rating'] for rating in ratings_received) / len(ratings_received)
-            stats_text += f"Средняя оценка: {avg_rating:.1f}/10\n\n"
+            if ratings_received:  # Check if list is not empty before accessing elements
+                total_rating = 0
+                count = 0
+                for rating in ratings_received:
+                    if isinstance(rating, dict):
+                        total_rating += rating.get('overall_rating', 0)
+                    else:
+                        total_rating += getattr(rating, 'overall_rating', 0)
+                    count += 1
+                if count > 0:
+                    avg_rating = total_rating / count
+                    stats_text += f"Средняя оценка: {avg_rating:.1f}/10\n\n"
         else:
             stats_text += "Пока никто не оценил\n\n"
 

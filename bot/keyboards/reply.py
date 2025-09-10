@@ -143,3 +143,21 @@ def get_dynamic_keyboard(items: list[str], columns: int = 2):
 
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])
     return keyboard
+
+
+def get_admin_panel_keyboard():
+    """Клавиатура панели администратора"""
+    return aiogram.types.ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                aiogram.types.KeyboardButton(text="👥 Участники команды"),
+                aiogram.types.KeyboardButton(text="📊 Статистика участника")
+            ],
+            [
+                aiogram.types.KeyboardButton(text="🗑️ Удалить участника"),
+                aiogram.types.KeyboardButton(text="Назад")
+            ]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )

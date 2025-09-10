@@ -227,3 +227,45 @@ def test_get_teammates_not_rated():
     not_rated = db.student_get_teammates_not_rated(admin['student_id'])
     assert len(not_rated) == 1
     assert not_rated[0]['name'] == "Участник 2"
+
+
+def test_get_all_team_members():
+    """Тест получения всех участников команды, включая администратора"""
+    # Создаем студентов
+    admin = db.student_create(888888888, "Админ Команды Тест", "ГРП-11")
+    member1 = db.student_create(888888889, "Участник 1 Тест", "ГРП-12")
+    member2 = db.student_create(888888890, "Участник 2 Тест", "ГРП-13")
+    
+    # Создаем команду
+    team = db.team_create("Команда Тест", "Проект Тест", "TEST123", admin['student_id'])
+    
+    # Добавляем участников в команду (администратора добавлять не нужно, он автоматически включен)
+    db.team_add_member(team['team_id'], member1['student_id'], "Разработчик")
+    db.team_add_member(team['team_id'], member2['student_id'], "Тестировщик")
+    
+    # Получаем всех участников команды
+    all_members = db.team_get_all_members(team['team_id'])
+    
+    # Должно быть 3 участника: админ + 2 обычных участника
+    assert len(all_members) == 3
+    
+    # Проверяем, что администратор имеет роль Scrum Master
+    admin_found = False
+    member1_found = False
+    member2_found = False
+    
+    for member in all_members:
+        if member['student_id'] == admin['student_id']:
+            assert member['role'] == 'Scrum Master'
+            admin_found = True
+        elif member['student_id'] == member1['student_id']:
+            assert member['role'] == 'Разработчик'
+            member1_found = True
+        elif member['student_id'] == member2['student_id']:
+            assert member['role'] == 'Тестировщик'
+            member2_found = True
+    
+    # Проверяем, что все участники найдены
+    assert admin_found
+    assert member1_found
+    assert member2_found

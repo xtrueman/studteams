@@ -153,20 +153,28 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
     if is_admin and len(members) > 1:  # Можно удалять только если есть кого удалять
         # Кнопки для каждого участника (кроме самого админа)
         for member in members:
-            if member.student.id != current_user_id:
+            # Direct dictionary access
+            member_id = member.get('student_id')
+            member_name = member.get('name')
+            
+            # Skip if this is the current user
+            if member_id == current_user_id:
+                continue
+                
+            if member_id and member_name:
                 # Обрезаем длинные имена для лучшей читаемости
-                name = member.student.name
+                name = member_name
                 if len(name) > 15:
                     name = name[:12] + "..."
 
                 keyboard.append([
                     aiogram.types.InlineKeyboardButton(
                         text=f"✏️ {name}",
-                        callback_data=f"edit_member_{member.student.id}"
+                        callback_data=f"edit_member_{member_id}"
                     ),
                     aiogram.types.InlineKeyboardButton(
                         text="🗑️ Delete",
-                        callback_data=f"remove_member_{member.student.id}"
+                        callback_data=f"remove_member_{member_id}"
                     )
                 ])
 

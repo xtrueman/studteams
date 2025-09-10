@@ -6,6 +6,7 @@
 
 # StudHelper Bot Configuration
 
+BOT_USERNAME = "@SSAU_SoftDevMgmt_bot"
 BOT_TOKEN = "8307678596:AAEeJm_M1rV4yMU6rRT4W7lqQPqLnwfRogo" # noqa S105
 
 # MySQL
