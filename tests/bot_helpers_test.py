@@ -146,11 +146,12 @@ def test_format_team_info():
         {'name': 'Петр Петров', 'role': 'Разработчик'}
     ]
     
-    result = helpers.format_team_info(team, members, None)
+    # Теперь ссылка-приглашение отображается всегда
+    result = helpers.format_team_info(team, members)
     
     assert "*Команда: Команда А*" in result
     assert "📱 Продукт: Продукт Б" in result
-    assert "🔗 Код приглашения: `INV123`" in result
+    assert "🔗 *Ссылка-приглашение:*" in result
     assert "*Участники команды:*" in result
     assert "• Иван Иванов (Scrum Master)" in result
     assert "• Петр Петров (Разработчик)" in result
@@ -162,7 +163,6 @@ def test_get_invite_link_text():
     result = helpers.get_invite_link_text("Команда А", "INV123")
     assert "🔗 *Ссылка-приглашение:*" in result
     assert "`https://t.me/@SSAU_SoftDevMgmt_bot?start=INV123`" in result
-    assert "📤 Отправьте эту ссылку" not in result
     
     # С инструкцией
     result = helpers.get_invite_link_text("Команда А", "INV123", True)

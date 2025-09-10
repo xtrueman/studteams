@@ -79,18 +79,18 @@ def format_reports_list(reports: list) -> str:
     return text
 
 
-def format_team_info(team: dict, all_members: list, invite_link_text: str) -> str:
+def format_team_info(team: dict, all_members: list) -> str:
     """Форматирует информацию о команде для отображения"""
     team_info = (
         f"👥 *Команда: {team['team_name']}*\n"
         f"📱 Продукт: {team['product_name']}\n"
-        f"🔗 Код приглашения: `{team['invite_code']}`\n\n"
     )
 
-    if invite_link_text:
-        team_info += invite_link_text + "\n"
+    # Генерируем и показываем ссылку-приглашение всегда
+    invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'])
+    team_info += f"{invite_link_text}\n"
 
-    team_info += "*Участники команды:*\n"
+    team_info += "\n*Участники команды:*\n"
     for member in all_members:
         # Direct dictionary access for MySQL data
         name = member['name']
@@ -123,12 +123,7 @@ def get_team_display_data(student_id: str, tg_id: int):
     # Проверяем права администратора
     is_admin = team['admin_student_id'] == student['student_id']
 
-    # Для админов генерируем ссылку-приглашение
-    invite_link_text = None
-    if is_admin:
-        invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'])
-
-    team_info = format_team_info(team, all_members, invite_link_text)
+    team_info = format_team_info(team, all_members)
 
     # Добавляем inline клавиатуру для управления участниками (только для админов)
     keyboard = inline_keyboards.get_team_member_management_keyboard(
@@ -148,7 +143,7 @@ def get_invite_link_text(team_name: str, invite_code: str, show_instruction: boo
     """Генерация текста с ссылкой-приглашением"""
     invite_url = f"https://t.me/{config.BOT_USERNAME}?start={invite_code}"
     base_text = (
-        f"\n🔗 *Ссылка-приглашение:*\n"
+        f"🔗 *Ссылка-приглашение:*\n"
         f"`{invite_url}`\n"
     )
 

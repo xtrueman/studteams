@@ -77,7 +77,6 @@ async def callback_confirm_team_registration(
                 f"🎉 *Команда успешно создана!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"📱 Продукт: {data['product_name']}\n"
-                f"🔗 Код приглашения: `{invite_code}`"
                 f"{invite_link_text}",
                 parse_mode="Markdown"
             )

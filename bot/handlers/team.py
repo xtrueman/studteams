@@ -214,11 +214,13 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
             # Отправляем главное меню
             keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
 
+            invite_link_text = f"🔗 Код приглашения: `{invite_code}`"
+
             await message.answer(
                 f"🎉 *Команда успешно создана!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"📱 Продукт: {data['product_name']}\n"
-                f"🔗 Код приглашения: `{invite_code}`\n\n"
+                f"{invite_link_text}\n\n"
                 f"Теперь вы можете пригласить участников, используя кнопку \"Ссылка-приглашение\".",
                 reply_markup=keyboard,
                 parse_mode="Markdown"
