@@ -47,17 +47,21 @@ def test_is_valid_group_number():
 
 def test_extract_sprint_number():
     """Тест извлечения номера спринта из текста"""
-    # Корректные форматы
+    # Корректные форматы - теперь извлекаем любое первое число
     assert helpers.extract_sprint_number("Спринт №1") == 1
     assert helpers.extract_sprint_number("Спринт №10") == 10
     assert helpers.extract_sprint_number("Спринт №0") == 0
+    # Теперь работает с любым текстом, содержащим число
+    assert helpers.extract_sprint_number("1") == 1
+    assert helpers.extract_sprint_number("Тест 5 номер") == 5
+    assert helpers.extract_sprint_number("Номер спринта: 123") == 123
+    assert helpers.extract_sprint_number("15 и 20") == 15  # Первое число
     
-    # Некорректные форматы
-    assert helpers.extract_sprint_number("Спринт 1") is None  # Без №
-    assert helpers.extract_sprint_number("Спринт №") is None  # Без номера
-    assert helpers.extract_sprint_number("Спринт №abc") is None  # Не число
-    assert helpers.extract_sprint_number("Неправильный текст") is None  # Не начинается с "Спринт №"
+    # Некорректные форматы - без чисел
+    assert helpers.extract_sprint_number("Спринт") is None  # Без чисел
+    assert helpers.extract_sprint_number("Неправильный текст") is None  # Без чисел
     assert helpers.extract_sprint_number("") is None  # Пустая строка
+    assert helpers.extract_sprint_number("Текст без чисел") is None  # Без чисел
 
 
 def test_generate_invite_code():
@@ -149,8 +153,8 @@ def test_format_team_info():
     # Теперь ссылка-приглашение отображается всегда
     result = helpers.format_team_info(team, members)
     
-    assert "*Команда: Команда А*" in result
-    assert "📱 Продукт: Продукт Б" in result
+    assert "Команда: *«Команда А»*" in result
+    assert "📱 Продукт: «Продукт Б»" in result
     assert "🔗 *Ссылка-приглашение:*" in result
     assert "*Участники команды:*" in result
     assert "• Иван Иванов (Scrum Master)" in result
