@@ -30,27 +30,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#" title="В разработке">
-                            <i class="bi bi-house"></i>
-                            Главная
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link{% if request.url.path == '/teams' %} active{% endif %}" href="/teams">
                             <i class="bi bi-people"></i>
                             Команды
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" title="В разработке">
-                            <i class="bi bi-file-earmark-text"></i>
-                            Отчеты
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" title="В разработке">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Должники
                         </a>
                     </li>
                     <li class="nav-item">
@@ -60,7 +42,19 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" title="В разработке">
+                        <a class="nav-link text-muted not-implemented" href="#" data-bs-toggle="tooltip" title="Пока не реализовано">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Отчеты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-muted not-implemented" href="#" data-bs-toggle="tooltip" title="Пока не реализовано">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Должники
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-muted not-implemented" href="#" data-bs-toggle="tooltip" title="Пока не реализовано">
                             <i class="bi bi-gear"></i>
                             Управление
                         </a>
@@ -81,7 +75,24 @@
     <!-- jQuery -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script>
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5@latest/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+    $(document).ready(function() {
+        // Инициализация тултипов
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Обработчик для нереализованных пунктов меню
+        $('.not-implemented').on('click', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>
