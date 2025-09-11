@@ -4,92 +4,89 @@
 Содержит функции для выполнения всех необходимых операций с базой данных.
 """
 
-import myconn
+from myconn import cursors
 
 
 def student_get_by_tg_id(tg_id: int):
     """
     Получение студента по Telegram ID
-    
+
     Args:
         tg_id: Telegram ID студента
-        
+
     Returns:
         Словарь с информацией о студенте или None если не найден
     """
-    dict_cur = myconn.cursors.dict_cur
     # Получаем студента
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT s.student_id, s.tg_id, s.name, s.group_num
         FROM students s
         WHERE s.tg_id = %s
     """, (tg_id,))
-    
-    student = dict_cur.fetchone()
-    
+
+    student = cursors.dict_cur.fetchone()
+
     if not student:
         return None
-        
+
     # Получаем информацию о команде
-    dict_cur.execute("""
-        SELECT t.team_id, t.team_name, t.product_name, t.invite_code, 
+    cursors.dict_cur.execute("""
+        SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s2.name as admin_name
         FROM team_members tm
         JOIN teams t ON tm.team_id = t.team_id
         JOIN students s2 ON t.admin_student_id = s2.student_id
         WHERE tm.student_id = %s
     """, (student['student_id'],))
-    
-    team_info = dict_cur.fetchone()
-    
+
+    team_info = cursors.dict_cur.fetchone()
+
     if team_info:
         student['team'] = team_info
-        
+
     return student
 
 
 def student_get_by_id(student_id: int):
     """
     Получение студента по внутреннему ID
-    
+
     Args:
         student_id: Внутренний ID студента
-        
+
     Returns:
         Словарь с информацией о студенте или None если не найден
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT student_id, tg_id, name, group_num
         FROM students
         WHERE student_id = %s
     """, (student_id,))
-    
-    result = dict_cur.fetchone()
-    
+
+    result = cursors.dict_cur.fetchone()
+
     return result
 
 
-def student_create(tg_id: int, name: str, group_num: str = None):
+def student_create(tg_id: int, name: str, group_num: str | None = None):
     """
     Создание нового студента в базе данных
-    
+
     Args:
         tg_id: Telegram ID студента
         name: Имя и фамилия студента
         group_num: Номер группы (опционально)
-        
+
     Returns:
         Словарь с информацией о созданном студенте
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
+    cursors.cur.execute("""
         INSERT INTO students (tg_id, name, group_num)
         VALUES (%s, %s, %s)
     """, (tg_id, name, group_num))
-    
-    student_id = cur.lastrowid
-    
+
+    student_id = cursors.cur.lastrowid
+
     return {
         'student_id': student_id,
         'tg_id': tg_id,
@@ -101,50 +98,47 @@ def student_create(tg_id: int, name: str, group_num: str = None):
 def student_get_teammates(student_id: int):
     """
     Получение всех участников команды студента (кроме него самого)
-    
+
     Args:
         student_id: ID студента
-        
+
     Returns:
         Список словарей с информацией об участниках команды
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT DISTINCT s.student_id, s.name, tm.role
         FROM students s
         JOIN team_members tm ON s.student_id = tm.student_id
         WHERE tm.team_id IN (
-            SELECT team_id 
-            FROM team_members 
+            SELECT team_id
+            FROM team_members
             WHERE student_id = %s
         )
         AND s.student_id != %s
     """, (student_id, student_id))
-    
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result
 
 
 def student_get_teammates_not_rated(assessor_id: int):
     """
     Получение участников команды, которых ещё не оценил данный студент
-    
+
     Args:
         assessor_id: ID студента, который оценивает
-        
+
     Returns:
         Список словарей с информацией об участниках команды, которых ещё не оценили
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT DISTINCT s.student_id, s.name
         FROM students s
         JOIN team_members tm ON s.student_id = tm.student_id
         WHERE tm.team_id IN (
-            SELECT team_id 
-            FROM team_members 
+            SELECT team_id
+            FROM team_members
             WHERE student_id = %s
         )
         AND s.student_id != %s
@@ -154,34 +148,33 @@ def student_get_teammates_not_rated(assessor_id: int):
             WHERE assessor_student_id = %s
         )
     """, (assessor_id, assessor_id, assessor_id))
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result
 
 
 def team_create(team_name: str, product_name: str, invite_code: str, admin_student_id: int):
     """
     Создание новой команды с администратором
-    
+
     Args:
         team_name: Название команды
         product_name: Название продукта
         invite_code: Код приглашения
         admin_student_id: ID администратора команды
-        
+
     Returns:
         Словарь с информацией о созданной команде
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
+    cursors.cur.execute("""
         INSERT INTO teams (team_name, product_name, invite_code, admin_student_id)
         VALUES (%s, %s, %s, %s)
     """, (team_name, product_name, invite_code, admin_student_id))
-    
-    team_id = cur.lastrowid
+
+    team_id = cursors.cur.lastrowid
     # Убран вызов myconn.commit() так как у нас включен autocommit
-    
+
     return {
         'team_id': team_id,
         'team_name': team_name,
@@ -193,38 +186,36 @@ def team_create(team_name: str, product_name: str, invite_code: str, admin_stude
 def team_get_by_invite_code(invite_code: str):
     """
     Поиск команды по коду приглашения
-    
+
     Args:
         invite_code: Код приглашения
-        
+
     Returns:
         Словарь с информацией о команде или None если не найдена
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
-        SELECT t.team_id, t.team_name, t.product_name, t.invite_code, 
+    cursors.dict_cur.execute("""
+        SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s.name as admin_name
         FROM teams t
         JOIN students s ON t.admin_student_id = s.student_id
         WHERE t.invite_code = %s
     """, (invite_code,))
-    
-    result = dict_cur.fetchone()
-    
+
+    result = cursors.dict_cur.fetchone()
+
     return result
 
 
 def team_add_member(team_id: int, student_id: int, role: str):
     """
     Добавление участника в команду с указанной ролью
-    
+
     Args:
         team_id: ID команды
         student_id: ID студента
         role: Роль участника
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
+    cursors.cur.execute("""
         INSERT INTO team_members (team_id, student_id, role)
         VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE role = %s
@@ -234,13 +225,12 @@ def team_add_member(team_id: int, student_id: int, role: str):
 def team_remove_member(team_id: int, student_id: int):
     """
     Удаление участника из команды
-    
+
     Args:
         team_id: ID команды
         student_id: ID студента
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
+    cursors.cur.execute("""
         DELETE FROM team_members
         WHERE team_id = %s AND student_id = %s
     """, (team_id, student_id))
@@ -249,17 +239,16 @@ def team_remove_member(team_id: int, student_id: int):
 def team_get_all_members(team_id: int):
     """
     Получение всех участников команды, включая администратора
-    
+
     Args:
         team_id: ID команды
-        
+
     Returns:
         Список словарей с информацией о всех участниках команды, включая администратора
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
-        SELECT DISTINCT s.student_id, s.name, 
-            CASE 
+    cursors.dict_cur.execute("""
+        SELECT DISTINCT s.student_id, s.name,
+            CASE
                 WHEN t.admin_student_id = s.student_id THEN 'Scrum Master'
                 ELSE tm.role
             END as role
@@ -268,41 +257,40 @@ def team_get_all_members(team_id: int):
         JOIN teams t ON t.team_id = %s
         WHERE tm.team_id = %s OR s.student_id = t.admin_student_id
     """, (team_id, team_id, team_id))
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result
 
 
 def report_create_or_update(student_id: int, sprint_num: int, report_text: str):
     """
     Создание нового отчёта или обновление существующего
-    
+
     Args:
         student_id: ID студента
         sprint_num: Номер спринта
         report_text: Текст отчёта
     """
-    cur = myconn.cursors.cur
     # Проверяем существует ли отчет
-    cur.execute("""
+    cursors.cur.execute("""
         SELECT COUNT(*) as cnt
         FROM sprint_reports
         WHERE student_id = %s AND sprint_num = %s
     """, (student_id, sprint_num))
-    
-    result = cur.fetchone()
-    
+
+    result = cursors.cur.fetchone()
+
     if result[0] > 0:
         # Обновляем существующий отчет
-        cur.execute("""
+        cursors.cur.execute("""
             UPDATE sprint_reports
             SET report_text = %s, report_date = NOW()
             WHERE student_id = %s AND sprint_num = %s
         """, (report_text, student_id, sprint_num))
     else:
         # Создаем новый отчет
-        cur.execute("""
+        cursors.cur.execute("""
             INSERT INTO sprint_reports (student_id, sprint_num, report_text, report_date)
             VALUES (%s, %s, %s, NOW())
         """, (student_id, sprint_num, report_text))
@@ -311,36 +299,34 @@ def report_create_or_update(student_id: int, sprint_num: int, report_text: str):
 def report_get_by_student(student_id: int):
     """
     Получение всех отчётов студента
-    
+
     Args:
         student_id: ID студента
-        
+
     Returns:
         Список словарей с отчётами студента
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT *
         FROM sprint_reports
         WHERE student_id = %s
         ORDER BY sprint_num
     """, (student_id,))
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result
 
 
 def report_delete(student_id: int, sprint_num: int):
     """
     Удаление отчёта студента по конкретному спринту
-    
+
     Args:
         student_id: ID студента
         sprint_num: Номер спринта
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
+    cursors.cur.execute("""
         DELETE FROM sprint_reports
         WHERE student_id = %s AND sprint_num = %s
     """, (student_id, sprint_num))
@@ -356,7 +342,7 @@ def rating_create(
 ):
     """
     Создание новой оценки участника команды
-    
+
     Args:
         assessor_student_id: ID студента, который оценивает
         assessored_student_id: ID студента, которого оценивают
@@ -364,12 +350,11 @@ def rating_create(
         advantages: Положительные качества
         disadvantages: Области для улучшения
     """
-    cur = myconn.cursors.cur
-    cur.execute("""
-        INSERT INTO team_members_ratings 
+    cursors.cur.execute("""
+        INSERT INTO team_members_ratings
         (assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages, rate_date)
         VALUES (%s, %s, %s, %s, %s, NOW())
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
         overall_rating = %s, advantages = %s, disadvantages = %s, rate_date = NOW()
     """, (assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages,
           overall_rating, advantages, disadvantages))
@@ -379,47 +364,45 @@ def rating_create(
 def rating_get_who_rated_me(student_id: int):
     """
     Получение списка тех, кто оценил данного студента
-    
+
     Args:
         student_id: ID студента
-        
+
     Returns:
         Список словарей с информацией о тех, кто оценил студента
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
+    cursors.dict_cur.execute("""
         SELECT s.name as assessor_name, tmr.rate_date
         FROM team_members_ratings tmr
         JOIN students s ON tmr.assessor_student_id = s.student_id
         WHERE tmr.assessored_student_id = %s
         ORDER BY tmr.rate_date DESC
     """, (student_id,))
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result
 
 
 def rating_get_given_by_student(student_id: int):
     """
     Получение списка оценок, которые поставил данный студент
-    
+
     Args:
         student_id: ID студента
-        
+
     Returns:
         Список словарей с оценками, которые поставил студент
     """
-    dict_cur = myconn.cursors.dict_cur
-    dict_cur.execute("""
-        SELECT s.name as assessed_name, tmr.overall_rating, 
+    cursors.dict_cur.execute("""
+        SELECT s.name as assessed_name, tmr.overall_rating,
                tmr.advantages, tmr.disadvantages, tmr.rate_date
         FROM team_members_ratings tmr
         JOIN students s ON tmr.assessored_student_id = s.student_id
         WHERE tmr.assessor_student_id = %s
         ORDER BY tmr.rate_date DESC
     """, (student_id,))
-    
-    result = dict_cur.fetchall()
-    
+
+    result = cursors.dict_cur.fetchall()
+
     return result

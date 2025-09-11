@@ -164,8 +164,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
     await state.set_state(states.ReviewProcess.disadvantages_input)
 
     await message.answer(
-        f"✅ Положительные качества записаны\n\n"
-        f"📈 *Области для улучшения*\n"
+        text=f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
         parse_mode="Markdown"
     )

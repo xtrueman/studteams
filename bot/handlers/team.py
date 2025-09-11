@@ -366,6 +366,7 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
         await cancel_join_team(message, state)
 
 
+@decorators.log_handler("cancel_join_team")
 async def cancel_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Отмена присоединения к команде"""
     await state.clear()
@@ -373,11 +374,96 @@ async def cancel_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
     await message.answer("❌ Присоединение к команде отменено.", reply_markup=keyboard)
 
 
+@decorators.log_handler("team_report")
+async def handle_team_report(message: aiogram.types.Message):
+    """Просмотр отчёта о команде"""
+    student = db.student_get_by_tg_id(message.from_user.id)
+
+    if not student or 'team' not in student:
+        await message.answer("❌ Вы не состоите в команде.")
+        return
+
+    # Получаем всех участников команды, включая администратора
+    all_members = db.team_get_all_members(student['team']['team_id'])
+
+    if not all_members:
+        await message.answer("👥 В команде нет участников.")
+        return
+
+    # Собираем статистику для каждого участника
+    team_stats = []
+    
+    for member in all_members:
+        # Получаем ID участника
+        member_id = ""
+        member_name = ""
+        member_role = ""
+        
+        if isinstance(member, dict):
+            member_id = member.get('student_id', '')
+            member_name = member.get('name', 'Неизвестно')
+            member_role = member.get('role', 'Участник')
+        else:
+            member_id = getattr(member, 'student_id', '')
+            member_name = getattr(member, 'name', 'Неизвестно')
+            member_role = getattr(member, 'role', 'Участник')
+
+        # Получаем количество отчетов
+        reports = db.report_get_by_student(member_id)
+        reports_count = len(reports) if reports else 0
+
+        # Получаем количество оценок, данных участником
+        ratings_given = db.rating_get_given_by_student(member_id)
+        ratings_given_count = len(ratings_given) if ratings_given else 0
+
+        # Получаем количество оценок, полученных участником
+        ratings_received = db.rating_get_who_rated_me(member_id)
+        ratings_received_count = len(ratings_received) if ratings_received else 0
+
+        # Считаем среднюю оценку, если есть оценки
+        avg_rating = 0
+        if ratings_received:
+            total_rating = 0
+            count = 0
+            for rating in ratings_received:
+                if isinstance(rating, dict):
+                    total_rating += rating.get('overall_rating', 0)
+                else:
+                    total_rating += getattr(rating, 'overall_rating', 0)
+                count += 1
+            if count > 0:
+                avg_rating = round(total_rating / count, 1)
+
+        team_stats.append({
+            'name': member_name,
+            'role': member_role,
+            'reports_count': reports_count,
+            'ratings_given_count': ratings_given_count,
+            'ratings_received_count': ratings_received_count,
+            'avg_rating': avg_rating
+        })
+
+    # Формируем текст отчета
+    report_text = f"📊 *Отчёт о команде: {student['team']['team_name']}*\n\n"
+    
+    for stats in team_stats:
+        report_text += f"👤 {stats['name']} ({stats['role']})\n"
+        report_text += f"   📝 Отчеты: {stats['reports_count']}\n"
+        report_text += f"   ⭐ Оценки от меня: {stats['ratings_given_count']}\n"
+        report_text += f"   👀 Оценки мне: {stats['ratings_received_count']}"
+        if stats['avg_rating'] > 0:
+            report_text += f" (средняя: {stats['avg_rating']}/10)"
+        report_text += "\n\n"
+
+    await message.answer(report_text, parse_mode="Markdown")
+
+
 def register_team_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков команды"""
     # Основные команды
     dp.message.register(handle_register_team, F.text == "Регистрация команды")
     dp.message.register(handle_my_team, F.text == "Моя команда")
+    dp.message.register(handle_team_report, F.text == "📊 Отчёт о команде")
 
     # FSM для регистрации команды (только текстовые поля)
     dp.message.register(process_team_name, states.TeamRegistration.team_name)

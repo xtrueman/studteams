@@ -173,7 +173,7 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                         callback_data=f"edit_member_{member_id}"
                     ),
                     aiogram.types.InlineKeyboardButton(
-                        text="🗑️ Delete",
+                        text="🗑️ Удалить",
                         callback_data=f"remove_member_{member_id}"
                     )
                 ])

@@ -63,14 +63,9 @@ async def callback_confirm_team_registration(
         keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
 
         # Генерируем ссылку-приглашение с инструкцией
-        bot_info = await callback.bot.get_me()
-        bot_username = bot_info.username if bot_info else None
-        if bot_username:
-            invite_link_text = helpers.get_invite_link_text(
-                data['team_name'], invite_code, show_instruction=True
-            )
-        else:
-            invite_link_text = ""
+        invite_link_text = helpers.get_invite_link_text(
+            data['team_name'], invite_code, show_instruction=True
+        )
 
         if callback.message:
             await callback.message.edit_text(
@@ -229,6 +224,7 @@ async def callback_cancel_join_team(callback: aiogram.types.CallbackQuery, state
 
     if callback.message:
         await callback.message.edit_text("❌ Присоединение к команде отменено.")
+
         await callback.message.answer("Главное меню:", reply_markup=keyboard)
     await callback.answer()
 
@@ -663,36 +659,37 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
         await callback.answer("❌ Неверные данные")
         return
 
-    # Извлекаем имя участника из callback_data
-    member_name = callback.data.split("_", 1)[1]
+    # Извлекаем индекс участника из callback_data
+    try:
+        member_index = int(callback.data.split("_", 1)[1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
 
     data = await state.get_data()
     teammates = data.get('teammates_to_rate', [])
 
-    # Находим выбранного участника
-    selected_teammate = None
-    for teammate in teammates:
-        if teammate['name'] == member_name:
-            selected_teammate = teammate
-            break
-
-    if not selected_teammate:
+    # Проверяем, что индекс корректный
+    if member_index < 0 or member_index >= len(teammates):
         await callback.answer("❌ Участник не найден")
         return
+
+    # Получаем выбранного участника по индексу
+    selected_teammate = teammates[member_index]
 
     # Сохраняем выбранного участника в состоянии
     await state.update_data(
         selected_teammate_id=selected_teammate['student_id'],
-        teammate_name=member_name
+        teammate_name=selected_teammate['name']
     )
 
     await state.set_state(states.ReviewProcess.rating_input)
 
     if callback.message:
         await callback.message.edit_text(
-            f"⭐ *Оценка участника: {member_name}*\n\n"
+            f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
             f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-            reply_markup=inline_keyboards.get_rating_inline_keyboard(config.MIN_RATING, config.MAX_RATING),
+            reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
             parse_mode="Markdown"
         )
     await callback.answer()
@@ -705,36 +702,37 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
         await callback.answer("❌ Неверные данные")
         return
 
-    # Извлекаем имя участника из callback_data
-    teammate_name = callback.data.split("_", 1)[1]
+    # Извлекаем индекс участника из callback_data
+    try:
+        teammate_index = int(callback.data.split("_", 1)[1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
 
     data = await state.get_data()
     teammates = data.get('teammates_to_rate', [])
 
-    # Находим выбранного участника
-    selected_teammate = None
-    for teammate in teammates:
-        if teammate['name'] == teammate_name:
-            selected_teammate = teammate
-            break
-
-    if not selected_teammate:
+    # Проверяем, что индекс корректный
+    if teammate_index < 0 or teammate_index >= len(teammates):
         await callback.answer("❌ Участник не найден")
         return
+
+    # Получаем выбранного участника по индексу
+    selected_teammate = teammates[teammate_index]
 
     # Сохраняем выбранного участника в состоянии
     await state.update_data(
         selected_teammate_id=selected_teammate['student_id'],
-        teammate_name=teammate_name
+        teammate_name=selected_teammate['name']
     )
 
     await state.set_state(states.ReviewProcess.rating_input)
 
     if callback.message:
         await callback.message.edit_text(
-            f"⭐ *Оценка участника: {teammate_name}*\n\n"
+            f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
             f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
-            reply_markup=inline_keyboards.get_rating_inline_keyboard(config.MIN_RATING, config.MAX_RATING),
+            reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
             parse_mode="Markdown"
         )
     await callback.answer()
@@ -774,7 +772,42 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
 @decorators.log_handler("callback_edit_member")
 async def callback_edit_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик редактирования участника команды"""
-    await callback.answer("❌ Функция редактирования участника пока не реализована")
+    if not callback.data or not callback.data.startswith("edit_member_"):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    # Извлекаем ID участника из callback_data
+    try:
+        member_id = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("❌ Неверные данные")
+        return
+
+    student = db.student_get_by_tg_id(callback.from_user.id)
+
+    # Проверяем, что пользователь является администратором команды
+    if not student or 'team' not in student or student['team']['admin_student_id'] != student['student_id']:
+        await callback.answer("❌ Недостаточно прав")
+        return
+
+    # Получаем информацию об участнике
+    member_to_edit = db.student_get_by_id(member_id)
+
+    if not member_to_edit:
+        await callback.answer("❌ Участник не найден")
+        return
+
+    # TODO: Implement member editing functionality
+    # For now, we'll just show member info
+    if callback.message:
+        await callback.message.edit_text(
+            f"✏️ *Редактирование участника*\n\n"
+            f"Имя: {member_to_edit['name']}\n"
+            f"ID: {member_to_edit['student_id']}\n\n"
+            f"Функция редактирования пока не реализована.",
+            parse_mode="Markdown"
+        )
+    await callback.answer()
 
 
 @decorators.log_handler("callback_cancel_action")

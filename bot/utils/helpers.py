@@ -30,11 +30,11 @@ def is_valid_group_number(group: str) -> bool:
 
 def extract_sprint_number(text: str) -> int | None:
     """Извлекает номер спринта из текста"""
-    if text.startswith("Спринт №"):
-        try:
-            return int(text.split("№")[1])
-        except (ValueError, IndexError):
-            return None
+    import re
+    # Ищем первое число в тексте
+    match = re.search(r'\d+', text)
+    if match:
+        return int(match.group())
     return None
 
 
@@ -79,18 +79,32 @@ def format_reports_list(reports: list) -> str:
     return text
 
 
+def get_invite_link_text(team_name: str, invite_code: str, show_instruction: bool = False) -> str:
+    """Генерация текста с ссылкой-приглашением"""
+    invite_url = f"https://t.me/{config.BOT_USERNAME}?start={invite_code}"
+    base_text = (
+        f"🔗 *Ссылка-приглашение:*\n"
+        f"`{invite_url}`\n"
+    )
+
+    if show_instruction:
+        base_text += "\n\n📤 Отправьте эту ссылку участникам команды для присоединения."
+
+    return base_text
+
+
 def format_team_info(team: dict, all_members: list) -> str:
     """Форматирует информацию о команде для отображения"""
     team_info = (
-        f"👥 *Команда: {team['team_name']}*\n"
-        f"📱 Продукт: {team['product_name']}\n"
+        f"👥 Команда: *«{team['team_name']}»*\n"
+        f"📱 Продукт: «{team['product_name']}»\n"
     )
 
     # Генерируем и показываем ссылку-приглашение всегда
     invite_link_text = get_invite_link_text(team['team_name'], team['invite_code'])
-    team_info += f"{invite_link_text}\n"
+    team_info += f"\n{invite_link_text}\n"
 
-    team_info += "\n*Участники команды:*\n"
+    team_info += "*Участники команды:*\n"
     for member in all_members:
         # Direct dictionary access for MySQL data
         name = member['name']
@@ -137,17 +151,3 @@ def get_team_display_data(student_id: str, tg_id: int):
         'team': team,
         'all_members': all_members
     }
-
-
-def get_invite_link_text(team_name: str, invite_code: str, show_instruction: bool = False) -> str:
-    """Генерация текста с ссылкой-приглашением"""
-    invite_url = f"https://t.me/{config.BOT_USERNAME}?start={invite_code}"
-    base_text = (
-        f"🔗 *Ссылка-приглашение:*\n"
-        f"`{invite_url}`\n"
-    )
-
-    if show_instruction:
-        base_text += "\n\n📤 Отправьте эту ссылку участникам команды для присоединения."
-
-    return base_text
