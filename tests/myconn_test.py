@@ -5,38 +5,39 @@
 Тесты безопасны и не изменяют существующие данные.
 """
 
-import config
 import myconn
+from config import config
 
 
 def test_config_values_exist():
     """Тест наличия всех необходимых значений конфигурации"""
 
-    assert hasattr(config, 'MYSQL_PROD')
-    assert hasattr(config, 'MYSQL_TEST')
+    assert hasattr(config, 'database')
+    assert hasattr(config.database, 'prod')
+    assert hasattr(config.database, 'test')
 
-    # Проверяем структуру MYSQL_PROD
-    assert 'host' in config.MYSQL_PROD
-    assert 'user' in config.MYSQL_PROD
-    assert 'password' in config.MYSQL_PROD
-    assert 'database' in config.MYSQL_PROD
+    # Проверяем структуру database.prod
+    assert hasattr(config.database.prod, 'host')
+    assert hasattr(config.database.prod, 'user')
+    assert hasattr(config.database.prod, 'password')
+    assert hasattr(config.database.prod, 'database')
 
-    # Проверяем структуру MYSQL_TEST
-    assert 'host' in config.MYSQL_TEST
-    assert 'user' in config.MYSQL_TEST
-    assert 'password' in config.MYSQL_TEST
-    assert 'database' in config.MYSQL_TEST
+    # Проверяем структуру database.test
+    assert hasattr(config.database.test, 'host')
+    assert hasattr(config.database.test, 'user')
+    assert hasattr(config.database.test, 'password')
+    assert hasattr(config.database.test, 'database')
 
     # Проверяем, что значения не пустые
-    assert config.MYSQL_PROD['host']
-    assert config.MYSQL_PROD['user']
-    assert config.MYSQL_PROD['password']
-    assert config.MYSQL_PROD['database']
+    assert config.database.prod.host
+    assert config.database.prod.user
+    assert config.database.prod.password
+    assert config.database.prod.database
 
-    assert config.MYSQL_TEST['host']
-    assert config.MYSQL_TEST['user']
-    assert config.MYSQL_TEST['password']
-    assert config.MYSQL_TEST['database']
+    assert config.database.test.host
+    assert config.database.test.user
+    assert config.database.test.password
+    assert config.database.test.database
 
 
 def setup_function():
@@ -63,7 +64,7 @@ def test_real_connection_success():
     assert conn.is_connected()
 
     # Проверяем, что используется тестовая база данных при запуске тестов
-    expected_db = config.MYSQL_TEST['database']
+    expected_db = config.database.test.database
     assert conn.database == expected_db
 
 
@@ -79,7 +80,7 @@ def test_cursor_usage():
     dict_cur.execute("SELECT DATABASE() as current_db")
     result = dict_cur.fetchone()
     assert isinstance(result, dict)
-    assert result['current_db'] == config.MYSQL_TEST['database']
+    assert result['current_db'] == config.database.test.database
     dict_cur.close()
 
 
@@ -89,7 +90,7 @@ def test_database_tables_exist():
     dict_cur.execute("""
         SELECT TABLE_NAME FROM information_schema.TABLES
         WHERE TABLE_SCHEMA = %s
-    """, (config.MYSQL_TEST['database'],))
+    """, (config.database.test.database,))
 
     tables = [row['TABLE_NAME'] for row in dict_cur.fetchall()]
     expected_tables = ['students', 'teams', 'team_members', 'sprint_reports', 'team_members_ratings']

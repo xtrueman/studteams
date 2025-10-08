@@ -4,8 +4,8 @@
 
 import os
 
-import config
 import mysql.connector
+from config import config
 from mysql.connector import Error
 
 # Глобальная переменная для хранения соединения с базой данных
@@ -22,18 +22,18 @@ def get_db_credentials():
     use_test_db = 'PYTEST_CURRENT_TEST' in os.environ
 
     # Выбираем конфигурацию в зависимости от контекста
-    db_config = config.MYSQL_TEST if use_test_db else config.MYSQL_PROD
+    db_cfg = config.database.test if use_test_db else config.database.prod
 
     return {
-        'host': db_config['host'],
-        'user': db_config['user'],
-        'password': db_config['password'],
-        'database': db_config['database'],
-        'charset': 'utf8mb4',
-        'collation': 'utf8mb4_unicode_ci',
-        'autocommit': True,  # Автокоммит по умолчанию
-        'consume_results': True,  # Автоматически потребляем все результаты
-        'auth_plugin': 'mysql_native_password'  # Для совместимости с разными версиями MySQL
+        'host': db_cfg.host,
+        'user': db_cfg.user,
+        'password': db_cfg.password,
+        'database': db_cfg.database,
+        'charset': db_cfg.charset or 'utf8mb4',
+        'collation': db_cfg.collation or 'utf8mb4_unicode_ci',
+        'autocommit': db_cfg.autocommit if hasattr(db_cfg, 'autocommit') else True,
+        'consume_results': True,
+        'auth_plugin': db_cfg.auth_plugin or 'mysql_native_password'
     }
 
 

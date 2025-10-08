@@ -8,7 +8,7 @@ import datetime
 import random
 import string
 
-import config
+from config import config
 
 import bot.db as db
 
@@ -81,7 +81,7 @@ def format_reports_list(reports: list) -> str:
 
 def get_invite_link_text(team_name: str, invite_code: str, show_instruction: bool = False) -> str:
     """Генерация текста с ссылкой-приглашением"""
-    invite_url = f"https://t.me/{config.BOT_USERNAME}?start={invite_code}"
+    invite_url = f"https://t.me/{config.bot.username}?start={invite_code}"
     base_text = (
         f"🔗 *Ссылка-приглашение:*\n"
         f"`{invite_url}`\n"

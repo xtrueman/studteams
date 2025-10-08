@@ -119,56 +119,57 @@ def get_config(component: str = "common") -> Config:
         return _common_config
 
 
-# Для обратной совместимости создаем переменные в стиле старого config.py
-def _init_legacy_vars():
-    """Инициализация переменных для обратной совместимости."""
-    cfg = get_config("tgbot")
+# Создаём единый объект конфига с доступом ко всем секциям
+class _ConfigProxy:
+    """Прокси-класс для удобного доступа к разным секциям конфига."""
 
-    # Bot settings
-    global BOT_USERNAME, BOT_TOKEN
-    BOT_USERNAME = cfg.get("bot.username", "@SSAU_SoftDevMgmt_bot")
-    BOT_TOKEN = cfg.get("bot.token", "")
+    def __init__(self):
+        self._common = None
+        self._tgbot = None
+        self._webapp = None
 
-    # Database settings
-    global MYSQL_PROD, MYSQL_TEST
-    MYSQL_PROD = {
-        'host': cfg.get("database.prod.host", "localhost"),
-        'user': cfg.get("database.prod.user", "studteams"),
-        'password': cfg.get("database.prod.password", ""),
-        'database': cfg.get("database.prod.database", "studteams"),
-        'charset': cfg.get("database.prod.charset", "utf8mb4"),
-        'collation': cfg.get("database.prod.collation", "utf8mb4_unicode_ci"),
-        'autocommit': cfg.get("database.prod.autocommit", True),
-        'consume_results': True,
-        'auth_plugin': cfg.get("database.prod.auth_plugin", "mysql_native_password"),
-    }
+    @property
+    def common(self):
+        """Общие настройки."""
+        if self._common is None:
+            self._common = get_config("common")
+        return self._common
 
-    MYSQL_TEST = {
-        'host': cfg.get("database.test.host", "localhost"),
-        'user': cfg.get("database.test.user", "studteams"),
-        'password': cfg.get("database.test.password", ""),
-        'database': cfg.get("database.test.database", "studteams_test"),
-        'charset': cfg.get("database.test.charset", "utf8mb4"),
-        'collation': cfg.get("database.test.collation", "utf8mb4_unicode_ci"),
-        'autocommit': cfg.get("database.test.autocommit", True),
-        'consume_results': True,
-        'auth_plugin': cfg.get("database.test.auth_plugin", "mysql_native_password"),
-    }
+    @property
+    def tgbot(self):
+        """Настройки телеграм-бота."""
+        if self._tgbot is None:
+            self._tgbot = get_config("tgbot")
+        return self._tgbot
 
-    # Features
-    global ENABLE_REVIEWS, MAX_SPRINT_NUMBER, MIN_RATING, MAX_RATING
-    ENABLE_REVIEWS = cfg.get("features.enable_reviews", True)
-    MAX_SPRINT_NUMBER = cfg.get("features.max_sprint_number", 6)
-    MIN_RATING = cfg.get("features.min_rating", 1)
-    MAX_RATING = cfg.get("features.max_rating", 10)
+    @property
+    def webapp(self):
+        """Настройки веб-приложения."""
+        if self._webapp is None:
+            self._webapp = get_config("webapp")
+        return self._webapp
 
-    # Logging
-    global LOG_FILE, LOG_LEVEL, LOG_ROTATION, LOG_RETENTION
-    LOG_FILE = cfg.get("logging.file", "logs/studhelper-bot.log")
-    LOG_LEVEL = cfg.get("logging.level", "INFO")
-    LOG_ROTATION = cfg.get("logging.rotation", "10 MB")
-    LOG_RETENTION = cfg.get("logging.retention", "1 month")
+    # Для удобства делаем алиасы на основные секции tgbot
+    @property
+    def bot(self):
+        """Алиас для tgbot.bot."""
+        return self.tgbot.bot
+
+    @property
+    def database(self):
+        """Алиас для tgbot.database."""
+        return self.tgbot.database
+
+    @property
+    def features(self):
+        """Алиас для tgbot.features."""
+        return self.tgbot.features
+
+    @property
+    def logging(self):
+        """Алиас для tgbot.logging."""
+        return self.tgbot.logging
 
 
-# Инициализируем переменные при импорте модуля
-_init_legacy_vars()
+# Единый объект конфига
+config = _ConfigProxy()

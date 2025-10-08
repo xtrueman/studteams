@@ -5,7 +5,7 @@
 """
 
 import aiogram.types
-import config
+from config import config
 
 
 def get_confirmation_inline_keyboard(confirm_text: str = "Продолжить",
@@ -45,9 +45,9 @@ def get_roles_inline_keyboard():
 
 
 def get_sprints_inline_keyboard():
-    """Inline клавиатура выбора спринта"""
+    """Иnline клавиатура выбора спринта"""
     keyboard = []
-    sprints = [f"Спринт №{i}" for i in range(1, config.MAX_SPRINT_NUMBER + 1)]
+    sprints = [f"Спринт №{i}" for i in range(1, config.features.max_sprint_number + 1)]
 
     for i in range(0, len(sprints), 3):
         row = []
@@ -65,17 +65,17 @@ def get_sprints_inline_keyboard():
 
 
 def get_ratings_inline_keyboard():
-    """Inline клавиатура выбора оценки"""
+    """Иnline клавиатура выбора оценки"""
     keyboard = []
 
     # Первая строка: 1-5
     row1 = []
-    for i in range(config.MIN_RATING, 6):
+    for i in range(config.features.min_rating, 6):
         row1.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
 
     # Вторая строка: 6-10
     row2 = []
-    for i in range(6, config.MAX_RATING + 1):
+    for i in range(6, config.features.max_rating + 1):
         row2.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
 
     keyboard.extend([row1, row2])

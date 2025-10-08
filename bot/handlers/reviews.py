@@ -7,8 +7,8 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
-import config
 from aiogram import F
+from config import config
 
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
@@ -20,7 +20,7 @@ import bot.utils.decorators as decorators
 @decorators.log_handler("rate_teammates")
 async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Начало оценивания участников команды"""
-    if not config.ENABLE_REVIEWS:
+    if not config.features.enable_reviews:
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
@@ -57,7 +57,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
 @decorators.log_handler("who_rated_me")
 async def handle_who_rated_me(message: aiogram.types.Message):
     """Показать кто оценил пользователя"""
-    if not config.ENABLE_REVIEWS:
+    if not config.features.enable_reviews:
         await message.answer("❌ Функция оценивания временно отключена.")
         return
 
@@ -117,13 +117,15 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         rating = int(message.text.strip())
     except ValueError:
         await message.answer(
-            f"❌ Введите число от {config.MIN_RATING} до {config.MAX_RATING}:"
+            f"❌ Введите число от {config.features.min_rating} до {config.features.max_rating}:"
         )
         return
 
-    if rating < config.MIN_RATING or rating > config.MAX_RATING:
+    if rating < config.features.min_rating or rating > config.features.max_rating:
         await message.answer(
-            f"❌ Оценка должна быть от {config.MIN_RATING} до {config.MAX_RATING}. Попробуйте еще раз:"
+            "❌ Оценка должна быть от "
+            f"{config.features.min_rating} до {config.features.max_rating}. "
+            "Попробуйте еще раз:"
         )
         return
 
@@ -237,7 +239,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
             )
 
             # Переходим на страницу "Оценить участников команды"
-            if config.ENABLE_REVIEWS:
+            if config.features.enable_reviews:
                 teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                 if not teammates_to_rate:

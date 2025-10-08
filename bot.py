@@ -17,15 +17,15 @@ import bot.handlers.reviews as reviews_handlers
 import bot.handlers.start as start_handlers
 import bot.handlers.team as team_handlers
 import bot.middlewares.logging as logging_middleware
-import config
 import loguru
+from config import config
 
 # Настройка логирования с loguru
 loguru.logger.add(
-    config.LOG_FILE,
-    rotation=config.LOG_ROTATION,
-    retention=config.LOG_RETENTION,
-    level=config.LOG_LEVEL,
+    config.logging.file,
+    rotation=config.logging.rotation,
+    retention=config.logging.retention,
+    level=config.logging.level,
     format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}"
 )
 
@@ -34,12 +34,12 @@ logger = loguru.logger
 
 async def main():
     # Проверяем конфигурацию
-    if not config.BOT_TOKEN:
+    if not config.bot.token:
         logger.error("BOT_TOKEN not set in config.py")
         return
 
     # Создаем бота и диспетчер
-    bot = aiogram.Bot(token=config.BOT_TOKEN)
+    bot = aiogram.Bot(token=config.bot.token)
     storage = aiogram.fsm.storage.memory.MemoryStorage()
     dp = aiogram.Dispatcher(storage=storage)
 

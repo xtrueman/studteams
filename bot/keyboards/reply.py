@@ -5,7 +5,7 @@
 """
 
 import aiogram.types
-import config
+from config import config
 
 
 def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
@@ -27,7 +27,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
         row1 = [aiogram.types.KeyboardButton(text="Моя команда")]
 
         # Добавляем кнопку "Отчёт о команде" справа от "Моя команда" для всех участников при включенных отзывах
-        if config.ENABLE_REVIEWS:
+        if config.features.enable_reviews:
             row1.append(aiogram.types.KeyboardButton(text="📊 Отчёт о команде"))
 
         row2 = [
@@ -35,7 +35,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
             aiogram.types.KeyboardButton(text="Отправить отчёт")
         ]
 
-        if config.ENABLE_REVIEWS:
+        if config.features.enable_reviews:
             row4 = [
                 aiogram.types.KeyboardButton(text="Оценить участников команды"),
                 aiogram.types.KeyboardButton(text="Кто меня оценил?")
@@ -95,7 +95,7 @@ def get_sprints_keyboard():
         one_time_keyboard=True
     )
 
-    sprints = [f"Спринт №{i}" for i in range(1, config.MAX_SPRINT_NUMBER + 1)]
+    sprints = [f"Спринт №{i}" for i in range(1, config.features.max_sprint_number + 1)]
 
     for i in range(0, len(sprints), 3):
         row = []
@@ -117,9 +117,12 @@ def get_ratings_keyboard():
     )
 
     # Первая строка: 1-5
-    row1 = [aiogram.types.KeyboardButton(text=str(i)) for i in range(config.MIN_RATING, 6)]
+    row1 = [aiogram.types.KeyboardButton(text=str(i)) for i in range(config.features.min_rating, 6)]
     # Вторая строка: 6-10
-    row2 = [aiogram.types.KeyboardButton(text=str(i)) for i in range(6, config.MAX_RATING + 1)]
+    row2 = [
+        aiogram.types.KeyboardButton(text=str(i))
+        for i in range(6, config.features.max_rating + 1)
+    ]
 
     keyboard.keyboard.extend([row1, row2])
     keyboard.keyboard.append([aiogram.types.KeyboardButton(text="Отмена")])

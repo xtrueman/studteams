@@ -7,8 +7,8 @@
 import aiogram
 import aiogram.filters
 import aiogram.fsm.context
-import config
 from aiogram import F
+from config import config
 
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
@@ -471,7 +471,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
                 )
 
                 # Переходим на страницу "Оценить участников команды"
-                if config.ENABLE_REVIEWS:
+                if config.features.enable_reviews:
                     teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                     if not teammates_to_rate:
@@ -702,7 +702,7 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
     if callback.message:
         await callback.message.edit_text(
             f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
-            f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
+            f"Поставьте оценку от {config.features.min_rating} до {config.features.max_rating}:",
             reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
             parse_mode="Markdown"
         )
@@ -745,7 +745,7 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
     if callback.message:
         await callback.message.edit_text(
             f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
-            f"Поставьте оценку от {config.MIN_RATING} до {config.MAX_RATING}:",
+            f"Поставьте оценку от {config.features.min_rating} до {config.features.max_rating}:",
             reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
             parse_mode="Markdown"
         )
@@ -766,8 +766,10 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
         await callback.answer("❌ Неверные данные")
         return
 
-    if rating < config.MIN_RATING or rating > config.MAX_RATING:
-        await callback.answer(f"❌ Оценка должна быть от {config.MIN_RATING} до {config.MAX_RATING}")
+    if rating < config.features.min_rating or rating > config.features.max_rating:
+        await callback.answer(
+            f"❌ Оценка должна быть от {config.features.min_rating} до {config.features.max_rating}"
+        )
         return
 
     await state.update_data(overall_rating=rating)
