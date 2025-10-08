@@ -173,8 +173,9 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
 
 def register_reports_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков отчетов"""
+    # FSM обработчики РЕГИСТРИРУЮТСЯ ПЕРВЫМИ
+    dp.message.register(process_report_text, states.ReportCreation.report_text)
+
+    # Основные команды (регистрируются ПОСЛЕ FSM)
     dp.message.register(handle_my_reports, F.text == "Мои отчёты")
     dp.message.register(handle_send_report, F.text == "Отправить отчёт")
-
-    # FSM для создания отчета
-    dp.message.register(process_report_text, states.ReportCreation.report_text)

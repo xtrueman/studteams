@@ -295,9 +295,12 @@ async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.conte
 
 def register_reviews_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков оценивания"""
-    dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
-    dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
+    # FSM обработчики РЕГИСТРИРУЮТСЯ ПЕРВЫМИ
     dp.message.register(process_rating_input, states.ReviewProcess.rating_input)
     dp.message.register(process_advantages_input, states.ReviewProcess.advantages_input)
     dp.message.register(process_disadvantages_input, states.ReviewProcess.disadvantages_input)
     dp.message.register(confirm_review, states.ReviewProcess.confirmation)
+
+    # Основные команды (регистрируются ПОСЛЕ FSM)
+    dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
+    dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")

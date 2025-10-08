@@ -459,19 +459,18 @@ async def handle_team_report(message: aiogram.types.Message):
 
 def register_team_handlers(dp: aiogram.Dispatcher):
     """Регистрация обработчиков команды"""
-    # Основные команды
-    dp.message.register(handle_register_team, F.text == "Регистрация команды")
-    dp.message.register(handle_my_team, F.text == "Моя команда")
-    dp.message.register(handle_team_report, F.text == "📊 Отчёт о команде")
-
-    # FSM для регистрации команды (только текстовые поля)
+    # FSM обработчики РЕГИСТРИРУЮТСЯ ПЕРВЫМИ (они имеют приоритет)
+    # FSM для регистрации команды
     dp.message.register(process_team_name, states.TeamRegistration.team_name)
     dp.message.register(process_product_name, states.TeamRegistration.product_name)
     dp.message.register(process_admin_name, states.TeamRegistration.user_name)
     dp.message.register(process_admin_group, states.TeamRegistration.user_group)
-    # confirm_team_registration теперь обрабатывается через callback
 
-    # FSM для присоединения к команде (только текстовые поля)
+    # FSM для присоединения к команде
     dp.message.register(process_join_user_name, states.JoinTeam.user_name)
     dp.message.register(process_join_user_group, states.JoinTeam.user_group)
-    # process_join_user_role и confirm_join_team теперь обрабатываются через callback
+
+    # Основные команды (регистрируются ПОСЛЕ FSM)
+    dp.message.register(handle_register_team, F.text == "Регистрация команды")
+    dp.message.register(handle_my_team, F.text == "Моя команда")
+    dp.message.register(handle_team_report, F.text == "📊 Отчёт о команде")
