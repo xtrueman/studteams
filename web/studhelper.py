@@ -8,7 +8,7 @@ app = FastAPI(title="StudTeams Web")
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Templates (jinja2)
+# Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
 
@@ -25,12 +25,12 @@ async def faq(request: Request):
 
 @app.get("/teams", response_class=HTMLResponse)
 async def teams(request: Request):
-    from db import get_teams_with_members, get_teams_count, get_total_students_count
-    
+    from db import get_teams_count, get_teams_with_members, get_total_students_count
+
     teams_data = get_teams_with_members()
     teams_count = get_teams_count()
     students_count = get_total_students_count()
-    
+
     params = {
         "request": request,
         "teams": teams_data,
@@ -41,22 +41,22 @@ async def teams(request: Request):
 
 
 @app.get("/reports", response_class=HTMLResponse)
-async def reports(request: Request, team: str = None, sprint: int = None, student: str = None):
+async def reports(request: Request, team: str | None = None, sprint: int | None = None, student: str | None = None):
     from db import get_all_reports, get_reports_statistics, get_teams_list
-    
+
     # Получаем отчеты с фильтрацией
     reports_data = get_all_reports(
         team_filter=team,
         sprint_filter=sprint,
         student_filter=student
     )
-    
+
     # Получаем статистику
     stats = get_reports_statistics()
-    
+
     # Получаем список команд для фильтра
     teams_list = get_teams_list()
-    
+
     params = {
         "request": request,
         "reports": reports_data,
