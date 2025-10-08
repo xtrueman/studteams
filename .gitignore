@@ -29,5 +29,5 @@ env.bak/
 venv.bak/
 
 # Secret configuration files
-# config/secrets.yaml
+#config/secrets.yaml
 #config/secrets-*.yaml
