@@ -2,23 +2,38 @@
 Менеджер соединений / курсоров к MySQL
 """
 
+import os
+
+import config
 import mysql.connector
 from mysql.connector import Error
-import config
-
-DB_CREDENTIALS = {
-    'host': config.MYSQL_HOST,
-    'user': config.MYSQL_USER,
-    'password': config.MYSQL_PASS,
-    'database': config.MYSQL_BDNAME,
-    'charset': 'utf8mb4',
-    'collation': 'utf8mb4_unicode_ci',
-    'autocommit': True,  # Автокоммит по умолчанию
-    'consume_results': True  # Автоматически потребляем все результаты
-}
 
 # Глобальная переменная для хранения соединения с базой данных
 conn = None
+
+
+def get_db_credentials():
+    """
+    Функция для получения учетных данных базы данных.
+    Выбирает между продакшен и тестовой базой данных в зависимости от контекста.
+    """
+    # Определяем, использовать ли тестовую базу данных
+    # Это будет True при запуске pytest тестов
+    use_test_db = 'PYTEST_CURRENT_TEST' in os.environ
+
+    # Выбираем конфигурацию в зависимости от контекста
+    db_config = config.MYSQL_TEST if use_test_db else config.MYSQL_PROD
+
+    return {
+        'host': db_config['host'],
+        'user': db_config['user'],
+        'password': db_config['password'],
+        'database': db_config['database'],
+        'charset': 'utf8mb4',
+        'collation': 'utf8mb4_unicode_ci',
+        'autocommit': True,  # Автокоммит по умолчанию
+        'consume_results': True  # Автоматически потребляем все результаты
+    }
 
 
 def get_connection():
@@ -27,18 +42,19 @@ def get_connection():
     Если соединение еще не установлено или закрыто, устанавливает новое.
     """
     global conn
-    
+
     # Проверяем, есть ли активное соединение
     if conn and conn.is_connected():
         return conn
-    
+
     try:
-        conn = mysql.connector.connect(**DB_CREDENTIALS)
+        # Получаем учетные данные при каждом подключении
+        db_credentials = get_db_credentials()
+        conn = mysql.connector.connect(**db_credentials)
         if conn.is_connected():
-            print(f"Подключение к MySQL базе данных '{config.MYSQL_BDNAME}' установлено")
+            pass
         return conn
-    except Error as e:
-        print(f"Ошибка подключения к MySQL: {e}")
+    except Error:
         raise
 
 
@@ -82,37 +98,38 @@ def close_connection():
     if conn and conn.is_connected():
         conn.close()
         conn = None
-        print("Соединение с MySQL закрыто")
+        # Получаем учетные данные для вывода имени базы данных
+        get_db_credentials()
 
 
 class GlobalCursors:
     """
     Класс для управления глобальными курсорами MySQL
     """
-    
+
     def __getattr__(self, name):
         if name == 'cur':
             cur = cursor()
-            setattr(self, 'cur', cur)
+            self.cur = cur
             return cur
         elif name == 'dict_cur':
             dict_cur = dict_cursor()
-            setattr(self, 'dict_cur', dict_cur)
+            self.dict_cur = dict_cur
             return dict_cur
         else:
             raise AttributeError(f"'GlobalCursors' has no attribute '{name}'")
-    
+
     def __del__(self):
         """Закрываем курсоры при удалении объекта"""
         try:
             if hasattr(self, 'cur') and self.cur:
                 self.cur.close()
-        except:
+        except Exception:
             pass
         try:
             if hasattr(self, 'dict_cur') and self.dict_cur:
                 self.dict_cur.close()
-        except:
+        except Exception:
             pass
 
 

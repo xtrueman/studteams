@@ -10,7 +10,6 @@ import asyncio
 
 import aiogram
 import aiogram.fsm.storage.memory
-# import bot.database.client as db_client
 import bot.handlers.admin as admin_handlers
 import bot.handlers.callbacks as callback_handlers
 import bot.handlers.reports as reports_handlers

@@ -10,10 +10,18 @@ BOT_USERNAME = "@SSAU_SoftDevMgmt_bot"
 BOT_TOKEN = "8307678596:AAEeJm_M1rV4yMU6rRT4W7lqQPqLnwfRogo" # noqa S105
 
 # MySQL
-MYSQL_HOST = 'localhost'
-MYSQL_USER = 'studteams'
-MYSQL_PASS = 'MySPss123!'
-MYSQL_BDNAME = 'studteams'
+MYSQL_PROD = {
+    'host': 'localhost',
+    'user': 'studteams',
+    'password': 'MySPss123!',
+    'database': 'studteams',
+}
+MYSQL_TEST = {
+    'host': 'localhost',
+    'user': 'studteams',
+    'password': 'MySPss123!',
+    'database': 'studteams_test',
+}
 
 # Features
 ENABLE_REVIEWS = True

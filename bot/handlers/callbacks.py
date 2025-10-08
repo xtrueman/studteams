@@ -10,7 +10,6 @@ import aiogram.fsm.context
 import config
 from aiogram import F
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
@@ -342,12 +341,16 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
     await state.set_state(states.ReportCreation.report_text)
 
     if callback.message:
+        report_preview = report_to_edit['report_text'][:200]
+        ellipsis = '...' if len(report_to_edit['report_text']) > 200 else ''
         await callback.message.edit_text(
             f"📝 *Редактирование отчета*\n\n"
             f"📊 Спринт: №{sprint_num}\n\n"
-            f"Текущий текст отчета:\n{report_to_edit['report_text'][:200]}{'...' if len(report_to_edit['report_text']) > 200 else ''}\n\n"
+            f"Текущий текст отчета:\n{report_preview}{ellipsis}\n\n"
             f"Введите новый текст отчета:",
-            reply_markup=inline_keyboards.get_confirmation_inline_keyboard("Отмена", "Назад", "cancel", "back"),
+            reply_markup=inline_keyboards.get_confirmation_inline_keyboard(
+                "Отмена", "Назад", "cancel", "back"
+            ),
             parse_mode="Markdown"
         )
     await callback.answer()
@@ -482,10 +485,13 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
 
                         await state.set_state(states.ReviewProcess.teammate_selection)
 
+                        keyboard = inline_keyboards.get_dynamic_inline_keyboard(
+                            teammate_names, "teammate", columns=2
+                        )
                         await callback.message.answer(
                             "⭐ *Оценивание участников команды*\n\n"
                             "Выберите участника для оценки:",
-                            reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
+                            reply_markup=keyboard,
                             parse_mode="Markdown"
                         )
 
@@ -595,7 +601,11 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
             team_data = helpers.get_team_display_data(None, callback.from_user.id)
 
             if team_data:
-                await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+                await callback.message.answer(
+                    team_data['team_info'],
+                    parse_mode="Markdown",
+                    reply_markup=team_data['keyboard']
+                )
 
     except Exception as e:
         if callback.message:
@@ -612,7 +622,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
 async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, state: aiogram.fsm.context.FSMContext):
     """Callback обработчик отмены удаления участника"""
     await state.clear()
-    
+
     if callback.message:
         await callback.message.edit_text("❌ Удаление участника отменено.")
 
@@ -620,7 +630,11 @@ async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, s
         team_data = helpers.get_team_display_data(None, callback.from_user.id)
 
         if team_data:
-            await callback.message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+            await callback.message.answer(
+                team_data['team_info'],
+                parse_mode="Markdown",
+                reply_markup=team_data['keyboard']
+            )
     await callback.answer()
 
 

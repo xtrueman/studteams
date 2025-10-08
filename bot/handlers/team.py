@@ -11,7 +11,6 @@ import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
@@ -392,13 +391,13 @@ async def handle_team_report(message: aiogram.types.Message):
 
     # Собираем статистику для каждого участника
     team_stats = []
-    
+
     for member in all_members:
         # Получаем ID участника
         member_id = ""
         member_name = ""
         member_role = ""
-        
+
         if isinstance(member, dict):
             member_id = member.get('student_id', '')
             member_name = member.get('name', 'Неизвестно')
@@ -445,7 +444,7 @@ async def handle_team_report(message: aiogram.types.Message):
 
     # Формируем текст отчета
     report_text = f"📊 *Отчёт о команде: {student['team']['team_name']}*\n\n"
-    
+
     for stats in team_stats:
         report_text += f"👤 {stats['name']} ({stats['role']})\n"
         report_text += f"   📝 Отчеты: {stats['reports_count']}\n"

@@ -10,7 +10,6 @@ import aiogram.fsm.context
 import config
 from aiogram import F
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
@@ -253,10 +252,13 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                     await state.update_data(teammates_to_rate=teammates_to_rate)
                     await state.set_state(states.ReviewProcess.teammate_selection)
 
+                    keyboard = inline_keyboards.get_dynamic_inline_keyboard(
+                        teammate_names, "teammate", columns=2
+                    )
                     await message.answer(
                         "⭐ *Оценивание участников команды*\n\n"
                         "Выберите участника для оценки:",
-                        reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
+                        reply_markup=keyboard,
                         parse_mode="Markdown"
                     )
 

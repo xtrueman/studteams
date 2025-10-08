@@ -156,11 +156,11 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
             # Direct dictionary access
             member_id = member.get('student_id')
             member_name = member.get('name')
-            
+
             # Skip if this is the current user
             if member_id == current_user_id:
                 continue
-                
+
             if member_id and member_name:
                 # Обрезаем длинные имена для лучшей читаемости
                 name = member_name

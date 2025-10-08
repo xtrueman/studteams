@@ -40,9 +40,16 @@ ignore = [
     "RUF003", # Игнорирование похожих символов с разными ASCII
     "S110",  # try-except-pass
     "BLE001", # blind-except
+    "S311",  # Standard pseudo-random generators (для invite code это нормально)
+    "DTZ001", # datetime without tzinfo (не критично для display форматирования)
+    "DTZ005", # datetime.now without tz (не критично для display форматирования)
 ]
 # Исключение директорий и файлов из линтинга
 exclude = []
+
+# Игнорирование правил для конкретных путей
+[lint.per-file-ignores]
+"tests/*" = ["S101"]  # Allow asserts in tests
 # Ошибки, которые могут быть исправлены автоматически
 # fixable = [ "I", "W293", "RUF010", "E501" ]
  

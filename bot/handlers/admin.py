@@ -9,14 +9,150 @@ import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
 import bot.utils.helpers as helpers
-import config
+
+
+def get_team_member_stats(member_id: int) -> dict:
+    """
+    Получение статистики участника команды.
+
+    Args:
+        member_id: ID участника
+
+    Returns:
+        Словарь со статистикой участника
+    """
+    try:
+        # Получаем отчеты участника
+        reports = db.report_get_by_student(member_id)
+
+        # Получаем оценки, данные участником
+        ratings_given = db.rating_get_given_by_student(member_id)
+
+        # Получаем оценки, полученные участником
+        ratings_received = db.rating_get_who_rated_me(member_id)
+
+        # Считаем среднюю оценку, если есть оценки
+        avg_rating = 0
+        if ratings_received:
+            total_rating = 0
+            count = 0
+            for rating in ratings_received:
+                if isinstance(rating, dict):
+                    total_rating += rating.get('overall_rating', 0)
+                else:
+                    total_rating += getattr(rating, 'overall_rating', 0)
+                count += 1
+            if count > 0:
+                avg_rating = round(total_rating / count, 1)
+
+        return {
+            'success': True,
+            'reports': reports,
+            'reports_count': len(reports),
+            'ratings_given': ratings_given,
+            'ratings_given_count': len(ratings_given),
+            'ratings_received': ratings_received,
+            'ratings_received_count': len(ratings_received),
+            'average_rating': avg_rating
+        }
+
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def get_team_overall_stats(team_id: int) -> dict:
+    """
+    Получение общей статистики команды.
+
+    Args:
+        team_id: ID команды
+
+    Returns:
+        Словарь с общей статистикой команды
+    """
+    try:
+        # Получаем всех участников команды, включая администратора
+        all_members = db.team_get_all_members(team_id)
+
+        if not all_members:
+            return {
+                'success': False,
+                'error': 'В команде нет участников'
+            }
+
+        # Собираем статистику для каждого участника
+        team_stats = []
+
+        for member in all_members:
+            # Получаем ID участника
+            member_id = ""
+            member_name = ""
+            member_role = ""
+
+            if isinstance(member, dict):
+                member_id = member.get('student_id', '')
+                member_name = member.get('name', 'Неизвестно')
+                member_role = member.get('role', 'Участник')
+            else:
+                member_id = getattr(member, 'student_id', '')
+                member_name = getattr(member, 'name', 'Неизвестно')
+                member_role = getattr(member, 'role', 'Участник')
+
+            # Получаем количество отчетов
+            reports = db.report_get_by_student(member_id)
+            reports_count = len(reports) if reports else 0
+
+            # Получаем количество оценок, данных участником
+            ratings_given = db.rating_get_given_by_student(member_id)
+            ratings_given_count = len(ratings_given) if ratings_given else 0
+
+            # Получаем количество оценок, полученных участником
+            ratings_received = db.rating_get_who_rated_me(member_id)
+            ratings_received_count = len(ratings_received) if ratings_received else 0
+
+            # Считаем среднюю оценку, если есть оценки
+            avg_rating = 0
+            if ratings_received:
+                total_rating = 0
+                count = 0
+                for rating in ratings_received:
+                    if isinstance(rating, dict):
+                        total_rating += rating.get('overall_rating', 0)
+                    else:
+                        total_rating += getattr(rating, 'overall_rating', 0)
+                    count += 1
+                if count > 0:
+                    avg_rating = round(total_rating / count, 1)
+
+            team_stats.append({
+                'name': member_name,
+                'role': member_role,
+                'reports_count': reports_count,
+                'ratings_given_count': ratings_given_count,
+                'ratings_received_count': ratings_received_count,
+                'avg_rating': avg_rating
+            })
+
+        return {
+            'success': True,
+            'members': all_members,
+            'stats': team_stats
+        }
+
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 
 @decorators.log_handler("admin_panel")
@@ -24,7 +160,7 @@ async def handle_admin_panel(message: aiogram.types.Message):
     """Показать панель администратора"""
     # В реальной реализации здесь должна быть проверка прав администратора
     # Например, проверка по списку разрешенных user_id
-    
+
     keyboard = keyboards.get_admin_panel_keyboard()
     await message.answer(
         "🔧 *Панель администратора*\n\n"
@@ -38,7 +174,7 @@ async def handle_admin_panel(message: aiogram.types.Message):
 async def handle_view_team_members(message: aiogram.types.Message):
     """Просмотр участников команды"""
     student = db.student_get_by_tg_id(message.from_user.id)
-    
+
     if not student:
         await message.answer("❌ Вы не состоите в команде.")
         return
@@ -153,7 +289,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
             # Get IDs safely
             team_id = ""
             student_id = ""
-            
+
             if isinstance(student, dict) and 'team' in student:
                 if isinstance(student['team'], dict):
                     team_id = student['team'].get('team_id', '')
@@ -161,7 +297,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
                     team_id = getattr(student['team'], 'team_id', '')
             elif hasattr(student, 'team'):
                 team_id = getattr(student['team'], 'team_id', '')
-                
+
             if isinstance(selected_member, dict):
                 student_id = selected_member.get('student_id', '')
             else:
@@ -271,7 +407,7 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         await message.answer("❌ Участник не найден. Выберите участника из списка:")
         return
 
-    # Получаем статистику участника
+    # Получаем статистику участника с помощью новой функции
     try:
         # Get ID safely
         member_id = ""
@@ -280,9 +416,13 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         else:
             member_id = getattr(selected_member, 'student_id', '')
 
-        reports = db.report_get_by_student(member_id)
-        ratings_given = db.rating_get_given_by_student(member_id)
-        ratings_received = db.rating_get_who_rated_me(member_id)
+        # Используем новую функцию для получения статистики
+        stats = get_team_member_stats(member_id)
+
+        if not stats['success']:
+            await message.answer(f"❌ Ошибка при получении статистики: {stats['error']}")
+            await state.clear()
+            return
 
         # Get name safely
         member_name = ""
@@ -295,11 +435,11 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         stats_text = f"📊 *Статистика участника: {member_name}*\n\n"
 
         # Отчеты
-        stats_text += f"📝 *Отчеты:*\n"
-        if reports:
-            stats_text += f"Отправлено: {len(reports)}\n"
+        stats_text += "📝 *Отчеты:*\n"
+        if stats['reports']:
+            stats_text += f"Отправлено: {stats['reports_count']}\n"
             sprint_numbers = []
-            for report in reports:
+            for report in stats['reports']:
                 if isinstance(report, dict):
                     sprint_numbers.append(str(report['sprint_num']))
                 else:
@@ -309,28 +449,17 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
             stats_text += "Нет отчетов\n\n"
 
         # Оценки, данные другими
-        stats_text += f"⭐ *Оценки, данные другими:*\n"
-        if ratings_received:
-            stats_text += f"Получено: {len(ratings_received)}\n"
-            if ratings_received:  # Check if list is not empty before accessing elements
-                total_rating = 0
-                count = 0
-                for rating in ratings_received:
-                    if isinstance(rating, dict):
-                        total_rating += rating.get('overall_rating', 0)
-                    else:
-                        total_rating += getattr(rating, 'overall_rating', 0)
-                    count += 1
-                if count > 0:
-                    avg_rating = total_rating / count
-                    stats_text += f"Средняя оценка: {avg_rating:.1f}/10\n\n"
+        stats_text += "⭐ *Оценки, данные другими:*\n"
+        if stats['ratings_received']:
+            stats_text += f"Получено: {stats['ratings_received_count']}\n"
+            stats_text += f"Средняя оценка: {stats['average_rating']:.1f}/10\n\n"
         else:
             stats_text += "Пока никто не оценил\n\n"
 
         # Оценки, данные участником
-        stats_text += f"👥 *Оценки, данные участником:*\n"
-        if ratings_given:
-            stats_text += f"Отправлено: {len(ratings_given)}\n"
+        stats_text += "👥 *Оценки, данные участником:*\n"
+        if stats['ratings_given']:
+            stats_text += f"Отправлено: {stats['ratings_given_count']}\n"
         else:
             stats_text += "Не оценивал других\n"
 
@@ -353,70 +482,17 @@ async def handle_team_report(message: aiogram.types.Message):
         await message.answer("❌ Вы не состоите в команде.")
         return
 
-    # Получаем всех участников команды, включая администратора
-    all_members = db.team_get_all_members(student['team']['team_id'])
+    # Получаем общую статистику команды с помощью новой функции
+    team_stats_result = get_team_overall_stats(student['team']['team_id'])
 
-    if not all_members:
-        await message.answer("👥 В команде нет участников.")
+    if not team_stats_result['success']:
+        await message.answer(f"❌ Ошибка при получении отчета: {team_stats_result['error']}")
         return
-
-    # Собираем статистику для каждого участника
-    team_stats = []
-    
-    for member in all_members:
-        # Получаем ID участника
-        member_id = ""
-        member_name = ""
-        member_role = ""
-        
-        if isinstance(member, dict):
-            member_id = member.get('student_id', '')
-            member_name = member.get('name', 'Неизвестно')
-            member_role = member.get('role', 'Участник')
-        else:
-            member_id = getattr(member, 'student_id', '')
-            member_name = getattr(member, 'name', 'Неизвестно')
-            member_role = getattr(member, 'role', 'Участник')
-
-        # Получаем количество отчетов
-        reports = db.report_get_by_student(member_id)
-        reports_count = len(reports) if reports else 0
-
-        # Получаем количество оценок, данных участником
-        ratings_given = db.rating_get_given_by_student(member_id)
-        ratings_given_count = len(ratings_given) if ratings_given else 0
-
-        # Получаем количество оценок, полученных участником
-        ratings_received = db.rating_get_who_rated_me(member_id)
-        ratings_received_count = len(ratings_received) if ratings_received else 0
-
-        # Считаем среднюю оценку, если есть оценки
-        avg_rating = 0
-        if ratings_received:
-            total_rating = 0
-            count = 0
-            for rating in ratings_received:
-                if isinstance(rating, dict):
-                    total_rating += rating.get('overall_rating', 0)
-                else:
-                    total_rating += getattr(rating, 'overall_rating', 0)
-                count += 1
-            if count > 0:
-                avg_rating = round(total_rating / count, 1)
-
-        team_stats.append({
-            'name': member_name,
-            'role': member_role,
-            'reports_count': reports_count,
-            'ratings_given_count': ratings_given_count,
-            'ratings_received_count': ratings_received_count,
-            'avg_rating': avg_rating
-        })
 
     # Формируем текст отчета
     report_text = f"📊 *Отчёт о команде: {student['team']['team_name']}*\n\n"
-    
-    for stats in team_stats:
+
+    for stats in team_stats_result['stats']:
         report_text += f"👤 {stats['name']} ({stats['role']})\n"
         report_text += f"   📝 Отчеты: {stats['reports_count']}\n"
         report_text += f"   ⭐ Оценки от меня: {stats['ratings_given_count']}\n"

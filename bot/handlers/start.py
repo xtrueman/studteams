@@ -11,7 +11,6 @@ import tgtexts
 from aiogram import F
 from aiogram.filters import Command
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards

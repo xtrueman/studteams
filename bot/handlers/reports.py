@@ -9,7 +9,6 @@ import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
-# import bot.database.queries as queries
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
 import bot.keyboards.reply as keyboards
@@ -58,7 +57,17 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
 async def process_sprint_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка выбора спринта"""
     if message.text == "Отмена":
-        await cancel_action(message, state)
+        await state.clear()
+        student = db.student_get_by_tg_id(message.from_user.id)
+        if student:
+            has_team = 'team' in student
+            is_admin = False
+            if has_team:
+                is_admin = student['team']['admin_student_id'] == student['student_id']
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+        else:
+            keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+        await message.answer("❌ Отправка отчета отменена.", reply_markup=keyboard)
         return
 
     sprint_num = helpers.extract_sprint_number(message.text)
@@ -88,7 +97,17 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
                 reply_markup=keyboards.get_sprints_keyboard()
             )
         else:
-            await cancel_action(message, state)
+            await state.clear()
+            student = db.student_get_by_tg_id(message.from_user.id)
+            if student:
+                has_team = 'team' in student
+                is_admin = False
+                if has_team:
+                    is_admin = student['team']['admin_student_id'] == student['student_id']
+                keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
+            else:
+                keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
+            await message.answer("❌ Отправка отчета отменена.", reply_markup=keyboard)
         return
 
     report_text = message.text.strip()

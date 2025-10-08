@@ -8,9 +8,9 @@ import datetime
 import random
 import string
 
-# import bot.database.queries as queries
-import bot.db as db
 import config
+
+import bot.db as db
 
 
 def is_valid_team_name(name: str) -> bool:
@@ -70,7 +70,7 @@ def format_reports_list(reports: list) -> str:
         date_str = report['report_date']
         if isinstance(date_str, datetime.datetime):
             date_str = format_datetime(date_str)
-        
+
         text += f"📊 Спринт №{report['sprint_num']} ({date_str})\n"
         # Truncate report text for preview
         preview = report['report_text'][:100] + "..." if len(report['report_text']) > 100 else report['report_text']
@@ -109,7 +109,7 @@ def format_team_info(team: dict, all_members: list) -> str:
         # Direct dictionary access for MySQL data
         name = member['name']
         role = member['role']
-            
+
         team_info += f"• {name} ({role})\n"
 
     return team_info
@@ -117,7 +117,6 @@ def format_team_info(team: dict, all_members: list) -> str:
 
 def get_team_display_data(student_id: str, tg_id: int):
     """Получение данных для отображения информации о команде"""
-    # import bot.database.queries as queries
     import bot.keyboards.inline as inline_keyboards
 
     student = db.student_get_by_tg_id(tg_id)
