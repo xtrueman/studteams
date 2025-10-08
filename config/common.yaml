@@ -1,0 +1,36 @@
+# Общая конфигурация для StudTeams
+# Все секреты вынесены в secrets.yaml
+
+# Настройки функциональности
+features:
+  enable_reviews: true  # Включить/выключить функцию оценивания участников
+  max_sprint_number: 6  # Максимальный номер спринта
+  min_rating: 1  # Минимальная оценка
+  max_rating: 10  # Максимальная оценка
+
+# Настройки базы данных (без секретов)
+database:
+  prod:
+    host: localhost
+    database: studteams
+    charset: utf8mb4
+    collation: utf8mb4_unicode_ci
+    autocommit: true
+    auth_plugin: mysql_native_password
+    # user и password загружаются из secrets.yaml
+  
+  test:
+    host: localhost
+    database: studteams_test
+    charset: utf8mb4
+    collation: utf8mb4_unicode_ci
+    autocommit: true
+    auth_plugin: mysql_native_password
+    # user и password загружаются из secrets.yaml
+
+# Настройки логирования
+logging:
+  file: logs/studteams.log
+  level: INFO
+  rotation: 10 MB
+  retention: 1 month

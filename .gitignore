@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Secret configuration files
+config/secrets.yaml
+config/secrets-*.yaml
+config.py.old

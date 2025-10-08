@@ -1,0 +1,10 @@
+# Конфигурация для Telegram бота
+
+# Настройки бота (без токена - он в secrets-tgbot.yaml)
+bot:
+  username: "@SSAU_SoftDevMgmt_bot"
+  # token загружается из secrets-tgbot.yaml
+
+# Логирование специфичное для бота
+logging:
+  file: logs/studhelper-bot.log
