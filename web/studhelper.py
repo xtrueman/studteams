@@ -42,7 +42,7 @@ async def teams(request: Request):
 
 @app.get("/reports", response_class=HTMLResponse)
 async def reports(request: Request, team: str = "", sprint: str = "", student: str = ""):
-    from db import get_all_reports, get_reports_statistics, get_teams_list
+    from db import get_all_reports, get_teams_list
 
     # Преобразуем параметры в нужные типы
     team_filter = team or None
@@ -56,16 +56,12 @@ async def reports(request: Request, team: str = "", sprint: str = "", student: s
         student_filter=student_filter
     )
 
-    # Получаем статистику
-    stats = get_reports_statistics()
-
     # Получаем список команд для фильтра
     teams_list = get_teams_list()
 
     params = {
         "request": request,
         "reports": reports_data,
-        "stats": stats,
         "teams_list": teams_list,
         "current_filters": {
             "team": team_filter,

@@ -3,11 +3,6 @@
 
 {% block head %}
 <style>
-    .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
     .filter-form {
         background-color: #f8f9fa;
         border-radius: 10px;
@@ -54,44 +49,13 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Заголовок и статистика -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h1 class="display-6 fw-bold text-primary mb-0">
-                <i class="bi bi-file-earmark-text-fill"></i>
-                Отчеты по спринтам
-            </h1>
-            <p class="text-muted mb-0">Все отчеты студентов о проделанной работе</p>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="row g-2">
-                <div class="col-3">
-                    <div class="stats-card rounded p-2 text-center">
-                        <div class="fs-5 fw-bold mb-0">{{ stats.total_reports }}</div>
-                        <div class="small">Всего</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="stats-card rounded p-2 text-center">
-                        <div class="fs-5 fw-bold mb-0">{{ stats.current_sprint_reports }}</div>
-                        <div class="small">Спринт {{ stats.last_sprint }}</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="stats-card rounded p-2 text-center">
-                        <div class="fs-5 fw-bold mb-0">{{ stats.teams_with_full_reports }}</div>
-                        <div class="small">Команд</div>
-                    </div>
-                </div>
-                <div class="col-3">
-                    <div class="stats-card rounded p-2 text-center">
-                        <div class="fs-5 fw-bold mb-0">{{ stats.avg_report_length }}</div>
-                        <div class="small">Ср. длина</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Заголовок -->
+    <div class="mb-4">
+        <h1 class="display-6 fw-bold text-primary mb-0">
+            <i class="bi bi-file-earmark-text-fill"></i>
+            Отчеты по спринтам
+        </h1>
+        <p class="text-muted mb-0">Все отчеты студентов о проделанной работе</p>
     </div>
 
     <!-- Фильтры -->
