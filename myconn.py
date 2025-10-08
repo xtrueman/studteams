@@ -32,7 +32,8 @@ def get_db_credentials():
         'charset': 'utf8mb4',
         'collation': 'utf8mb4_unicode_ci',
         'autocommit': True,  # Автокоммит по умолчанию
-        'consume_results': True  # Автоматически потребляем все результаты
+        'consume_results': True,  # Автоматически потребляем все результаты
+        'auth_plugin': 'mysql_native_password'  # Для совместимости с разными версиями MySQL
     }
 
 
