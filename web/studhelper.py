@@ -41,14 +41,19 @@ async def teams(request: Request):
 
 
 @app.get("/reports", response_class=HTMLResponse)
-async def reports(request: Request, team: str | None = None, sprint: int | None = None, student: str | None = None):
+async def reports(request: Request, team: str = "", sprint: str = "", student: str = ""):
     from db import get_all_reports, get_reports_statistics, get_teams_list
+
+    # Преобразуем параметры в нужные типы
+    team_filter = team or None
+    sprint_filter = int(sprint) if sprint and sprint.isdigit() else None
+    student_filter = student or None
 
     # Получаем отчеты с фильтрацией
     reports_data = get_all_reports(
-        team_filter=team,
-        sprint_filter=sprint,
-        student_filter=student
+        team_filter=team_filter,
+        sprint_filter=sprint_filter,
+        student_filter=student_filter
     )
 
     # Получаем статистику
@@ -63,9 +68,9 @@ async def reports(request: Request, team: str | None = None, sprint: int | None 
         "stats": stats,
         "teams_list": teams_list,
         "current_filters": {
-            "team": team,
-            "sprint": sprint,
-            "student": student
+            "team": team_filter,
+            "sprint": sprint_filter,
+            "student": student_filter
         }
     }
     return templates.TemplateResponse("reports.jinja", params)
