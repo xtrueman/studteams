@@ -1,0 +1,26 @@
+[Unit]
+Description=StudTeams Web Service
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/studteams
+Environment="PATH=/srv/studteams/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/srv/studteams/venv/bin/python3 /srv/studteams/web_server.py
+Restart=always
+RestartSec=10
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=studteams-web
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
