@@ -1,0 +1,296 @@
+{% extends "base.jinja" %}
+{% block title %}Отчеты по спринтам - StudHelper{% endblock %}
+
+{% block head %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .filter-form {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .report-preview {
+        max-height: 60px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .report-preview:hover {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 5px;
+    }
+    
+    .report-length-short {
+        color: #dc3545;
+    }
+    
+    .report-length-medium {
+        color: #ffc107;
+    }
+    
+    .report-length-good {
+        color: #198754;
+    }
+    
+    .admin-crown {
+        color: #ffc107;
+        margin-left: 5px;
+    }
+
+    .modal-dialog-scrollable .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок и статистика -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1 class="display-6 fw-bold text-primary mb-0">
+                <i class="bi bi-file-earmark-text-fill"></i>
+                Отчеты по спринтам
+            </h1>
+            <p class="text-muted mb-0">Все отчеты студентов о проделанной работе</p>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="stats-card rounded p-3 text-center">
+                        <div class="fs-5 fw-bold">{{ stats.total_reports }}</div>
+                        <div class="small">Всего отчетов</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stats-card rounded p-3 text-center">
+                        <div class="fs-5 fw-bold">{{ stats.current_sprint_reports }}</div>
+                        <div class="small">Спринт {{ stats.last_sprint }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stats-card rounded p-3 text-center">
+                        <div class="fs-5 fw-bold">{{ stats.teams_with_full_reports }}</div>
+                        <div class="small">Команд с полными отчетами</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stats-card rounded p-3 text-center">
+                        <div class="fs-5 fw-bold">{{ stats.avg_report_length }}</div>
+                        <div class="small">Ср. длина (символов)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-form">
+        <form method="get" action="/reports">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="team" class="form-label">Команда</label>
+                    <select name="team" id="team" class="form-select">
+                        <option value="">Все команды</option>
+                        {% for team in teams_list %}
+                            <option value="{{ team.team_name }}" {% if current_filters.team == team.team_name %}selected{% endif %}>
+                                {{ team.team_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="sprint" class="form-label">Спринт</label>
+                    <select name="sprint" id="sprint" class="form-select">
+                        <option value="">Все спринты</option>
+                        {% for i in range(1, 7) %}
+                            <option value="{{ i }}" {% if current_filters.sprint == i %}selected{% endif %}>
+                                Спринт {{ i }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="student" class="form-label">Студент</label>
+                    <input type="text" name="student" id="student" class="form-control" 
+                           placeholder="Поиск по имени" value="{{ current_filters.student or '' }}">
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Применить
+                        </button>
+                        <a href="/reports" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> Сбросить
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Таблица отчетов -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 15%">Команда</th>
+                            <th style="width: 15%">Студент</th>
+                            <th style="width: 8%">Группа</th>
+                            <th style="width: 12%">Роль</th>
+                            <th style="width: 8%">Спринт</th>
+                            <th style="width: 12%">Дата</th>
+                            <th style="width: 30%">Отчет</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>
+                                <strong class="text-primary">{{ report.team_name }}</strong>
+                                <div class="small text-muted">{{ report.product_name }}</div>
+                            </td>
+                            <td>
+                                <strong>{{ report.student_name }}</strong>
+                            </td>
+                            <td>
+                                {% if report.group_num %}
+                                    <span class="badge bg-light text-dark">{{ report.group_num }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ report.role }}
+                                {% if report.is_admin %}
+                                    <i class="bi bi-crown-fill admin-crown" title="Администратор команды"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ report.sprint_num }}</span>
+                            </td>
+                            <td>
+                                <div class="small">{{ report.report_date.strftime('%d.%m.%Y') }}</div>
+                                <div class="small text-muted">{{ report.report_date.strftime('%H:%M') }}</div>
+                            </td>
+                            <td>
+                                <div class="report-preview" 
+                                     data-bs-toggle="modal" 
+                                     data-bs-target="#reportModal"
+                                     data-student="{{ report.student_name }}"
+                                     data-team="{{ report.team_name }}"
+                                     data-sprint="{{ report.sprint_num }}"
+                                     data-date="{{ report.report_date.strftime('%d.%m.%Y %H:%M') }}"
+                                     data-text="{{ report.report_text }}">
+                                    {{ report.report_text[:100] }}{% if report.report_text|length > 100 %}...{% endif %}
+                                </div>
+                                <div class="mt-1">
+                                    {% set length = report.report_length %}
+                                    {% if length < 100 %}
+                                        <span class="badge bg-danger">{{ length }} симв.</span>
+                                    {% elif length < 300 %}
+                                        <span class="badge bg-warning text-dark">{{ length }} симв.</span>
+                                    {% else %}
+                                        <span class="badge bg-success">{{ length }} симв.</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if not reports %}
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+        </div>
+        <h3 class="text-muted">Отчеты не найдены</h3>
+        <p class="text-muted">
+            {% if current_filters.team or current_filters.sprint or current_filters.student %}
+                Попробуйте изменить фильтры поиска.
+            {% else %}
+                В системе пока нет отчетов по спринтам.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для просмотра полного текста отчета -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Отчет по спринту <span id="modalSprintNum"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Студент:</strong> <span id="modalStudentName"></span><br>
+                    <strong>Команда:</strong> <span id="modalTeamName"></span><br>
+                    <strong>Дата отправки:</strong> <span id="modalReportDate"></span>
+                </div>
+                <hr>
+                <div id="modalReportText" style="white-space: pre-wrap; line-height: 1.6;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Подсветка активного элемента навигации
+    $('.nav-link').removeClass('active');
+    $('a[href="/reports"]').addClass('active');
+    
+    // Обработчик для модального окна с полным текстом отчета
+    $('#reportModal').on('show.bs.modal', function(event) {
+        var trigger = $(event.relatedTarget);
+        
+        var studentName = trigger.data('student');
+        var teamName = trigger.data('team');
+        var sprintNum = trigger.data('sprint');
+        var reportDate = trigger.data('date');
+        var reportText = trigger.data('text');
+        
+        var modal = $(this);
+        modal.find('#modalSprintNum').text(sprintNum);
+        modal.find('#modalStudentName').text(studentName);
+        modal.find('#modalTeamName').text(teamName);
+        modal.find('#modalReportDate').text(reportDate);
+        modal.find('#modalReportText').text(reportText);
+    });
+    
+    // Автофокус на поле поиска студента при открытии
+    $('#student').focus();
+});
+</script>
+{% endblock %}

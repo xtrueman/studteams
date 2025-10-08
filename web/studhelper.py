@@ -38,3 +38,34 @@ async def teams(request: Request):
         "students_count": students_count
     }
     return templates.TemplateResponse("teams.jinja", params)
+
+
+@app.get("/reports", response_class=HTMLResponse)
+async def reports(request: Request, team: str = None, sprint: int = None, student: str = None):
+    from db import get_all_reports, get_reports_statistics, get_teams_list
+    
+    # Получаем отчеты с фильтрацией
+    reports_data = get_all_reports(
+        team_filter=team,
+        sprint_filter=sprint,
+        student_filter=student
+    )
+    
+    # Получаем статистику
+    stats = get_reports_statistics()
+    
+    # Получаем список команд для фильтра
+    teams_list = get_teams_list()
+    
+    params = {
+        "request": request,
+        "reports": reports_data,
+        "stats": stats,
+        "teams_list": teams_list,
+        "current_filters": {
+            "team": team,
+            "sprint": sprint,
+            "student": student
+        }
+    }
+    return templates.TemplateResponse("reports.jinja", params)
