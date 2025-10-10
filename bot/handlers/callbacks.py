@@ -597,7 +597,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
             )
 
             # Обновляем информацию о команде
-            team_data = helpers.get_team_display_data(None, callback.from_user.id)
+            team_data = helpers.get_team_display_data("", callback.from_user.id)
 
             if team_data:
                 await callback.message.answer(
@@ -626,7 +626,7 @@ async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, s
         await callback.message.edit_text("❌ Удаление участника отменено.")
 
         # Обновляем информацию о команде
-        team_data = helpers.get_team_display_data(None, callback.from_user.id)
+        team_data = helpers.get_team_display_data("", callback.from_user.id)
 
         if team_data:
             await callback.message.answer(

@@ -72,6 +72,9 @@ class Config:
             Значение конфига или default
         """
         try:
+            # OmegaConf.select может принимать None если конфиг не загружен
+            if self._config is None:
+                return default
             return OmegaConf.select(self._config, key, default=default)
         except Exception:
             return default

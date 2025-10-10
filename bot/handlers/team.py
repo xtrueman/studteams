@@ -55,7 +55,8 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
 @decorators.log_handler("my_team")
 async def handle_my_team(message: aiogram.types.Message):
     """Показать информацию о команде"""
-    team_data = helpers.get_team_display_data(None, message.from_user.id)
+    # get_team_display_data не использует первый параметр student_id, передаем пустую строку
+    team_data = helpers.get_team_display_data("", message.from_user.id)
 
     if not team_data:
         await message.answer("❌ Вы не состоите в команде.")
@@ -406,16 +407,18 @@ async def handle_team_report(message: aiogram.types.Message):
             member_name = getattr(member, 'name', 'Неизвестно')
             member_role = getattr(member, 'role', 'Участник')
 
-        # Получаем количество отчетов
-        reports = db.report_get_by_student(member_id)
-        reports_count = len(reports) if reports else 0
+            # Получаем количество отчетов
+            # Конвертируем member_id в int если это строка
+            member_id_int = int(member_id) if isinstance(member_id, str) else member_id
+            reports = db.report_get_by_student(member_id_int)
+            reports_count = len(reports) if reports else 0
 
-        # Получаем количество оценок, данных участником
-        ratings_given = db.rating_get_given_by_student(member_id)
-        ratings_given_count = len(ratings_given) if ratings_given else 0
+            # Получаем количество оценок, данных участником
+            ratings_given = db.rating_get_given_by_student(member_id_int)
+            ratings_given_count = len(ratings_given) if ratings_given else 0
 
-        # Получаем количество оценок, полученных участником
-        ratings_received = db.rating_get_who_rated_me(member_id)
+            # Получаем количество оценок, полученных участником
+            ratings_received = db.rating_get_who_rated_me(member_id_int)
         ratings_received_count = len(ratings_received) if ratings_received else 0
 
         # Считаем среднюю оценку, если есть оценки
@@ -430,7 +433,7 @@ async def handle_team_report(message: aiogram.types.Message):
                     total_rating += getattr(rating, 'overall_rating', 0)
                 count += 1
             if count > 0:
-                avg_rating = round(total_rating / count, 1)
+                avg_rating = int(round(total_rating / count, 1))
 
         team_stats.append({
             'name': member_name,
@@ -449,7 +452,7 @@ async def handle_team_report(message: aiogram.types.Message):
         report_text += f"   📝 Отчеты: {stats['reports_count']}\n"
         report_text += f"   ⭐ Оценки от меня: {stats['ratings_given_count']}\n"
         report_text += f"   👀 Оценки мне: {stats['ratings_received_count']}"
-        if stats['avg_rating'] > 0:
+        if isinstance(stats['avg_rating'], (int, float)) and stats['avg_rating'] > 0:
             report_text += f" (средняя: {stats['avg_rating']}/10)"
         report_text += "\n\n"
 

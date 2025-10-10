@@ -49,15 +49,20 @@ def generate_invite_code(length: int = 8) -> str:
 
 def format_datetime(dt: str | datetime.datetime) -> str:
     """Форматирует дату и время для отображения"""
-    if dt == "now":
-        dt = datetime.datetime.now()
-    elif isinstance(dt, str):
-        # Пытаемся распарсить строку в datetime
-        try:
-            dt = datetime.datetime.fromisoformat(dt)
-        except ValueError:
-            return dt  # Возвращаем как есть если не удалось распарсить
-    return dt.strftime("%d.%m.%Y %H:%M")
+    dt_obj: datetime.datetime
+    if isinstance(dt, str):
+        if dt == "now":
+            dt_obj = datetime.datetime.now()
+        else:
+            # Пытаемся распарсить строку в datetime
+            try:
+                dt_obj = datetime.datetime.fromisoformat(dt)
+            except ValueError:
+                # Возвращаем строку как есть если не удалось распарсить
+                return dt
+    else:
+        dt_obj = dt
+    return dt_obj.strftime("%d.%m.%Y %H:%M")
 
 
 def format_reports_list(reports: list) -> str:

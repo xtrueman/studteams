@@ -48,7 +48,7 @@ def get_team_member_stats(member_id: int) -> dict:
                     total_rating += getattr(rating, 'overall_rating', 0)
                 count += 1
             if count > 0:
-                avg_rating = round(total_rating / count, 1)
+                avg_rating = int(round(total_rating / count, 1))
 
         return {
             'success': True,
@@ -107,15 +107,17 @@ def get_team_overall_stats(team_id: int) -> dict:
                 member_role = getattr(member, 'role', 'Участник')
 
             # Получаем количество отчетов
-            reports = db.report_get_by_student(member_id)
+            # Конвертируем member_id в int если это строка
+            member_id_int = int(member_id) if isinstance(member_id, str) else member_id
+            reports = db.report_get_by_student(member_id_int)
             reports_count = len(reports) if reports else 0
 
             # Получаем количество оценок, данных участником
-            ratings_given = db.rating_get_given_by_student(member_id)
+            ratings_given = db.rating_get_given_by_student(member_id_int)
             ratings_given_count = len(ratings_given) if ratings_given else 0
 
             # Получаем количество оценок, полученных участником
-            ratings_received = db.rating_get_who_rated_me(member_id)
+            ratings_received = db.rating_get_who_rated_me(member_id_int)
             ratings_received_count = len(ratings_received) if ratings_received else 0
 
             # Считаем среднюю оценку, если есть оценки
@@ -130,7 +132,7 @@ def get_team_overall_stats(team_id: int) -> dict:
                         total_rating += getattr(rating, 'overall_rating', 0)
                     count += 1
                 if count > 0:
-                    avg_rating = round(total_rating / count, 1)
+                    avg_rating = int(round(total_rating / count, 1))
 
             team_stats.append({
                 'name': member_name,
