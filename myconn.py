@@ -52,8 +52,6 @@ def get_connection():
         # Получаем учетные данные при каждом подключении
         db_credentials = get_db_credentials()
         conn = mysql.connector.connect(**db_credentials)
-        if conn.is_connected():
-            pass
         return conn
     except Error:
         raise
@@ -99,39 +97,52 @@ def close_connection():
     if conn and conn.is_connected():
         conn.close()
         conn = None
-        # Получаем учетные данные для вывода имени базы данных
-        get_db_credentials()
 
 
 class GlobalCursors:
     """
-    Класс для управления глобальными курсорами MySQL
+    Класс для управления глобальными курсорами MySQL.
+
+    Позволяет получать курсоры через атрибуты:
+    - cursors.cur - обычный курсор
+    - cursors.dict_cur - словарный курсор
     """
 
-    def __getattr__(self, name):
-        if name == 'cur':
-            cur = cursor()
-            self.cur = cur
-            return cur
-        elif name == 'dict_cur':
-            dict_cur = dict_cursor()
-            self.dict_cur = dict_cur
-            return dict_cur
-        else:
-            raise AttributeError(f"'GlobalCursors' has no attribute '{name}'")
+    _cur = None
+    _dict_cur = None
+
+    @property
+    def cur(self):
+        """Возвращает обычный курсор (кэшируется)."""
+        if self._cur is None:
+            self._cur = cursor()
+        return self._cur
+
+    @property
+    def dict_cur(self):
+        """Возвращает словарный курсор (кэшируется)."""
+        if self._dict_cur is None:
+            self._dict_cur = dict_cursor()
+        return self._dict_cur
+
+    def close_all(self):
+        """Закрывает все открытые курсоры."""
+        if self._cur:
+            try:
+                self._cur.close()
+            except Exception:
+                pass
+            self._cur = None
+        if self._dict_cur:
+            try:
+                self._dict_cur.close()
+            except Exception:
+                pass
+            self._dict_cur = None
 
     def __del__(self):
-        """Закрываем курсоры при удалении объекта"""
-        try:
-            if hasattr(self, 'cur') and self.cur:
-                self.cur.close()
-        except Exception:
-            pass
-        try:
-            if hasattr(self, 'dict_cur') and self.dict_cur:
-                self.dict_cur.close()
-        except Exception:
-            pass
+        """Закрываем курсоры при удалении объекта."""
+        self.close_all()
 
 
 # Глобальный объект для работы с курсорами
