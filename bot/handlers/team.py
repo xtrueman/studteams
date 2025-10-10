@@ -7,7 +7,6 @@
 import re
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
@@ -41,7 +40,7 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
 
     if student and 'team' in student:
         await message.answer(
-            "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь."
+            "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь.",
         )
         return
 
@@ -49,7 +48,7 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
     await message.answer(
         "📝 *Регистрация новой команды*\n\n"
         "Введите название команды:",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -72,7 +71,7 @@ async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.c
 
     if not helpers.is_valid_team_name(team_name):
         await message.answer(
-            "❌ Название команды должно содержать от 3 до 64 символов. Попробуйте еще раз:"
+            "❌ Название команды должно содержать от 3 до 64 символов. Попробуйте еще раз:",
         )
         return
 
@@ -80,7 +79,7 @@ async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.c
     await state.set_state(states.TeamRegistration.product_name)
     await message.answer(
         "Название разрабатываемого продукта:",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -91,7 +90,7 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
 
     if not helpers.is_valid_product_name(product_name):
         await message.answer(
-            "❌ Название продукта должно содержать от 3 до 100 символов. Попробуйте еще раз:"
+            "❌ Название продукта должно содержать от 3 до 100 символов. Попробуйте еще раз:",
         )
         return
 
@@ -110,13 +109,13 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
             keyboard=[[aiogram.types.KeyboardButton(text=suggested_name)]],
             resize_keyboard=True,
             one_time_keyboard=True,
-            input_field_placeholder=suggested_name
+            input_field_placeholder=suggested_name,
         )
 
     await message.answer(
         "Ваше имя и фамилия («Иван Иванов»):",
         reply_markup=keyboard,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -128,7 +127,7 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
     if not is_valid_full_name(user_name):
         await message.answer(
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
-            "начинающиеся с заглавной буквы. Попробуйте еще раз:"
+            "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
         return
 
@@ -136,7 +135,7 @@ async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.
     await state.set_state(states.TeamRegistration.user_group)
     await message.answer(
         "Введите номер вашей группы (или 0 если без группы):",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -148,7 +147,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
         await message.answer(
-            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:"
+            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
 
@@ -170,7 +169,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
     await message.answer(
         confirmation_text,
         reply_markup=inline_keyboards.get_team_registration_confirm_keyboard(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -189,7 +188,7 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
                 student = db.student_create(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
-                    group_num=data['user_group'] if data['user_group'] != "0" else None
+                    group_num=data['user_group'] if data['user_group'] != "0" else None,
                 )
 
             # Создаем команду
@@ -198,14 +197,14 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
                 team_name=data['team_name'],
                 product_name=data['product_name'],
                 invite_code=invite_code,
-                admin_student_id=student['student_id']
+                admin_student_id=student['student_id'],
             )
 
             # Добавляем администратора в команду
             db.team_add_member(
                 team_id=team['team_id'],
                 student_id=student['student_id'],
-                role="Scrum Master"
+                role="Scrum Master",
             )
 
             await state.clear()
@@ -222,13 +221,13 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
                 f"{invite_link_text}\n\n"
                 f"Теперь вы можете пригласить участников, используя кнопку \"Ссылка-приглашение\".",
                 reply_markup=keyboard,
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
         except Exception as e:
             await message.answer(
                 f"❌ Ошибка при создании команды: {e!s}\n"
-                f"Попробуйте еще раз или обратитесь к администратору."
+                f"Попробуйте еще раз или обратитесь к администратору.",
             )
             await state.clear()
 
@@ -246,7 +245,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     if not is_valid_full_name(user_name):
         await message.answer(
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
-            "начинающиеся с заглавной буквы. Попробуйте еще раз:"
+            "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
         return
 
@@ -254,7 +253,7 @@ async def process_join_user_name(message: aiogram.types.Message, state: aiogram.
     await state.set_state(states.JoinTeam.user_group)
     await message.answer(
         "Введите номер вашей группы (или 0 если без группы):",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -266,7 +265,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
         await message.answer(
-            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:"
+            "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
 
@@ -275,7 +274,7 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
     await message.answer(
         "Выберите вашу роль в команде:",
         reply_markup=inline_keyboards.get_roles_inline_keyboard(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -310,7 +309,7 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
     await message.answer(
         confirmation_text,
         reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -329,14 +328,14 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
                 student = db.student_create(
                     tg_id=message.from_user.id,
                     name=data['user_name'],
-                    group_num=data['user_group'] if data['user_group'] != "0" else None
+                    group_num=data['user_group'] if data['user_group'] != "0" else None,
                 )
 
             # Добавляем в команду
             db.team_add_member(
                 team_id=data['team_id'],
                 student_id=student['student_id'],
-                role=data['user_role']
+                role=data['user_role'],
             )
 
             await state.clear()
@@ -351,13 +350,13 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
                 f"Теперь вы можете отправлять отчеты о проделанной работе и "
                 f"взаимодействовать с участниками команды.",
                 reply_markup=keyboard,
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
         except Exception as e:
             await message.answer(
                 f"❌ Ошибка при присоединении к команде: {e!s}\n"
-                f"Попробуйте еще раз или обратитесь к администратору."
+                f"Попробуйте еще раз или обратитесь к администратору.",
             )
             await state.clear()
 
@@ -439,7 +438,7 @@ async def handle_team_report(message: aiogram.types.Message):
             'reports_count': reports_count,
             'ratings_given_count': ratings_given_count,
             'ratings_received_count': ratings_received_count,
-            'avg_rating': avg_rating
+            'avg_rating': avg_rating,
         })
 
     # Формируем текст отчета

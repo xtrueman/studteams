@@ -20,18 +20,18 @@ def log_handler(handler_name: str | None = None):
             username = message.from_user.username or "None"
 
             loguru.logger.info(
-                f"Handler '{name}' called by user_id={user_id} username=@{username}"
+                f"Handler '{name}' called by user_id={user_id} username=@{username}",
             )
 
             try:
                 result = await func(message, *args, **kwargs)
                 loguru.logger.debug(
-                    f"Handler '{name}' completed successfully for user_id={user_id}"
+                    f"Handler '{name}' completed successfully for user_id={user_id}",
                 )
                 return result
             except Exception as e:
                 loguru.logger.error(
-                    f"Handler '{name}' failed for user_id={user_id}: {type(e).__name__}: {e!s}"
+                    f"Handler '{name}' failed for user_id={user_id}: {type(e).__name__}: {e!s}",
                 )
                 raise
 

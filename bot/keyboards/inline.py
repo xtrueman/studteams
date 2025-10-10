@@ -8,18 +8,20 @@ import aiogram.types
 from config import config
 
 
-def get_confirmation_inline_keyboard(confirm_text: str = "Продолжить",
-                                     cancel_text: str = "Отмена",
-                                     confirm_data: str = "confirm",
-                                     cancel_data: str = "cancel"):
+def get_confirmation_inline_keyboard(
+    confirm_text: str = "Продолжить",
+    cancel_text: str = "Отмена",
+    confirm_data: str = "confirm",
+    cancel_data: str = "cancel",
+):
     """Inline клавиатура подтверждения"""
     return aiogram.types.InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 aiogram.types.InlineKeyboardButton(text=confirm_text, callback_data=confirm_data),
-                aiogram.types.InlineKeyboardButton(text=cancel_text, callback_data=cancel_data)
-            ]
-        ]
+                aiogram.types.InlineKeyboardButton(text=cancel_text, callback_data=cancel_data),
+            ],
+        ],
     )
 
 
@@ -29,7 +31,7 @@ def get_roles_inline_keyboard():
         ("📈 Product owner", "role_po"),
         ("🎯 Scrum Master", "role_sm"),
         ("💻 Разработчик", "role_dev"),
-        ("👥 Участник команды", "role_member")
+        ("👥 Участник команды", "role_member"),
     ]
 
     keyboard = []
@@ -54,10 +56,12 @@ def get_sprints_inline_keyboard():
         for j in range(3):
             if i + j < len(sprints):
                 sprint_num = i + j + 1
-                row.append(aiogram.types.InlineKeyboardButton(
-                    text=sprints[i + j],
-                    callback_data=f"sprint_{sprint_num}"
-                ))
+                row.append(
+                    aiogram.types.InlineKeyboardButton(
+                        text=sprints[i + j],
+                        callback_data=f"sprint_{sprint_num}",
+                    ),
+                )
         keyboard.append(row)
 
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
@@ -96,10 +100,12 @@ def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns:
                 if len(item_text) > 20:
                     item_text = item_text[:17] + "..."
 
-                row.append(aiogram.types.InlineKeyboardButton(
-                    text=item_text,
-                    callback_data=f"{callback_prefix}_{item_index}"
-                ))
+                row.append(
+                    aiogram.types.InlineKeyboardButton(
+                        text=item_text,
+                        callback_data=f"{callback_prefix}_{item_index}",
+                    ),
+                )
         keyboard.append(row)
 
     keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
@@ -117,7 +123,7 @@ def get_team_registration_confirm_keyboard():
         "✅ Продолжить",
         "❌ Отмена",
         "confirm_team_reg",
-        cancel_data="cancel_team_reg"
+        cancel_data="cancel_team_reg",
     )
 
 
@@ -170,12 +176,12 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                 keyboard.append([
                     aiogram.types.InlineKeyboardButton(
                         text=f"✏️ {name}",
-                        callback_data=f"edit_member_{member_id}"
+                        callback_data=f"edit_member_{member_id}",
                     ),
                     aiogram.types.InlineKeyboardButton(
                         text="🗑️ Удалить",
-                        callback_data=f"remove_member_{member_id}"
-                    )
+                        callback_data=f"remove_member_{member_id}",
+                    ),
                 ])
 
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -198,12 +204,12 @@ def get_report_management_keyboard(reports):
             keyboard.append([
                 aiogram.types.InlineKeyboardButton(
                     text=f"✏️ {sprint_text}",
-                    callback_data=f"edit_report_{report['sprint_num']}"
+                    callback_data=f"edit_report_{report['sprint_num']}",
                 ),
                 aiogram.types.InlineKeyboardButton(
                     text="🗑️ Удалить",
-                    callback_data=f"delete_report_{report['sprint_num']}"
-                )
+                    callback_data=f"delete_report_{report['sprint_num']}",
+                ),
             ])
 
     return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)

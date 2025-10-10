@@ -5,7 +5,6 @@
 """
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
@@ -59,13 +58,13 @@ def get_team_member_stats(member_id: int) -> dict:
             'ratings_given_count': len(ratings_given),
             'ratings_received': ratings_received,
             'ratings_received_count': len(ratings_received),
-            'average_rating': avg_rating
+            'average_rating': avg_rating,
         }
 
     except Exception as e:
         return {
             'success': False,
-            'error': str(e)
+            'error': str(e),
         }
 
 
@@ -86,7 +85,7 @@ def get_team_overall_stats(team_id: int) -> dict:
         if not all_members:
             return {
                 'success': False,
-                'error': 'В команде нет участников'
+                'error': 'В команде нет участников',
             }
 
         # Собираем статистику для каждого участника
@@ -139,19 +138,19 @@ def get_team_overall_stats(team_id: int) -> dict:
                 'reports_count': reports_count,
                 'ratings_given_count': ratings_given_count,
                 'ratings_received_count': ratings_received_count,
-                'avg_rating': avg_rating
+                'avg_rating': avg_rating,
             })
 
         return {
             'success': True,
             'members': all_members,
-            'stats': team_stats
+            'stats': team_stats,
         }
 
     except Exception as e:
         return {
             'success': False,
-            'error': str(e)
+            'error': str(e),
         }
 
 
@@ -166,7 +165,7 @@ async def handle_admin_panel(message: aiogram.types.Message):
         "🔧 *Панель администратора*\n\n"
         "Выберите действие:",
         reply_markup=keyboard,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -268,7 +267,7 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
         f"Вы действительно хотите удалить *{member_name}* из команды?\n\n"
         f"*Это действие нельзя отменить!*",
         reply_markup=keyboard,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -309,7 +308,7 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
 
             db.team_remove_member(
                 team_id=team_id_int,
-                student_id=student_id_int
+                student_id=student_id_int,
             )
 
             # Get name safely
@@ -321,12 +320,12 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
 
             await message.answer(
                 f"✅ Участник *{member_name}* успешно удален из команды!",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
         except Exception as e:
             await message.answer(
-                f"❌ Ошибка при удалении участника: {e!s}"
+                f"❌ Ошибка при удалении участника: {e!s}",
             )
 
     elif message.text == "Отмена":
@@ -375,7 +374,7 @@ async def handle_view_member_stats(message: aiogram.types.Message, state: aiogra
         "📊 *Статистика участника*\n\n"
         "Выберите участника для просмотра статистики:",
         reply_markup=keyboard,
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -467,7 +466,7 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
 
     except Exception as e:
         await message.answer(
-            f"❌ Ошибка при получении статистики: {e!s}"
+            f"❌ Ошибка при получении статистики: {e!s}",
         )
 
     await state.clear()

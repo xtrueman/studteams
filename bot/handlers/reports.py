@@ -5,7 +5,6 @@
 """
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 
@@ -49,7 +48,7 @@ async def handle_send_report(message: aiogram.types.Message, state: aiogram.fsm.
         "📝 *Отправка отчета*\n\n"
         "Выберите номер спринта:",
         reply_markup=inline_keyboards.get_sprints_inline_keyboard(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -82,7 +81,7 @@ async def process_sprint_selection(message: aiogram.types.Message, state: aiogra
     await message.answer(
         f"✅ Спринт №{sprint_num}\n\n"
         f"📝 Введите текст отчета о проделанной работе:",
-        reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад")
+        reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
     )
 
 
@@ -94,7 +93,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
             await state.set_state(states.ReportCreation.sprint_selection)
             await message.answer(
                 "📝 Выберите номер спринта:",
-                reply_markup=keyboards.get_sprints_keyboard()
+                reply_markup=keyboards.get_sprints_keyboard(),
             )
         else:
             await state.clear()
@@ -114,13 +113,13 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
 
     if len(report_text) < 20:
         await message.answer(
-            "❌ Отчет слишком короткий. Минимум 20 символов. Попробуйте еще раз:"
+            "❌ Отчет слишком короткий. Минимум 20 символов. Попробуйте еще раз:",
         )
         return
 
     if len(report_text) > 4000:
         await message.answer(
-            "❌ Отчет слишком длинный. Максимум 4000 символов. Попробуйте еще раз:"
+            "❌ Отчет слишком длинный. Максимум 4000 символов. Попробуйте еще раз:",
         )
         return
 
@@ -136,7 +135,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
         db.report_create_or_update(
             student_id=student['student_id'],
             sprint_num=data['sprint_num'],
-            report_text=report_text
+            report_text=report_text,
         )
 
         await state.clear()
@@ -147,14 +146,14 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
                 f"✅ *Отчет успешно обновлен!*\n\n"
                 f"📊 Спринт: №{data['sprint_num']}\n"
                 f"📅 Дата: {helpers.format_datetime('now')}",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
         else:
             await message.answer(
                 f"✅ *Отчет успешно отправлен!*\n\n"
                 f"📊 Спринт: №{data['sprint_num']}\n"
                 f"📅 Дата: {helpers.format_datetime('now')}",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
         # Переходим на страницу "Мои отчёты"
@@ -166,7 +165,7 @@ async def process_report_text(message: aiogram.types.Message, state: aiogram.fsm
     except Exception as e:
         await message.answer(
             f"❌ Ошибка при сохранении отчета: {e!s}\n"
-            f"Попробуйте еще раз."
+            f"Попробуйте еще раз.",
         )
         await state.clear()
 

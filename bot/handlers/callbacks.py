@@ -5,7 +5,6 @@
 """
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 from config import config
@@ -23,7 +22,7 @@ import bot.utils.helpers as helpers
 @decorators.log_handler("callback_confirm_team_reg")
 async def callback_confirm_team_registration(
     callback: aiogram.types.CallbackQuery,
-    state: aiogram.fsm.context.FSMContext
+    state: aiogram.fsm.context.FSMContext,
 ):
     """Callback обработчик подтверждения регистрации команды"""
     data = await state.get_data()
@@ -37,7 +36,7 @@ async def callback_confirm_team_registration(
             student = db.student_create(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
-                group_num=data['user_group'] if data['user_group'] != "0" else None
+                group_num=data['user_group'] if data['user_group'] != "0" else None,
             )
 
         # Создаем команду
@@ -46,14 +45,14 @@ async def callback_confirm_team_registration(
             team_name=data['team_name'],
             product_name=data['product_name'],
             invite_code=invite_code,
-            admin_student_id=student['student_id']
+            admin_student_id=student['student_id'],
         )
 
         # Добавляем администратора в команду
         db.team_add_member(
             team_id=team['team_id'],
             student_id=student['student_id'],
-            role="Scrum Master"
+            role="Scrum Master",
         )
 
         await state.clear()
@@ -63,7 +62,7 @@ async def callback_confirm_team_registration(
 
         # Генерируем ссылку-приглашение с инструкцией
         invite_link_text = helpers.get_invite_link_text(
-            data['team_name'], invite_code, show_instruction=True
+            data['team_name'], invite_code, show_instruction=True,
         )
 
         if callback.message:
@@ -72,7 +71,7 @@ async def callback_confirm_team_registration(
                 f"👥 Команда: {data['team_name']}\n"
                 f"📱 Продукт: {data['product_name']}\n"
                 f"{invite_link_text}",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
             await callback.message.answer("Главное меню:", reply_markup=keyboard)
@@ -81,7 +80,7 @@ async def callback_confirm_team_registration(
         if callback.message:
             await callback.message.edit_text(
                 f"❌ Ошибка при создании команды: {e!s}\n"
-                f"Попробуйте еще раз или обратитесь к администратору."
+                f"Попробуйте еще раз или обратитесь к администратору.",
             )
         await state.clear()
 
@@ -91,7 +90,7 @@ async def callback_confirm_team_registration(
 @decorators.log_handler("callback_cancel_team_reg")
 async def callback_cancel_team_registration(
     callback: aiogram.types.CallbackQuery,
-    state: aiogram.fsm.context.FSMContext
+    state: aiogram.fsm.context.FSMContext,
 ):
     """Callback обработчик отмены регистрации команды"""
     await state.clear()
@@ -112,7 +111,7 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
         "role_po": "Product owner",
         "role_sm": "Scrum Master",
         "role_dev": "Разработчик",
-        "role_member": "Участник команды"
+        "role_member": "Участник команды",
     }
 
     if callback.data == "cancel":
@@ -152,7 +151,7 @@ async def callback_role_selection(callback: aiogram.types.CallbackQuery, state: 
         await callback.message.edit_text(
             confirmation_text,
             reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -177,14 +176,14 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
             student = db.student_create(
                 tg_id=callback.from_user.id,
                 name=data['user_name'],
-                group_num=data['user_group'] if data['user_group'] != "0" else None
+                group_num=data['user_group'] if data['user_group'] != "0" else None,
             )
 
         # Добавляем в команду
         db.team_add_member(
             team_id=data['team_id'],
             student_id=student['student_id'],
-            role=data['user_role']
+            role=data['user_role'],
         )
 
         await state.clear()
@@ -199,7 +198,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
                 f"💼 Ваша роль: {data['user_role']}\n\n"
                 f"Теперь вы можете отправлять отчеты о проделанной работе и "
                 f"взаимодействовать с участниками команды.",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
             await callback.message.answer("Главное меню:", reply_markup=keyboard)
@@ -208,7 +207,7 @@ async def callback_confirm_join_team(callback: aiogram.types.CallbackQuery, stat
         if callback.message:
             await callback.message.edit_text(
                 f"❌ Ошибка при присоединении к команде: {e!s}\n"
-                f"Попробуйте еще раз или обратитесь к администратору."
+                f"Попробуйте еще раз или обратитесь к администратору.",
             )
         await state.clear()
 
@@ -241,7 +240,7 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
         db.report_create_or_update(
             student_id=student['student_id'],
             sprint_num=data['sprint_num'],
-            report_text=data['report_text']
+            report_text=data['report_text'],
         )
 
         await state.clear()
@@ -253,14 +252,14 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
                     f"✅ *Отчет успешно обновлен!*\n\n"
                     f"📊 Спринт: №{data['sprint_num']}\n"
                     f"📅 Дата: {helpers.format_datetime('now')}",
-                    parse_mode="Markdown"
+                    parse_mode="Markdown",
                 )
             else:
                 await callback.message.edit_text(
                     f"✅ *Отчет успешно отправлен!*\n\n"
                     f"📊 Спринт: №{data['sprint_num']}\n"
                     f"📅 Дата: {helpers.format_datetime('now')}",
-                    parse_mode="Markdown"
+                    parse_mode="Markdown",
                 )
 
             # Переходим на страницу "Мои отчёты"
@@ -273,7 +272,7 @@ async def callback_confirm_report(callback: aiogram.types.CallbackQuery, state: 
         if callback.message:
             await callback.message.edit_text(
                 f"❌ Ошибка при сохранении отчета: {e!s}\n"
-                f"Попробуйте еще раз."
+                f"Попробуйте еще раз.",
             )
         await state.clear()
 
@@ -335,7 +334,7 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
     await state.update_data(
         sprint_num=sprint_num,
         report_text=report_to_edit['report_text'],
-        editing=True
+        editing=True,
     )
 
     await state.set_state(states.ReportCreation.report_text)
@@ -349,9 +348,9 @@ async def callback_edit_report(callback: aiogram.types.CallbackQuery, state: aio
             f"Текущий текст отчета:\n{report_preview}{ellipsis}\n\n"
             f"Введите новый текст отчета:",
             reply_markup=inline_keyboards.get_confirmation_inline_keyboard(
-                "Отмена", "Назад", "cancel", "back"
+                "Отмена", "Назад", "cancel", "back",
             ),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -375,7 +374,7 @@ async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, s
     # Сохраняем данные в состоянии
     await state.update_data(
         sprint_num=sprint_num,
-        student_id=student['student_id']
+        student_id=student['student_id'],
     )
 
     if callback.message:
@@ -384,7 +383,7 @@ async def callback_delete_report_inline(callback: aiogram.types.CallbackQuery, s
             f"Вы действительно хотите удалить отчет за *Спринт №{sprint_num}*?\n\n"
             f"*Это действие нельзя отменить!*",
             reply_markup=inline_keyboards.get_report_delete_confirm_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -397,7 +396,7 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
     try:
         db.report_delete(
             student_id=data['student_id'],
-            sprint_num=data['sprint_num']
+            sprint_num=data['sprint_num'],
         )
 
         await state.clear()
@@ -405,7 +404,7 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
         if callback.message:
             await callback.message.edit_text(
                 f"✅ *Отчет за Спринт №{data['sprint_num']} успешно удален!*",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
             # Переходим на страницу "Мои отчёты"
@@ -419,7 +418,7 @@ async def callback_confirm_delete_report(callback: aiogram.types.CallbackQuery, 
         if callback.message:
             await callback.message.edit_text(
                 f"❌ Ошибка при удалении отчета: {e!s}\n"
-                f"Попробуйте еще раз."
+                f"Попробуйте еще раз.",
             )
         await state.clear()
 
@@ -457,7 +456,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
                 assessored_student_id=data['selected_teammate_id'],
                 overall_rating=data['overall_rating'],
                 advantages=data['advantages'],
-                disadvantages=data['disadvantages']
+                disadvantages=data['disadvantages'],
             )
 
             await state.clear()
@@ -467,7 +466,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
                     f"✅ *Оценка успешно отправлена!*\n\n"
                     f"👤 Участник: {data['teammate_name']}\n"
                     f"⭐ Оценка: {data['overall_rating']}/10",
-                    parse_mode="Markdown"
+                    parse_mode="Markdown",
                 )
 
                 # Переходим на страницу "Оценить участников команды"
@@ -477,7 +476,7 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
                     if not teammates_to_rate:
                         await callback.message.answer(
                             "✅ Вы уже оценили всех участников команды!\n\n"
-                            "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки."
+                            "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                         )
                     else:
                         # Создаем список имен для выбора
@@ -486,20 +485,20 @@ async def callback_confirm_review(callback: aiogram.types.CallbackQuery, state: 
                         await state.set_state(states.ReviewProcess.teammate_selection)
 
                         keyboard = inline_keyboards.get_dynamic_inline_keyboard(
-                            teammate_names, "teammate", columns=2
+                            teammate_names, "teammate", columns=2,
                         )
                         await callback.message.answer(
                             "⭐ *Оценивание участников команды*\n\n"
                             "Выберите участника для оценки:",
                             reply_markup=keyboard,
-                            parse_mode="Markdown"
+                            parse_mode="Markdown",
                         )
 
         except Exception as e:
             if callback.message:
                 await callback.message.edit_text(
                     f"❌ Ошибка при отправке оценки: {e!s}\n"
-                    f"Попробуйте еще раз."
+                    f"Попробуйте еще раз.",
                 )
             await state.clear()
 
@@ -563,7 +562,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
     # Сохраняем данные в состоянии
     await state.update_data(
         selected_member=member_to_remove,
-        team_id=team['team_id']
+        team_id=team['team_id'],
     )
 
     if callback.message:
@@ -573,7 +572,7 @@ async def callback_remove_member_inline(callback: aiogram.types.CallbackQuery, s
             f"*Это действие нельзя отменить!*\n"
             f"Участник потеряет доступ ко всем функциям команды.",
             reply_markup=inline_keyboards.get_member_removal_confirm_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -586,7 +585,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
     try:
         db.team_remove_member(
             team_id=data['team_id'],
-            student_id=data['selected_member']['student_id']
+            student_id=data['selected_member']['student_id'],
         )
 
         await state.clear()
@@ -594,7 +593,7 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
         if callback.message:
             await callback.message.edit_text(
                 f"✅ *Участник {data['selected_member']['name']} успешно удален из команды!*",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
             # Обновляем информацию о команде
@@ -604,14 +603,14 @@ async def callback_confirm_remove_member(callback: aiogram.types.CallbackQuery, 
                 await callback.message.answer(
                     team_data['team_info'],
                     parse_mode="Markdown",
-                    reply_markup=team_data['keyboard']
+                    reply_markup=team_data['keyboard'],
                 )
 
     except Exception as e:
         if callback.message:
             await callback.message.edit_text(
                 f"❌ Ошибка при удалении участника: {e!s}\n"
-                f"Попробуйте еще раз."
+                f"Попробуйте еще раз.",
             )
         await state.clear()
 
@@ -633,7 +632,7 @@ async def callback_cancel_remove_member(callback: aiogram.types.CallbackQuery, s
             await callback.message.answer(
                 team_data['team_info'],
                 parse_mode="Markdown",
-                reply_markup=team_data['keyboard']
+                reply_markup=team_data['keyboard'],
             )
     await callback.answer()
 
@@ -661,7 +660,7 @@ async def callback_sprint_selection(callback: aiogram.types.CallbackQuery, state
             f"✅ Спринт №{sprint_num}\n\n"
             f"📝 Введите текст отчета о проделанной работе:",
             reply_markup=inline_keyboards.get_confirmation_inline_keyboard("Отмена", "Назад", "cancel", "back"),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -694,7 +693,7 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
     # Сохраняем выбранного участника в состоянии
     await state.update_data(
         selected_teammate_id=selected_teammate['student_id'],
-        teammate_name=selected_teammate['name']
+        teammate_name=selected_teammate['name'],
     )
 
     await state.set_state(states.ReviewProcess.rating_input)
@@ -704,7 +703,7 @@ async def callback_member_selection(callback: aiogram.types.CallbackQuery, state
             f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
             f"Поставьте оценку от {config.features.min_rating} до {config.features.max_rating}:",
             reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -737,7 +736,7 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
     # Сохраняем выбранного участника в состоянии
     await state.update_data(
         selected_teammate_id=selected_teammate['student_id'],
-        teammate_name=selected_teammate['name']
+        teammate_name=selected_teammate['name'],
     )
 
     await state.set_state(states.ReviewProcess.rating_input)
@@ -747,7 +746,7 @@ async def callback_teammate_selection(callback: aiogram.types.CallbackQuery, sta
             f"⭐ *Оценка участника: {selected_teammate['name']}*\n\n"
             f"Поставьте оценку от {config.features.min_rating} до {config.features.max_rating}:",
             reply_markup=inline_keyboards.get_ratings_inline_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -768,7 +767,7 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
 
     if rating < config.features.min_rating or rating > config.features.max_rating:
         await callback.answer(
-            f"❌ Оценка должна быть от {config.features.min_rating} до {config.features.max_rating}"
+            f"❌ Оценка должна быть от {config.features.min_rating} до {config.features.max_rating}",
         )
         return
 
@@ -780,7 +779,7 @@ async def callback_rating_selection(callback: aiogram.types.CallbackQuery, state
             f"✅ Оценка: {rating}/10\n\n"
             f"👍 *Положительные качества*\n"
             f"Напишите положительные качества участника:",
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 
@@ -821,7 +820,7 @@ async def callback_edit_member(callback: aiogram.types.CallbackQuery, state: aio
             f"Имя: {member_to_edit['name']}\n"
             f"ID: {member_to_edit['student_id']}\n\n"
             f"Функция редактирования пока не реализована.",
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     await callback.answer()
 

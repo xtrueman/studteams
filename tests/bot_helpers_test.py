@@ -121,13 +121,13 @@ def test_format_reports_list():
         {
             'sprint_num': 1,
             'report_date': datetime.datetime(2023, 1, 15, 14, 30),
-            'report_text': 'Текст отчета за первый спринт'
+            'report_text': 'Текст отчета за первый спринт',
         },
         {
             'sprint_num': 2,
             'report_date': '2023-01-22T14:30:00',
-            'report_text': 'Текст отчета за второй спринт'
-        }
+            'report_text': 'Текст отчета за второй спринт',
+        },
     ]
 
     result = helpers.format_reports_list(reports)
@@ -143,12 +143,12 @@ def test_format_team_info():
     team = {
         'team_name': 'Команда А',
         'product_name': 'Продукт Б',
-        'invite_code': 'INV123'
+        'invite_code': 'INV123',
     }
 
     members = [
         {'name': 'Иван Иванов', 'role': 'Scrum Master'},
-        {'name': 'Петр Петров', 'role': 'Разработчик'}
+        {'name': 'Петр Петров', 'role': 'Разработчик'},
     ]
 
     # Теперь ссылка-приглашение отображается всегда

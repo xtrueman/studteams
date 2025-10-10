@@ -31,6 +31,7 @@ def is_valid_group_number(group: str) -> bool:
 def extract_sprint_number(text: str) -> int | None:
     """Извлекает номер спринта из текста"""
     import re
+
     # Ищем первое число в тексте
     match = re.search(r'\d+', text)
     if match:
@@ -140,7 +141,7 @@ def get_team_display_data(student_id: str, tg_id: int):
 
     # Добавляем inline клавиатуру для управления участниками (только для админов)
     keyboard = inline_keyboards.get_team_member_management_keyboard(
-        all_members, student['student_id'], is_admin
+        all_members, student['student_id'], is_admin,
     )
 
     return {
@@ -148,5 +149,5 @@ def get_team_display_data(student_id: str, tg_id: int):
         'keyboard': keyboard,
         'is_admin': is_admin,
         'team': team,
-        'all_members': all_members
+        'all_members': all_members,
     }

@@ -5,7 +5,6 @@
 """
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 from aiogram import F
 from config import config
@@ -36,7 +35,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
     if not teammates_to_rate:
         await message.answer(
             "✅ Вы уже оценили всех участников команды!\n\n"
-            "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки."
+            "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
         )
         return
 
@@ -50,7 +49,7 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
         "⭐ *Оценивание участников команды*\n\n"
         "Выберите участника для оценки:",
         reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -74,7 +73,7 @@ async def handle_who_rated_me(message: aiogram.types.Message):
         await message.answer(
             "⭐ Вас пока никто не оценил.\n\n"
             "Оценки появятся здесь после того, как участники команды "
-            "воспользуются функцией \"Оценить участников команды\"."
+            "воспользуются функцией \"Оценить участников команды\".",
         )
         return
 
@@ -117,7 +116,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         rating = int(message.text.strip())
     except ValueError:
         await message.answer(
-            f"❌ Введите число от {config.features.min_rating} до {config.features.max_rating}:"
+            f"❌ Введите число от {config.features.min_rating} до {config.features.max_rating}:",
         )
         return
 
@@ -125,7 +124,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         await message.answer(
             "❌ Оценка должна быть от "
             f"{config.features.min_rating} до {config.features.max_rating}. "
-            "Попробуйте еще раз:"
+            "Попробуйте еще раз:",
         )
         return
 
@@ -136,7 +135,7 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
         f"✅ Оценка: {rating}/10\n\n"
         f"👍 *Положительные качества*\n"
         f"Напишите положительные качества участника:",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -152,7 +151,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
     if len(advantages) < 15:
         await message.answer(
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
-            "👍 Напишите положительные качества ещё раз:"
+            "👍 Напишите положительные качества ещё раз:",
         )
         return
 
@@ -167,7 +166,7 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
     await message.answer(
         text=f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -183,7 +182,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
     if len(disadvantages) < 15:
         await message.answer(
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
-            "📈 Напишите области для улучшения ещё раз:"
+            "📈 Напишите области для улучшения ещё раз:",
         )
         return
 
@@ -209,7 +208,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
     await message.answer(
         confirmation_text,
         reply_markup=inline_keyboards.get_review_confirm_keyboard(),
-        parse_mode="Markdown"
+        parse_mode="Markdown",
     )
 
 
@@ -226,7 +225,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                 assessored_student_id=data['selected_teammate_id'],
                 overall_rating=data['overall_rating'],
                 advantages=data['advantages'],
-                disadvantages=data['disadvantages']
+                disadvantages=data['disadvantages'],
             )
 
             await state.clear()
@@ -235,7 +234,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                 f"✅ *Оценка успешно отправлена!*\n\n"
                 f"👤 Участник: {data['teammate_name']}\n"
                 f"⭐ Оценка: {data['overall_rating']}/10",
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
             # Переходим на страницу "Оценить участников команды"
@@ -245,7 +244,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                 if not teammates_to_rate:
                     await message.answer(
                         "✅ Вы уже оценили всех участников команды!\n\n"
-                        "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки."
+                        "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                     )
                 else:
                     # Создаем список имен для выбора
@@ -255,19 +254,19 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                     await state.set_state(states.ReviewProcess.teammate_selection)
 
                     keyboard = inline_keyboards.get_dynamic_inline_keyboard(
-                        teammate_names, "teammate", columns=2
+                        teammate_names, "teammate", columns=2,
                     )
                     await message.answer(
                         "⭐ *Оценивание участников команды*\n\n"
                         "Выберите участника для оценки:",
                         reply_markup=keyboard,
-                        parse_mode="Markdown"
+                        parse_mode="Markdown",
                     )
 
         except Exception as e:
             await message.answer(
                 f"❌ Ошибка при отправке оценки: {e!s}\n"
-                f"Попробуйте еще раз."
+                f"Попробуйте еще раз.",
             )
             await state.clear()
 

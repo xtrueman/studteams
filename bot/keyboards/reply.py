@@ -13,14 +13,14 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
     keyboard = aiogram.types.ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )
 
     if not has_team:
         # Незарегистрированные пользователи
         keyboard.keyboard.append([
             aiogram.types.KeyboardButton(text="Регистрация команды"),
-            aiogram.types.KeyboardButton(text="Помощь")
+            aiogram.types.KeyboardButton(text="Помощь"),
         ])
     else:
         # Участники команды
@@ -32,13 +32,13 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
 
         row2 = [
             aiogram.types.KeyboardButton(text="Мои отчёты"),
-            aiogram.types.KeyboardButton(text="Отправить отчёт")
+            aiogram.types.KeyboardButton(text="Отправить отчёт"),
         ]
 
         if config.features.enable_reviews:
             row4 = [
                 aiogram.types.KeyboardButton(text="Оценить участников команды"),
-                aiogram.types.KeyboardButton(text="Кто меня оценил?")
+                aiogram.types.KeyboardButton(text="Кто меня оценил?"),
             ]
             keyboard.keyboard.append(row4)
 
@@ -47,7 +47,7 @@ def get_main_menu_keyboard(is_admin: bool = False, has_team: bool = False):
         # Последняя строка - служебные кнопки
         last_row = [
             aiogram.types.KeyboardButton(text="Помощь"),
-            aiogram.types.KeyboardButton(text="Обновить")
+            aiogram.types.KeyboardButton(text="Обновить"),
         ]
         keyboard.keyboard.append(last_row)
 
@@ -60,11 +60,11 @@ def get_confirmation_keyboard(confirm_text: str = "Продолжить", cancel
         keyboard=[
             [
                 aiogram.types.KeyboardButton(text=confirm_text),
-                aiogram.types.KeyboardButton(text=cancel_text)
-            ]
+                aiogram.types.KeyboardButton(text=cancel_text),
+            ],
         ],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
 
 
@@ -74,7 +74,7 @@ def get_roles_keyboard():
     keyboard = aiogram.types.ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
 
     for i in range(0, len(roles), 2):
@@ -92,7 +92,7 @@ def get_sprints_keyboard():
     keyboard = aiogram.types.ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
 
     sprints = [f"Спринт №{i}" for i in range(1, config.features.max_sprint_number + 1)]
@@ -113,7 +113,7 @@ def get_ratings_keyboard():
     keyboard = aiogram.types.ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
 
     # Первая строка: 1-5
@@ -134,7 +134,7 @@ def get_dynamic_keyboard(items: list[str], columns: int = 2):
     keyboard = aiogram.types.ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
 
     for i in range(0, len(items), columns):
@@ -154,12 +154,12 @@ def get_admin_panel_keyboard():
         keyboard=[
             [
                 aiogram.types.KeyboardButton(text="👥 Участники команды"),
-                aiogram.types.KeyboardButton(text="📊 Статистика участника")
+                aiogram.types.KeyboardButton(text="📊 Статистика участника"),
             ],
             [
-                aiogram.types.KeyboardButton(text="Назад")
-            ]
+                aiogram.types.KeyboardButton(text="Назад"),
+            ],
         ],
         resize_keyboard=True,
-        one_time_keyboard=False
+        one_time_keyboard=False,
     )

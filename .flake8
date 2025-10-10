@@ -1,4 +1,10 @@
 [flake8]
 exclude = .git,__pycache__,venv,.venv,tmp
 max-line-length = 120
-ignore = WPS,E128,E201,E202,E203,E221,E261,E251,E241,E266,W293,W503
+# Игнорируем ошибки стиля документации (не критичные)
+ignore = WPS,E128,E201,E202,E203,E221,E261,E251,E241,E266,W293,W503,
+    D100,D101,D102,D103,D104,D105,D107,
+    D200,D202,D205,
+    D400,D401,
+    DAR101,DAR201,DAR401,
+    I001,I003,I004,I005

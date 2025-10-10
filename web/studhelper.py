@@ -35,7 +35,7 @@ async def teams(request: Request):
         "request": request,
         "teams": teams_data,
         "teams_count": teams_count,
-        "students_count": students_count
+        "students_count": students_count,
     }
     return templates.TemplateResponse("teams.jinja", params)
 
@@ -53,7 +53,7 @@ async def reports(request: Request, team: str = "", sprint: str = "", student: s
     reports_data = get_all_reports(
         team_filter=team_filter,
         sprint_filter=sprint_filter,
-        student_filter=student_filter
+        student_filter=student_filter,
     )
 
     # Получаем список команд для фильтра
@@ -66,7 +66,7 @@ async def reports(request: Request, team: str = "", sprint: str = "", student: s
         "current_filters": {
             "team": team_filter,
             "sprint": sprint_filter,
-            "student": student_filter
-        }
+            "student": student_filter,
+        },
     }
     return templates.TemplateResponse("reports.jinja", params)

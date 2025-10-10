@@ -87,10 +87,12 @@ def test_cursor_usage():
 def test_database_tables_exist():
     """Тест наличия таблиц из схемы"""
     dict_cur = myconn.dict_cursor()
-    dict_cur.execute("""
+    dict_cur.execute(
+        """
         SELECT TABLE_NAME FROM information_schema.TABLES
         WHERE TABLE_SCHEMA = %s
-    """, (config.database.test.database,))
+    """, (config.database.test.database,),
+    )
 
     tables = [row['TABLE_NAME'] for row in dict_cur.fetchall()]
     expected_tables = ['students', 'teams', 'team_members', 'sprint_reports', 'team_members_ratings']

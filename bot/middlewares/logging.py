@@ -7,7 +7,6 @@ Middleware для логирования в боте.
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-import aiogram
 import aiogram.types
 import loguru
 from aiogram import BaseMiddleware
@@ -23,7 +22,7 @@ class LoggingMiddleware(BaseMiddleware):
         self,
         handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
-        data: dict[str, Any]
+        data: dict[str, Any],
     ) -> Any:
         # Логируем входящее обновление только для Update событий
         if isinstance(event, aiogram.types.Update):
@@ -33,7 +32,7 @@ class LoggingMiddleware(BaseMiddleware):
                 text = event.message.text or "[Non-text message]"
 
                 self.logger.info(
-                    f"Message from user_id={user_id} username=@{username} text='{text}'"
+                    f"Message from user_id={user_id} username=@{username} text='{text}'",
                 )
 
             elif event.callback_query:
@@ -42,7 +41,7 @@ class LoggingMiddleware(BaseMiddleware):
                 data_text = event.callback_query.data or "None"
 
                 self.logger.info(
-                    f"Callback from user_id={user_id} username=@{username} data='{data_text}'"
+                    f"Callback from user_id={user_id} username=@{username} data='{data_text}'",
                 )
 
         # Вызываем следующий middleware/handler
@@ -61,6 +60,6 @@ class LoggingMiddleware(BaseMiddleware):
             else:
                 user_id = "unknown"
             self.logger.error(
-                f"Handler error for user_id={user_id}: {type(e).__name__}: {e!s}"
+                f"Handler error for user_id={user_id}: {type(e).__name__}: {e!s}",
             )
             raise

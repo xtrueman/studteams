@@ -28,26 +28,26 @@ def cleanup_test_data():
         cur.execute(
             "DELETE FROM team_members_ratings WHERE assessor_student_id IN ("
             "123456789, 123456790, 123456791, 123456792, 123456793, 123456794, "
-            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)"
+            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)",
         )
         cur.execute(
             "DELETE FROM sprint_reports WHERE student_id IN ("
             "123456789, 123456790, 123456791, 123456792, 123456793, 123456794, "
-            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)"
+            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)",
         )
         cur.execute(
             "DELETE FROM team_members WHERE team_id IN ("
             "SELECT team_id FROM teams WHERE invite_code IN ("
-            "'INV123', 'INV456', 'INV789', 'TEST123'))"
+            "'INV123', 'INV456', 'INV789', 'TEST123'))",
         )
         cur.execute(
             "DELETE FROM teams WHERE invite_code IN ("
-            "'INV123', 'INV456', 'INV789', 'TEST123')"
+            "'INV123', 'INV456', 'INV789', 'TEST123')",
         )
         cur.execute(
             "DELETE FROM students WHERE tg_id IN ("
             "123456789, 123456790, 123456791, 123456792, 123456793, 123456794, "
-            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)"
+            "123456795, 123456796, 123456797, 123456798, 999999999, 888888888)",
         )
         # Убран вызов myconn.commit() так как у нас включен autocommit
     except Exception:
@@ -190,7 +190,7 @@ def test_create_and_get_ratings():
         assessed['student_id'],
         8,
         "Хороший специалист",
-        "Нужно улучшить коммуникацию"
+        "Нужно улучшить коммуникацию",
     )
 
     # Получаем кто оценил студента
@@ -236,7 +236,7 @@ def test_get_teammates_not_rated():
         member1['student_id'],
         9,
         "Отличная работа",
-        "Минорные замечания"
+        "Минорные замечания",
     )
 
     # Проверяем что теперь только один участник в списке неоцененных

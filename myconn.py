@@ -33,7 +33,7 @@ def get_db_credentials():
         'collation': db_cfg.collation or 'utf8mb4_unicode_ci',
         'autocommit': db_cfg.autocommit if hasattr(db_cfg, 'autocommit') else True,
         'consume_results': True,
-        'auth_plugin': db_cfg.auth_plugin or 'mysql_native_password'
+        'auth_plugin': db_cfg.auth_plugin or 'mysql_native_password',
     }
 
 

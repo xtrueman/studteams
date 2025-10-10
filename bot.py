@@ -26,7 +26,7 @@ loguru.logger.add(
     rotation=config.logging.rotation,
     retention=config.logging.retention,
     level=config.logging.level,
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}"
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
 )
 
 logger = loguru.logger

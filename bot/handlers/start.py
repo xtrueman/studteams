@@ -5,7 +5,6 @@
 """
 
 import aiogram
-import aiogram.filters
 import aiogram.fsm.context
 import tgtexts
 from aiogram import F
@@ -57,7 +56,7 @@ async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fs
             "👋 Добро пожаловать в StudHelper!\n\n"
             "Для начала работы зарегистрируйте команду (если вы Scrum Master) "
             "или обратитесь к администратору команды за ссылкой-приглашением.",
-            reply_markup=keyboard
+            reply_markup=keyboard,
         )
 
 
@@ -68,7 +67,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
 
     if not team:
         await message.answer(
-            "❌ Неверный код приглашения. Обратитесь к администратору команды за новой ссылкой."
+            "❌ Неверный код приглашения. Обратитесь к администратору команды за новой ссылкой.",
         )
         return
 
@@ -77,7 +76,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
 
     if student and 'team' in student:
         await message.answer(
-            "❌ Вы уже состоите в команде. Для смены команды обратитесь к администратору."
+            "❌ Вы уже состоите в команде. Для смены команды обратитесь к администратору.",
         )
         return
 
@@ -91,7 +90,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
             f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
             f"Выберите вашу роль в команде:",
             reply_markup=inline_keyboards.get_roles_inline_keyboard(),
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
     else:
         # Новый пользователь - запрашиваем данные
@@ -99,7 +98,7 @@ async def handle_join_team(message: aiogram.types.Message, state: aiogram.fsm.co
         await message.answer(
             f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
             f"Введите ваше имя и фамилию:",
-            parse_mode="Markdown"
+            parse_mode="Markdown",
         )
 
 

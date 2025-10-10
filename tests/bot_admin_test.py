@@ -14,17 +14,21 @@ def test_get_team_member_stats():
         # Настраиваем возвращаемые значения для моков
         mock_reports = [
             {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'},
-            {'sprint_num': 2, 'report_text': 'Report 2', 'report_date': '2023-01-08'}
+            {'sprint_num': 2, 'report_text': 'Report 2', 'report_date': '2023-01-08'},
         ]
         mock_ratings_given = [
-            {'assessed_name': 'Student 2', 'overall_rating': 8, 'advantages': 'Good',
-             'disadvantages': 'Bad', 'rate_date': '2023-01-01'},
-            {'assessed_name': 'Student 3', 'overall_rating': 9, 'advantages': 'Great',
-             'disadvantages': 'None', 'rate_date': '2023-01-02'}
+            {
+                'assessed_name': 'Student 2', 'overall_rating': 8, 'advantages': 'Good',
+                'disadvantages': 'Bad', 'rate_date': '2023-01-01',
+            },
+            {
+                'assessed_name': 'Student 3', 'overall_rating': 9, 'advantages': 'Great',
+                'disadvantages': 'None', 'rate_date': '2023-01-02',
+            },
         ]
         mock_ratings_received = [
             {'assessor_name': 'Student 4', 'overall_rating': 7, 'rate_date': '2023-01-01'},
-            {'assessor_name': 'Student 5', 'overall_rating': 8, 'rate_date': '2023-01-02'}
+            {'assessor_name': 'Student 5', 'overall_rating': 8, 'rate_date': '2023-01-02'},
         ]
 
         mock_db.report_get_by_student.return_value = mock_reports
@@ -51,7 +55,7 @@ def test_get_team_member_stats_with_no_ratings():
     with patch('bot.handlers.admin.db') as mock_db:
         # Настраиваем возвращаемые значения для моков
         mock_reports = [
-            {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'}
+            {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'},
         ]
         mock_ratings_given = []
         mock_ratings_received = []
@@ -95,26 +99,28 @@ def test_get_team_overall_stats():
         # Настраиваем возвращаемые значения для моков
         mock_members = [
             {'student_id': 1, 'name': 'Student 1', 'role': 'Developer'},
-            {'student_id': 2, 'name': 'Student 2', 'role': 'Tester'}
+            {'student_id': 2, 'name': 'Student 2', 'role': 'Tester'},
         ]
         mock_reports_1 = [
             {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'},
-            {'sprint_num': 2, 'report_text': 'Report 2', 'report_date': '2023-01-08'}
+            {'sprint_num': 2, 'report_text': 'Report 2', 'report_date': '2023-01-08'},
         ]
         mock_reports_2 = [
-            {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'}
+            {'sprint_num': 1, 'report_text': 'Report 1', 'report_date': '2023-01-01'},
         ]
         mock_ratings_given_1 = [
-            {'assessed_name': 'Student 2', 'overall_rating': 8, 'advantages': 'Good',
-             'disadvantages': 'Bad', 'rate_date': '2023-01-01'}
+            {
+                'assessed_name': 'Student 2', 'overall_rating': 8, 'advantages': 'Good',
+                'disadvantages': 'Bad', 'rate_date': '2023-01-01',
+            },
         ]
         mock_ratings_given_2 = []
         mock_ratings_received_1 = [
-            {'assessor_name': 'Student 2', 'overall_rating': 7, 'rate_date': '2023-01-01'}
+            {'assessor_name': 'Student 2', 'overall_rating': 7, 'rate_date': '2023-01-01'},
         ]
         mock_ratings_received_2 = [
             {'assessor_name': 'Student 1', 'overall_rating': 8, 'rate_date': '2023-01-01'},
-            {'assessor_name': 'Student 3', 'overall_rating': 9, 'rate_date': '2023-01-02'}
+            {'assessor_name': 'Student 3', 'overall_rating': 9, 'rate_date': '2023-01-02'},
         ]
 
         mock_db.team_get_all_members.return_value = mock_members

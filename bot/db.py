@@ -9,7 +9,7 @@ from myconn import cursors
 
 def student_get_by_tg_id(tg_id: int):
     """
-    Получение студента по Telegram ID
+    Получение студента по Telegram ID.
 
     Args:
         tg_id: Telegram ID студента
@@ -18,11 +18,13 @@ def student_get_by_tg_id(tg_id: int):
         Словарь с информацией о студенте или None если не найден
     """
     # Получаем студента
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT s.student_id, s.tg_id, s.name, s.group_num
         FROM students s
         WHERE s.tg_id = %s
-    """, (tg_id,))
+    """, (tg_id,),
+    )
 
     student = cursors.dict_cur.fetchone()
 
@@ -30,14 +32,16 @@ def student_get_by_tg_id(tg_id: int):
         return None
 
     # Получаем информацию о команде
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s2.name as admin_name
         FROM team_members tm
         JOIN teams t ON tm.team_id = t.team_id
         JOIN students s2 ON t.admin_student_id = s2.student_id
         WHERE tm.student_id = %s
-    """, (student['student_id'],))
+    """, (student['student_id'],),
+    )
 
     team_info = cursors.dict_cur.fetchone()
 
@@ -57,11 +61,13 @@ def student_get_by_id(student_id: int):
     Returns:
         Словарь с информацией о студенте или None если не найден
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT student_id, tg_id, name, group_num
         FROM students
         WHERE student_id = %s
-    """, (student_id,))
+    """, (student_id,),
+    )
 
     result = cursors.dict_cur.fetchone()
 
@@ -80,10 +86,12 @@ def student_create(tg_id: int, name: str, group_num: str | None = None):
     Returns:
         Словарь с информацией о созданном студенте
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         INSERT INTO students (tg_id, name, group_num)
         VALUES (%s, %s, %s)
-    """, (tg_id, name, group_num))
+    """, (tg_id, name, group_num),
+    )
 
     student_id = cursors.cur.lastrowid
 
@@ -91,7 +99,7 @@ def student_create(tg_id: int, name: str, group_num: str | None = None):
         'student_id': student_id,
         'tg_id': tg_id,
         'name': name,
-        'group_num': group_num
+        'group_num': group_num,
     }
 
 
@@ -105,7 +113,8 @@ def student_get_teammates(student_id: int):
     Returns:
         Список словарей с информацией об участниках команды
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT DISTINCT s.student_id, s.name, tm.role
         FROM students s
         JOIN team_members tm ON s.student_id = tm.student_id
@@ -115,7 +124,8 @@ def student_get_teammates(student_id: int):
             WHERE student_id = %s
         )
         AND s.student_id != %s
-    """, (student_id, student_id))
+    """, (student_id, student_id),
+    )
 
     result = cursors.dict_cur.fetchall()
 
@@ -132,7 +142,8 @@ def student_get_teammates_not_rated(assessor_id: int):
     Returns:
         Список словарей с информацией об участниках команды, которых ещё не оценили
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT DISTINCT s.student_id, s.name
         FROM students s
         JOIN team_members tm ON s.student_id = tm.student_id
@@ -147,7 +158,8 @@ def student_get_teammates_not_rated(assessor_id: int):
             FROM team_members_ratings
             WHERE assessor_student_id = %s
         )
-    """, (assessor_id, assessor_id, assessor_id))
+    """, (assessor_id, assessor_id, assessor_id),
+    )
 
     result = cursors.dict_cur.fetchall()
 
@@ -167,10 +179,12 @@ def team_create(team_name: str, product_name: str, invite_code: str, admin_stude
     Returns:
         Словарь с информацией о созданной команде
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         INSERT INTO teams (team_name, product_name, invite_code, admin_student_id)
         VALUES (%s, %s, %s, %s)
-    """, (team_name, product_name, invite_code, admin_student_id))
+    """, (team_name, product_name, invite_code, admin_student_id),
+    )
 
     team_id = cursors.cur.lastrowid
     # Убран вызов myconn.commit() так как у нас включен autocommit
@@ -179,7 +193,7 @@ def team_create(team_name: str, product_name: str, invite_code: str, admin_stude
         'team_id': team_id,
         'team_name': team_name,
         'product_name': product_name,
-        'invite_code': invite_code
+        'invite_code': invite_code,
     }
 
 
@@ -193,13 +207,15 @@ def team_get_by_invite_code(invite_code: str):
     Returns:
         Словарь с информацией о команде или None если не найдена
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s.name as admin_name
         FROM teams t
         JOIN students s ON t.admin_student_id = s.student_id
         WHERE t.invite_code = %s
-    """, (invite_code,))
+    """, (invite_code,),
+    )
 
     result = cursors.dict_cur.fetchone()
 
@@ -215,11 +231,13 @@ def team_add_member(team_id: int, student_id: int, role: str):
         student_id: ID студента
         role: Роль участника
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         INSERT INTO team_members (team_id, student_id, role)
         VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE role = %s
-    """, (team_id, student_id, role, role))
+    """, (team_id, student_id, role, role),
+    )
 
 
 def team_remove_member(team_id: int, student_id: int):
@@ -230,10 +248,12 @@ def team_remove_member(team_id: int, student_id: int):
         team_id: ID команды
         student_id: ID студента
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         DELETE FROM team_members
         WHERE team_id = %s AND student_id = %s
-    """, (team_id, student_id))
+    """, (team_id, student_id),
+    )
 
 
 def team_get_all_members(team_id: int):
@@ -246,7 +266,8 @@ def team_get_all_members(team_id: int):
     Returns:
         Список словарей с информацией о всех участниках команды, включая администратора
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT DISTINCT s.student_id, s.name,
             CASE
                 WHEN t.admin_student_id = s.student_id THEN 'Scrum Master'
@@ -256,7 +277,8 @@ def team_get_all_members(team_id: int):
         LEFT JOIN team_members tm ON s.student_id = tm.student_id AND tm.team_id = %s
         JOIN teams t ON t.team_id = %s
         WHERE tm.team_id = %s OR s.student_id = t.admin_student_id
-    """, (team_id, team_id, team_id))
+    """, (team_id, team_id, team_id),
+    )
 
     result = cursors.dict_cur.fetchall()
 
@@ -273,27 +295,33 @@ def report_create_or_update(student_id: int, sprint_num: int, report_text: str):
         report_text: Текст отчёта
     """
     # Проверяем существует ли отчет
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         SELECT COUNT(*) as cnt
         FROM sprint_reports
         WHERE student_id = %s AND sprint_num = %s
-    """, (student_id, sprint_num))
+    """, (student_id, sprint_num),
+    )
 
     result = cursors.cur.fetchone()
 
     if result[0] > 0:
         # Обновляем существующий отчет
-        cursors.cur.execute("""
+        cursors.cur.execute(
+            """
             UPDATE sprint_reports
             SET report_text = %s, report_date = NOW()
             WHERE student_id = %s AND sprint_num = %s
-        """, (report_text, student_id, sprint_num))
+        """, (report_text, student_id, sprint_num),
+        )
     else:
         # Создаем новый отчет
-        cursors.cur.execute("""
+        cursors.cur.execute(
+            """
             INSERT INTO sprint_reports (student_id, sprint_num, report_text, report_date)
             VALUES (%s, %s, %s, NOW())
-        """, (student_id, sprint_num, report_text))
+        """, (student_id, sprint_num, report_text),
+        )
 
 
 def report_get_by_student(student_id: int):
@@ -306,12 +334,14 @@ def report_get_by_student(student_id: int):
     Returns:
         Список словарей с отчётами студента
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT *
         FROM sprint_reports
         WHERE student_id = %s
         ORDER BY sprint_num
-    """, (student_id,))
+    """, (student_id,),
+    )
 
     result = cursors.dict_cur.fetchall()
 
@@ -326,10 +356,12 @@ def report_delete(student_id: int, sprint_num: int):
         student_id: ID студента
         sprint_num: Номер спринта
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         DELETE FROM sprint_reports
         WHERE student_id = %s AND sprint_num = %s
-    """, (student_id, sprint_num))
+    """, (student_id, sprint_num),
+    )
     # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
@@ -338,7 +370,7 @@ def rating_create(
     assessored_student_id: int,
     overall_rating: int,
     advantages: str,
-    disadvantages: str
+    disadvantages: str,
 ):
     """
     Создание новой оценки участника команды
@@ -350,14 +382,18 @@ def rating_create(
         advantages: Положительные качества
         disadvantages: Области для улучшения
     """
-    cursors.cur.execute("""
+    cursors.cur.execute(
+        """
         INSERT INTO team_members_ratings
         (assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages, rate_date)
         VALUES (%s, %s, %s, %s, %s, NOW())
         ON DUPLICATE KEY UPDATE
         overall_rating = %s, advantages = %s, disadvantages = %s, rate_date = NOW()
-    """, (assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages,
-          overall_rating, advantages, disadvantages))
+    """, (
+            assessor_student_id, assessored_student_id, overall_rating, advantages, disadvantages,
+            overall_rating, advantages, disadvantages,
+        ),
+    )
     # Убран вызов myconn.commit() так как у нас включен autocommit
 
 
@@ -371,13 +407,15 @@ def rating_get_who_rated_me(student_id: int):
     Returns:
         Список словарей с информацией о тех, кто оценил студента
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT s.name as assessor_name, tmr.rate_date
         FROM team_members_ratings tmr
         JOIN students s ON tmr.assessor_student_id = s.student_id
         WHERE tmr.assessored_student_id = %s
         ORDER BY tmr.rate_date DESC
-    """, (student_id,))
+    """, (student_id,),
+    )
 
     result = cursors.dict_cur.fetchall()
 
@@ -394,14 +432,16 @@ def rating_get_given_by_student(student_id: int):
     Returns:
         Список словарей с оценками, которые поставил студент
     """
-    cursors.dict_cur.execute("""
+    cursors.dict_cur.execute(
+        """
         SELECT s.name as assessed_name, tmr.overall_rating,
                tmr.advantages, tmr.disadvantages, tmr.rate_date
         FROM team_members_ratings tmr
         JOIN students s ON tmr.assessored_student_id = s.student_id
         WHERE tmr.assessor_student_id = %s
         ORDER BY tmr.rate_date DESC
-    """, (student_id,))
+    """, (student_id,),
+    )
 
     result = cursors.dict_cur.fetchall()
 

@@ -150,7 +150,7 @@ def get_total_students_count() -> int:
 def get_all_reports(
     team_filter: str | None = None,
     sprint_filter: int | None = None,
-    student_filter: str | None = None
+    student_filter: str | None = None,
 ) -> list[dict[str, Any]]:
     """
     Получить все отчеты с фильтрацией

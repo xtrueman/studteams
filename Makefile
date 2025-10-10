@@ -9,7 +9,7 @@ install-certbot:
 	@echo ""
 	@echo "✅ Certbot установлен"
 	@echo "Для получения сертификата выполните:"
-	@echo "  make setup-ssl DOMAIN=your-domain.com EMAIL=your-email@example.com"
+	@echo "  make setup-ssl DOMAIN=studhelper.ru EMAIL=despairr@gmail.com"
 	@echo ""
 	@echo "Подробнее см. config/SSL.md"
 
@@ -34,12 +34,10 @@ ruff-fix-unsafe:
 setup-ssl:
 	@if [ -z "$(DOMAIN)" ]; then \
 		echo "❌ Ошибка: укажите DOMAIN"; \
-		echo "Пример: make setup-ssl DOMAIN=studteams.example.com EMAIL=admin@example.com"; \
 		exit 1; \
 	fi
 	@if [ -z "$(EMAIL)" ]; then \
 		echo "❌ Ошибка: укажите EMAIL"; \
-		echo "Пример: make setup-ssl DOMAIN=studteams.example.com EMAIL=admin@example.com"; \
 		exit 1; \
 	fi
 	@echo "🔒 Получение SSL сертификата для $(DOMAIN)..."
