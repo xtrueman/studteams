@@ -121,6 +121,41 @@ def format_team_info(team: dict, all_members: list) -> str:
     return team_info
 
 
+def get_student_status(tg_id: int) -> dict:
+    """Получает информацию о статусе студента (зарегистрирован ли, в команде ли, админ ли)."""
+    student = db.student_get_by_tg_id(tg_id)
+
+    if not student:
+        return {
+            'student': None,
+            'has_team': False,
+            'is_admin': False
+        }
+
+    has_team = 'team' in student
+    is_admin = False
+
+    if has_team:
+        is_admin = student['team']['admin_student_id'] == student['student_id']
+
+    return {
+        'student': student,
+        'has_team': has_team,
+        'is_admin': is_admin
+    }
+
+
+def get_main_menu_for_user(tg_id: int):
+    """Возвращает главное меню для пользователя на основе его статуса."""
+    import bot.keyboards.reply as keyboards
+
+    status = get_student_status(tg_id)
+    return keyboards.get_main_menu_keyboard(
+        is_admin=status['is_admin'],
+        has_team=status['has_team']
+    )
+
+
 def get_team_display_data(student_id: str, tg_id: int):
     """Получение данных для отображения информации о команде"""
     import bot.keyboards.inline as inline_keyboards

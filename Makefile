@@ -1,11 +1,24 @@
 .PHONY: *
 
+# Активация виртуальной среды
+activate:
+	@echo "Для активации виртуальной среды выполните:"
+	@echo "source venv/bin/activate"
+
+# Запуск бота
+run:
+	venv/bin/python bot.py
+
+# Создание requirements.txt
+freeze:
+	venv/bin/pip freeze > requirements.txt
+
 install:
-	pip install -r requirements.txt
+	venv/bin/pip install -r requirements.txt
 
 install-certbot:
 	@echo "Установка certbot..."
-	pip install certbot certbot-nginx
+	venv/bin/pip install certbot certbot-nginx
 	@echo ""
 	@echo "✅ Certbot установлен"
 	@echo "Для получения сертификата выполните:"
@@ -20,10 +33,10 @@ test-cov:
 	pytest tests/ --cov=bratishkabot --cov-report=html --cov-report=term
 
 lint:
+	@echo "Проверка ruff..."
+	ruff check --fix
 	@echo "Проверка flake8..."
 	flake8
-	@echo "Проверка ruff..."
-	ruff check
 
 ruff-fix:
 	ruff check --fix

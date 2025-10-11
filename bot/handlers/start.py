@@ -12,7 +12,6 @@ from aiogram.filters import Command
 
 import bot.db as db
 import bot.keyboards.inline as inline_keyboards
-import bot.keyboards.reply as keyboards
 import bot.states.user_states as states
 import bot.utils.decorators as decorators
 
@@ -36,22 +35,16 @@ async def cmd_start(message: aiogram.types.Message, state: aiogram.fsm.context.F
 
 async def handle_regular_start(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработка обычного старта без кода"""
-    student = db.student_get_by_tg_id(message.from_user.id)
+    import bot.utils.helpers as helpers
 
-    if student:
+    status = helpers.get_student_status(message.from_user.id)
+    keyboard = helpers.get_main_menu_for_user(message.from_user.id)
+
+    if status['student']:
         # Пользователь уже зарегистрирован
-        has_team = 'team' in student
-        is_admin = False
-
-        if has_team:
-            # In MySQL version, we have team info directly in student dict
-            is_admin = student['team']['admin_student_id'] == student['student_id']
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
         await message.answer(tgtexts.WELCOME_MESSAGE, reply_markup=keyboard, parse_mode="Markdown")
     else:
         # Новый пользователь
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
         await message.answer(
             "👋 Добро пожаловать в StudHelper!\n\n"
             "Для начала работы зарегистрируйте команду (если вы Scrum Master) "
@@ -117,23 +110,11 @@ async def handle_help_button(message: aiogram.types.Message):
 @decorators.log_handler("update_button")
 async def handle_update_button(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
     """Обработчик кнопки Обновить"""
+    import bot.utils.helpers as helpers
+
     await state.clear()
-
-    student = db.student_get_by_tg_id(message.from_user.id)
-
-    if student:
-        has_team = 'team' in student
-        is_admin = False
-
-        if has_team:
-            # In MySQL version, we have team info directly in student dict
-            is_admin = student['team']['admin_student_id'] == student['student_id']
-
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=is_admin, has_team=has_team)
-        await message.answer("🔄 Меню обновлено", reply_markup=keyboard)
-    else:
-        keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
-        await message.answer("🔄 Меню обновлено", reply_markup=keyboard)
+    keyboard = helpers.get_main_menu_for_user(message.from_user.id)
+    await message.answer("🔄 Меню обновлено", reply_markup=keyboard)
 
 
 def register_start_handlers(dp: aiogram.Dispatcher):

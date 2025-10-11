@@ -32,7 +32,7 @@ loguru.logger.add(
 logger = loguru.logger
 
 
-async def main():
+async def run_bot():
     # Проверяем конфигурацию
     if not config.bot.token:
         logger.error("BOT_TOKEN not set in config.py")
@@ -70,4 +70,4 @@ async def main():
         await bot.session.close()
 
 
-asyncio.run(main())
+asyncio.run(run_bot())

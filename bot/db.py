@@ -7,6 +7,55 @@
 from myconn import cursors
 
 
+def _exec_select_one(query: str, params=None, use_dict=True):
+    """
+    Выполняет SELECT запрос и возвращает одну запись.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+        use_dict: Использовать словарный курсор (True) или обычный (False)
+
+    Returns:
+        Одна запись или None
+    """
+    cursor = cursors.dict_cur if use_dict else cursors.cur
+    cursor.execute(query, params or ())
+    return cursor.fetchone()
+
+
+def _exec_select_all(query: str, params=None, use_dict=True):
+    """
+    Выполняет SELECT запрос и возвращает все записи.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+        use_dict: Использовать словарный курсор (True) или обычный (False)
+
+    Returns:
+        Список записей
+    """
+    cursor = cursors.dict_cur if use_dict else cursors.cur
+    cursor.execute(query, params or ())
+    return cursor.fetchall()
+
+
+def _exec_insert_update(query: str, params=None):
+    """
+    Выполняет INSERT/UPDATE/DELETE запрос.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+
+    Returns:
+        ID последней вставленной записи (для INSERT) или None
+    """
+    cursors.cur.execute(query, params or ())
+    return cursors.cur.lastrowid or None
+
+
 def student_get_by_tg_id(tg_id: int):
     """
     Получение студента по Telegram ID.
@@ -18,21 +67,19 @@ def student_get_by_tg_id(tg_id: int):
         Словарь с информацией о студенте или None если не найден
     """
     # Получаем студента
-    cursors.dict_cur.execute(
+    student = _exec_select_one(
         """
         SELECT s.student_id, s.tg_id, s.name, s.group_num
         FROM students s
         WHERE s.tg_id = %s
-    """, (tg_id,),
+    """, (tg_id,)
     )
-
-    student = cursors.dict_cur.fetchone()
 
     if not student:
         return None
 
     # Получаем информацию о команде
-    cursors.dict_cur.execute(
+    team_info = _exec_select_one(
         """
         SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s2.name as admin_name
@@ -40,10 +87,8 @@ def student_get_by_tg_id(tg_id: int):
         JOIN teams t ON tm.team_id = t.team_id
         JOIN students s2 ON t.admin_student_id = s2.student_id
         WHERE tm.student_id = %s
-    """, (student['student_id'],),
+    """, (student['student_id'],)
     )
-
-    team_info = cursors.dict_cur.fetchone()
 
     if team_info:
         student['team'] = team_info
@@ -61,17 +106,13 @@ def student_get_by_id(student_id: int):
     Returns:
         Словарь с информацией о студенте или None если не найден
     """
-    cursors.dict_cur.execute(
+    return _exec_select_one(
         """
         SELECT student_id, tg_id, name, group_num
         FROM students
         WHERE student_id = %s
-    """, (student_id,),
+    """, (student_id,)
     )
-
-    result = cursors.dict_cur.fetchone()
-
-    return result
 
 
 def student_create(tg_id: int, name: str, group_num: str | None = None):
@@ -86,14 +127,12 @@ def student_create(tg_id: int, name: str, group_num: str | None = None):
     Returns:
         Словарь с информацией о созданном студенте
     """
-    cursors.cur.execute(
+    student_id = _exec_insert_update(
         """
         INSERT INTO students (tg_id, name, group_num)
         VALUES (%s, %s, %s)
-    """, (tg_id, name, group_num),
+    """, (tg_id, name, group_num)
     )
-
-    student_id = cursors.cur.lastrowid
 
     return {
         'student_id': student_id,
@@ -113,7 +152,7 @@ def student_get_teammates(student_id: int):
     Returns:
         Список словарей с информацией об участниках команды
     """
-    cursors.dict_cur.execute(
+    return _exec_select_all(
         """
         SELECT DISTINCT s.student_id, s.name, tm.role
         FROM students s
@@ -124,12 +163,8 @@ def student_get_teammates(student_id: int):
             WHERE student_id = %s
         )
         AND s.student_id != %s
-    """, (student_id, student_id),
+    """, (student_id, student_id)
     )
-
-    result = cursors.dict_cur.fetchall()
-
-    return result
 
 
 def student_get_teammates_not_rated(assessor_id: int):
@@ -142,7 +177,7 @@ def student_get_teammates_not_rated(assessor_id: int):
     Returns:
         Список словарей с информацией об участниках команды, которых ещё не оценили
     """
-    cursors.dict_cur.execute(
+    return _exec_select_all(
         """
         SELECT DISTINCT s.student_id, s.name
         FROM students s
@@ -158,12 +193,8 @@ def student_get_teammates_not_rated(assessor_id: int):
             FROM team_members_ratings
             WHERE assessor_student_id = %s
         )
-    """, (assessor_id, assessor_id, assessor_id),
+    """, (assessor_id, assessor_id, assessor_id)
     )
-
-    result = cursors.dict_cur.fetchall()
-
-    return result
 
 
 def team_create(team_name: str, product_name: str, invite_code: str, admin_student_id: int):
@@ -179,15 +210,12 @@ def team_create(team_name: str, product_name: str, invite_code: str, admin_stude
     Returns:
         Словарь с информацией о созданной команде
     """
-    cursors.cur.execute(
+    team_id = _exec_insert_update(
         """
         INSERT INTO teams (team_name, product_name, invite_code, admin_student_id)
         VALUES (%s, %s, %s, %s)
-    """, (team_name, product_name, invite_code, admin_student_id),
+    """, (team_name, product_name, invite_code, admin_student_id)
     )
-
-    team_id = cursors.cur.lastrowid
-    # Убран вызов myconn.commit() так как у нас включен autocommit
 
     return {
         'team_id': team_id,
@@ -207,19 +235,15 @@ def team_get_by_invite_code(invite_code: str):
     Returns:
         Словарь с информацией о команде или None если не найдена
     """
-    cursors.dict_cur.execute(
+    return _exec_select_one(
         """
         SELECT t.team_id, t.team_name, t.product_name, t.invite_code,
                t.admin_student_id, s.name as admin_name
         FROM teams t
         JOIN students s ON t.admin_student_id = s.student_id
         WHERE t.invite_code = %s
-    """, (invite_code,),
+    """, (invite_code,)
     )
-
-    result = cursors.dict_cur.fetchone()
-
-    return result
 
 
 def team_add_member(team_id: int, student_id: int, role: str):
