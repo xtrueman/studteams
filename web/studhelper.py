@@ -1,7 +1,13 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from web.db import get_teams_count, get_teams_with_members, get_total_students_count, get_all_reports, get_teams_list
 
 app = FastAPI(title="StudTeams Web")
 
@@ -25,7 +31,6 @@ async def faq(request: Request):
 
 @app.get("/teams", response_class=HTMLResponse)
 async def teams(request: Request):
-    from db import get_teams_count, get_teams_with_members, get_total_students_count
 
     teams_data = get_teams_with_members()
     teams_count = get_teams_count()
@@ -42,7 +47,6 @@ async def teams(request: Request):
 
 @app.get("/reports", response_class=HTMLResponse)
 async def reports(request: Request, team: str = "", sprint: str = "", student: str = ""):
-    from db import get_all_reports, get_teams_list
 
     # Преобразуем параметры в нужные типы
     team_filter = team or None

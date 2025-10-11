@@ -48,7 +48,7 @@ def get_team_member_stats(member_id: int) -> dict:
                     total_rating += getattr(rating, 'overall_rating', 0)
                 count += 1
             if count > 0:
-                avg_rating = int(round(total_rating / count, 1))
+                avg_rating = round(total_rating / count, 1)
 
         return {
             'success': True,
@@ -132,7 +132,7 @@ def get_team_overall_stats(team_id: int) -> dict:
                         total_rating += getattr(rating, 'overall_rating', 0)
                     count += 1
                 if count > 0:
-                    avg_rating = int(round(total_rating / count, 1))
+                    avg_rating = round(total_rating / count, 1)
 
             team_stats.append({
                 'name': member_name,

@@ -79,7 +79,8 @@ def format_reports_list(reports: list) -> str:
 
         text += f"📊 Спринт №{report['sprint_num']} ({date_str})\n"
         # Truncate report text for preview
-        preview = report['report_text'][:100] + "..." if len(report['report_text']) > 100 else report['report_text']
+        text_content = report['report_text']
+        preview = text_content[:100] + ("..." if len(text_content) > 100 else "")
         text += f"{preview}\n\n"
 
     return text

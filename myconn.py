@@ -118,12 +118,32 @@ class GlobalCursors:
             self._cur = cursor()
         return self._cur
 
+    @cur.deleter
+    def cur(self):
+        """Удаляет обычный курсор."""
+        if self._cur:
+            try:
+                self._cur.close()
+            except Exception:
+                pass
+        self._cur = None
+
     @property
     def dict_cur(self):
         """Возвращает словарный курсор (кэшируется)."""
         if self._dict_cur is None:
             self._dict_cur = dict_cursor()
         return self._dict_cur
+
+    @dict_cur.deleter
+    def dict_cur(self):
+        """Удаляет словарный курсор."""
+        if self._dict_cur:
+            try:
+                self._dict_cur.close()
+            except Exception:
+                pass
+        self._dict_cur = None
 
     def close_all(self):
         """Закрывает все открытые курсоры."""

@@ -19,10 +19,8 @@ cover/
 
 *.log
 
-# Environments
-.env
+# Virtual environments
 .venv
-env/
 venv/
 ENV/
 env.bak/

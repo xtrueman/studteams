@@ -21,11 +21,8 @@ pip install -r requirements.txt
 
 ### 3. Конфигурация
 ```bash
-# Скопируйте пример конфигурации
-cp .env.example .env
-
-# Отредактируйте config.py или .env файл
-# Укажите ваш BOT_TOKEN от @BotFather и параметры MySQL
+# Отредактируйте конфигурационные файлы в папке config/
+# Укажите ваш BOT_TOKEN от @BotFather и параметры MySQL в соответствующих .yaml файлах
 ```
 
 ### 4. Запуск бота
@@ -46,14 +43,18 @@ ENABLE_REVIEWS = True  # Включить/выключить систему оц
 MAX_SPRINT_NUMBER = 6
 ```
 
-### Альтернативно через .env:
-```bash
-BOT_TOKEN=your_bot_token_here
-MYSQL_HOST=localhost
-MYSQL_USER=your_mysql_user
-MYSQL_PASS=your_mysql_password
-MYSQL_BDNAME=studteams
-ENABLE_REVIEWS=true
+### Через YAML конфиги:
+```yaml
+# config/secrets-tgbot.yaml
+bot:
+  token: "your_bot_token_here"
+
+database:
+  prod:
+    host: "localhost"
+    user: "your_mysql_user"
+    password: "your_mysql_password"
+    database: "studteams"
 ```
 
 ## 📱 Функции бота

@@ -1,6 +1,7 @@
 # Web dependencies for StudTeams FastAPI application
-fastapi
-jinja2
-python-multipart
-uvicorn[standard]
-mysql-connector-python
+fastapi>=0.116.1
+jinja2>=3.1.0
+omegaconf>=2.3.0
+python-multipart>=0.0.9
+uvicorn[standard]>=0.35.0
+mysql-connector-python>=9.4.0
