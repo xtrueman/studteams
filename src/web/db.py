@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from myconn import cursors
+from myconn import select_one, select_all
 
 
 def get_teams_with_members() -> list[dict[str, Any]]:
@@ -28,8 +28,7 @@ def get_teams_with_members() -> list[dict[str, Any]]:
     ORDER BY t.team_name
     """
 
-    cursors.dict_cur.execute(query)
-    teams = cursors.dict_cur.fetchall()
+    teams = select_all(query)
 
     # Для каждой команды получаем участников
     for team in teams:
@@ -58,8 +57,7 @@ def get_teams_with_members() -> list[dict[str, Any]]:
             s.name
         """
 
-        cursors.dict_cur.execute(members_query, (admin_id, team_id, admin_id))
-        team['members'] = cursors.dict_cur.fetchall()
+        team['members'] = select_all(members_query, (admin_id, team_id, admin_id))
 
     return teams
 
@@ -87,8 +85,7 @@ def get_team_by_id(team_id: int) -> dict[str, Any]:
     WHERE t.team_id = %s
     """
 
-    cursors.dict_cur.execute(team_query, (team_id,))
-    team = cursors.dict_cur.fetchone()
+    team = select_one(team_query, (team_id,))
 
     if not team:
         return {}
@@ -117,8 +114,7 @@ def get_team_by_id(team_id: int) -> dict[str, Any]:
         s.name
     """
 
-    cursors.dict_cur.execute(members_query, (admin_id, team_id, admin_id))
-    team['members'] = cursors.dict_cur.fetchall()
+    team['members'] = select_all(members_query, (admin_id, team_id, admin_id))
 
     return team
 
@@ -130,8 +126,7 @@ def get_teams_count() -> int:
     Returns:
         int: Количество команд
     """
-    cursors.cur.execute("SELECT COUNT(*) FROM teams")
-    result = cursors.cur.fetchone()
+    result = select_one("SELECT COUNT(*) FROM teams", use_dict=False)
     return result[0] if result else 0
 
 
@@ -142,8 +137,7 @@ def get_total_students_count() -> int:
     Returns:
         int: Количество студентов
     """
-    cursors.cur.execute("SELECT COUNT(*) FROM students")
-    result = cursors.cur.fetchone()
+    result = select_one("SELECT COUNT(*) FROM students", use_dict=False)
     return result[0] if result else 0
 
 
@@ -199,8 +193,7 @@ def get_all_reports(
 
     query += " ORDER BY sr.report_date DESC, t.team_name, s.name"
 
-    cursors.dict_cur.execute(query, params)
-    return cursors.dict_cur.fetchall()
+    return select_all(query, params)
 
 
 def get_reports_statistics() -> dict[str, Any]:
@@ -213,27 +206,23 @@ def get_reports_statistics() -> dict[str, Any]:
     stats = {}
 
     # Общее количество отчетов
-    cursors.cur.execute("SELECT COUNT(*) FROM sprint_reports")
-    result = cursors.cur.fetchone()
+    result = select_one("SELECT COUNT(*) FROM sprint_reports", use_dict=False)
     stats['total_reports'] = result[0] if result else 0
 
     # Последний спринт
-    cursors.cur.execute("SELECT MAX(sprint_num) FROM sprint_reports")
-    result = cursors.cur.fetchone()
+    result = select_one("SELECT MAX(sprint_num) FROM sprint_reports", use_dict=False)
     last_sprint = result[0] if result and result[0] else 0
     stats['last_sprint'] = last_sprint
 
     # Отчетов в последнем спринте
     if last_sprint > 0:
-        cursors.cur.execute("SELECT COUNT(*) FROM sprint_reports WHERE sprint_num = %s", (last_sprint,))
-        result = cursors.cur.fetchone()
+        result = select_one("SELECT COUNT(*) FROM sprint_reports WHERE sprint_num = %s", (last_sprint,), use_dict=False)
         stats['current_sprint_reports'] = result[0] if result else 0
     else:
         stats['current_sprint_reports'] = 0
 
     # Средняя длина отчета
-    cursors.cur.execute("SELECT AVG(LENGTH(report_text)) FROM sprint_reports")
-    result = cursors.cur.fetchone()
+    result = select_one("SELECT AVG(LENGTH(report_text)) FROM sprint_reports", use_dict=False)
     stats['avg_report_length'] = int(result[0]) if result and result[0] else 0
 
     # Команды с полными отчетами в последнем спринте
@@ -247,8 +236,7 @@ def get_reports_statistics() -> dict[str, Any]:
             WHERE tm.team_id = t.team_id AND sr.student_id IS NULL
         )
         """
-        cursors.cur.execute(query, (last_sprint,))
-        result = cursors.cur.fetchone()
+        result = select_one(query, (last_sprint,), use_dict=False)
         stats['teams_with_full_reports'] = result[0] if result else 0
     else:
         stats['teams_with_full_reports'] = 0
@@ -264,5 +252,4 @@ def get_teams_list() -> list[dict[str, Any]]:
         List[Dict]: Список команд
     """
     query = "SELECT team_id, team_name FROM teams ORDER BY team_name"
-    cursors.dict_cur.execute(query)
-    return cursors.dict_cur.fetchall()
+    return select_all(query)

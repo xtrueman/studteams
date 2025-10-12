@@ -167,3 +167,52 @@ class GlobalCursors:
 
 # Глобальный объект для работы с курсорами
 cursors = GlobalCursors()
+
+
+def select_one(query: str, params=None, use_dict=True):
+    """
+    Выполняет SELECT запрос и возвращает одну запись.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+        use_dict: Использовать словарный курсор (True) или обычный (False)
+
+    Returns:
+        Одна запись или None
+    """
+    cursor = cursors.dict_cur if use_dict else cursors.cur
+    cursor.execute(query, params or ())
+    return cursor.fetchone()
+
+
+def select_all(query: str, params=None, use_dict=True):
+    """
+    Выполняет SELECT запрос и возвращает все записи.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+        use_dict: Использовать словарный курсор (True) или обычный (False)
+
+    Returns:
+        Список записей
+    """
+    cursor = cursors.dict_cur if use_dict else cursors.cur
+    cursor.execute(query, params or ())
+    return cursor.fetchall()
+
+
+def insert_update(query: str, params=None):
+    """
+    Выполняет INSERT/UPDATE/DELETE запрос.
+
+    Args:
+        query: SQL запрос
+        params: Параметры для запроса
+
+    Returns:
+        ID последней вставленной записи (для INSERT) или None
+    """
+    cursors.cur.execute(query, params or ())
+    return cursors.cur.lastrowid or None

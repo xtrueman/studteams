@@ -10,7 +10,7 @@ from config import config
 
 from bot.state_storage import state_storage
 from bot import db
-from bot.bot_instance import bot as db
+from bot.bot_instance import bot
 from bot.keyboards import inline as inline_keyboards
 from bot.keyboards import reply as keyboards
 from bot.utils import decorators as decorators
@@ -22,7 +22,6 @@ from bot.utils import helpers as helpers
 @decorators.log_handler("callback_confirm_team_reg")
 def callback_confirm_team_registration(
     callback: telebot.types.CallbackQuery,
-    ,
 ):
     """Callback обработчик подтверждения регистрации команды"""
     data = state_storage.get_data(message.from_user.id)
@@ -90,7 +89,6 @@ def callback_confirm_team_registration(
 @decorators.log_handler("callback_cancel_team_reg")
 def callback_cancel_team_registration(
     callback: telebot.types.CallbackQuery,
-    ,
 ):
     """Callback обработчик отмены регистрации команды"""
     state_storage.clear_state(message.from_user.id)
@@ -105,7 +103,7 @@ def callback_cancel_team_registration(
 
 
 @decorators.log_handler("callback_role_selection")
-def callback_role_selection(callback: telebot.types.CallbackQuery, ):
+def callback_role_selection(callback: telebot.types.CallbackQuery):
     """Callback обработчик выбора роли"""
     role_mapping = {
         "role_po": "Product owner",
@@ -159,7 +157,7 @@ def callback_role_selection(callback: telebot.types.CallbackQuery, ):
 
 
 @decorators.log_handler("callback_confirm_join_team")
-def callback_confirm_join_team(callback: telebot.types.CallbackQuery, ):
+def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
     """Callback обработчик подтверждения присоединения к команде"""
     data = state_storage.get_data(message.from_user.id)
 
