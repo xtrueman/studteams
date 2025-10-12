@@ -25,7 +25,7 @@ def get_db_credentials():
     # Выбираем конфигурацию в зависимости от контекста
     db_cfg = config.database.test if use_test_db else config.database.prod
 
-    return {
+    credentials = {
         'host': db_cfg.host,
         'user': db_cfg.user,
         'password': db_cfg.password,
@@ -34,8 +34,11 @@ def get_db_credentials():
         'collation': db_cfg.collation or 'utf8mb4_unicode_ci',
         'autocommit': db_cfg.autocommit if hasattr(db_cfg, 'autocommit') else True,
         'consume_results': True,
-        'auth_plugin': db_cfg.auth_plugin or 'mysql_native_password',
     }
+
+    # Удаляем auth_plugin из параметров подключения
+    # Пусть mysql.connector определяет его автоматически
+    return credentials
 
 
 def get_connection():
