@@ -43,7 +43,9 @@ def handle_send_report(message: telebot.types.Message, ):
         return
 
     state_storage.set_state(message.from_user.id, "states.ReportCreation.sprint_selection")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "📝 *Отправка отчета*\n\n"
         "Выберите номер спринта:",
         reply_markup=inline_keyboards.get_sprints_inline_keyboard(),
@@ -77,7 +79,10 @@ def process_sprint_selection(message: telebot.types.Message, ):
     state_storage.update_data(message.from_user.id, sprint_num=sprint_num)
     state_storage.set_state(message.from_user.id, "states.ReportCreation.report_text")
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         f"✅ Спринт №{sprint_num}\n\n"
         f"📝 Введите текст отчета о проделанной работе:",
         reply_markup=keyboards.get_confirmation_keyboard("Отмена", "Назад"),
@@ -90,7 +95,9 @@ def process_report_text(message: telebot.types.Message, ):
     if message.text in ["Отмена", "Назад"]:
         if message.text == "Назад":
             state_storage.set_state(message.from_user.id, "states.ReportCreation.sprint_selection")
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 "📝 Выберите номер спринта:",
                 reply_markup=keyboards.get_sprints_keyboard(),
             )
@@ -111,13 +118,17 @@ def process_report_text(message: telebot.types.Message, ):
     report_text = message.text.strip()
 
     if len(report_text) < 20:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Отчет слишком короткий. Минимум 20 символов. Попробуйте еще раз:",
         )
         return
 
     if len(report_text) > 4000:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Отчет слишком длинный. Максимум 4000 символов. Попробуйте еще раз:",
         )
         return
@@ -141,14 +152,18 @@ def process_report_text(message: telebot.types.Message, ):
 
         # Показываем сообщение об успешном сохранении
         if is_editing:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"✅ *Отчет успешно обновлен!*\n\n"
                 f"📊 Спринт: №{data['sprint_num']}\n"
                 f"📅 Дата: {helpers.format_datetime('now')}",
                 parse_mode="Markdown",
             )
         else:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"✅ *Отчет успешно отправлен!*\n\n"
                 f"📊 Спринт: №{data['sprint_num']}\n"
                 f"📅 Дата: {helpers.format_datetime('now')}",
@@ -162,7 +177,9 @@ def process_report_text(message: telebot.types.Message, ):
         bot.send_message(message.chat.id, report_text, parse_mode="Markdown", reply_markup=keyboard)
 
     except Exception as e:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             f"❌ Ошибка при сохранении отчета: {e!s}\n"
             f"Попробуйте еще раз.",
         )

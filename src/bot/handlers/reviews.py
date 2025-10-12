@@ -32,7 +32,9 @@ def handle_rate_teammates(message: telebot.types.Message, ):
     teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
     if not teammates_to_rate:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "✅ Вы уже оценили всех участников команды!\n\n"
             "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
         )
@@ -44,7 +46,10 @@ def handle_rate_teammates(message: telebot.types.Message, ):
     state_storage.update_data(message.from_user.id, teammates_to_rate=teammates_to_rate)
     state_storage.set_state(message.from_user.id, "states.ReviewProcess.teammate_selection")
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         "⭐ *Оценивание участников команды*\n\n"
         "Выберите участника для оценки:",
         reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
@@ -69,7 +74,9 @@ def handle_who_rated_me(message: telebot.types.Message):
     ratings = db.rating_get_who_rated_me(student['student_id'])
 
     if not ratings:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "⭐ Вас пока никто не оценил.\n\n"
             "Оценки появятся здесь после того, как участники команды "
             "воспользуются функцией \"Оценить участников команды\".",
@@ -114,13 +121,17 @@ def process_rating_input(message: telebot.types.Message, ):
     try:
         rating = int(message.text.strip())
     except ValueError:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             f"❌ Введите число от {config.features.min_rating} до {config.features.max_rating}:",
         )
         return
 
     if rating < config.features.min_rating or rating > config.features.max_rating:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Оценка должна быть от "
             f"{config.features.min_rating} до {config.features.max_rating}. "
             "Попробуйте еще раз:",
@@ -130,7 +141,10 @@ def process_rating_input(message: telebot.types.Message, ):
     state_storage.update_data(message.from_user.id, overall_rating=rating)
     state_storage.set_state(message.from_user.id, "states.ReviewProcess.advantages_input")
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         f"✅ Оценка: {rating}/10\n\n"
         f"👍 *Положительные качества*\n"
         f"Напишите положительные качества участника:",
@@ -148,7 +162,9 @@ def process_advantages_input(message: telebot.types.Message, ):
     advantages = message.text.strip() if message.text and message.text.strip() else ""
 
     if len(advantages) < 15:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
             "👍 Напишите положительные качества ещё раз:",
         )
@@ -162,7 +178,10 @@ def process_advantages_input(message: telebot.types.Message, ):
     state_storage.update_data(message.from_user.id, advantages=advantages)
     state_storage.set_state(message.from_user.id, "states.ReviewProcess.disadvantages_input")
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         text=f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
         parse_mode="Markdown",
@@ -179,7 +198,9 @@ def process_disadvantages_input(message: telebot.types.Message, ):
     disadvantages = message.text.strip() if message.text and message.text.strip() else ""
 
     if len(disadvantages) < 15:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
             "📈 Напишите области для улучшения ещё раз:",
         )
@@ -204,7 +225,10 @@ def process_disadvantages_input(message: telebot.types.Message, ):
         f"Отправить оценку?"
     )
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_review_confirm_keyboard(),
         parse_mode="Markdown",
@@ -229,7 +253,10 @@ def confirm_review(message: telebot.types.Message, ):
 
             state_storage.clear_state(message.from_user.id)
 
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+
+                message.chat.id,
                 f"✅ *Оценка успешно отправлена!*\n\n"
                 f"👤 Участник: {data['teammate_name']}\n"
                 f"⭐ Оценка: {data['overall_rating']}/10",
@@ -241,7 +268,9 @@ def confirm_review(message: telebot.types.Message, ):
                 teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                 if not teammates_to_rate:
-                    bot.send_message(message.chat.id,
+                    bot.send_message(
+
+                        message.chat.id,
                         "✅ Вы уже оценили всех участников команды!\n\n"
                         "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                     )
@@ -255,7 +284,9 @@ def confirm_review(message: telebot.types.Message, ):
                     keyboard = inline_keyboards.get_dynamic_inline_keyboard(
                         teammate_names, "teammate", columns=2,
                     )
-                    bot.send_message(message.chat.id,
+                    bot.send_message(
+
+                        message.chat.id,
                         "⭐ *Оценивание участников команды*\n\n"
                         "Выберите участника для оценки:",
                         reply_markup=keyboard,
@@ -263,7 +294,9 @@ def confirm_review(message: telebot.types.Message, ):
                     )
 
         except Exception as e:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"❌ Ошибка при отправке оценки: {e!s}\n"
                 f"Попробуйте еще раз.",
             )

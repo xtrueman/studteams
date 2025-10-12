@@ -162,7 +162,8 @@ def handle_admin_panel(message: telebot.types.Message):
     # Например, проверка по списку разрешенных user_id
 
     keyboard = keyboards.get_admin_panel_keyboard()
-    bot.send_message(message.chat.id,
+    bot.send_message(
+        message.chat.id,
         "🔧 *Панель администратора*\n\n"
         "Выберите действие:",
         reply_markup=keyboard,
@@ -263,7 +264,10 @@ def process_member_selection(message: telebot.types.Message, ):
     else:
         member_name = getattr(selected_member, 'name', 'Неизвестно')
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         f"⚠️ *Подтверждение удаления*\n\n"
         f"Вы действительно хотите удалить *{member_name}* из команды?\n\n"
         f"*Это действие нельзя отменить!*",
@@ -319,13 +323,18 @@ def confirm_member_removal(message: telebot.types.Message, ):
             else:
                 member_name = getattr(selected_member, 'name', 'Неизвестно')
 
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+
+                message.chat.id,
                 f"✅ Участник *{member_name}* успешно удален из команды!",
                 parse_mode="Markdown",
             )
 
         except Exception as e:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"❌ Ошибка при удалении участника: {e!s}",
             )
 
@@ -371,7 +380,10 @@ def handle_view_member_stats(message: telebot.types.Message, ):
 
     keyboard = inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "member", columns=2)
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         "📊 *Статистика участника*\n\n"
         "Выберите участника для просмотра статистики:",
         reply_markup=keyboard,
@@ -466,7 +478,9 @@ def process_member_stats_selection(message: telebot.types.Message, ):
         bot.send_message(message.chat.id, stats_text, parse_mode="Markdown")
 
     except Exception as e:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             f"❌ Ошибка при получении статистики: {e!s}",
         )
 

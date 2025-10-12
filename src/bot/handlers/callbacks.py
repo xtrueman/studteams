@@ -330,7 +330,8 @@ def callback_edit_report(callback: telebot.types.CallbackQuery, ):
         return
 
     # Сохраняем данные в состоянии
-    state_storage.update_data(callback.from_user.id,
+    state_storage.update_data(
+        callback.from_user.id,
         sprint_num=sprint_num,
         report_text=report_to_edit['report_text'],
         editing=True,
@@ -479,7 +480,8 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                     teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                     if not teammates_to_rate:
-                        callback.bot.send_message(callback.message.chat.id,
+                        callback.bot.send_message(
+                            callback.message.chat.id,
                             "✅ Вы уже оценили всех участников команды!\n\n"
                             "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                         )
@@ -492,7 +494,8 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                         keyboard = inline_keyboards.get_dynamic_inline_keyboard(
                             teammate_names, "teammate", columns=2,
                         )
-                        callback.bot.send_message(callback.message.chat.id,
+                        callback.bot.send_message(
+                            callback.message.chat.id,
                             "⭐ *Оценивание участников команды*\n\n"
                             "Выберите участника для оценки:",
                             reply_markup=keyboard,
@@ -696,7 +699,8 @@ def callback_member_selection(callback: telebot.types.CallbackQuery, ):
     selected_teammate = teammates[member_index]
 
     # Сохраняем выбранного участника в состоянии
-    state_storage.update_data(callback.from_user.id,
+    state_storage.update_data(
+        callback.from_user.id,
         selected_teammate_id=selected_teammate['student_id'],
         teammate_name=selected_teammate['name'],
     )
@@ -739,7 +743,8 @@ def callback_teammate_selection(callback: telebot.types.CallbackQuery, ):
     selected_teammate = teammates[teammate_index]
 
     # Сохраняем выбранного участника в состоянии
-    state_storage.update_data(callback.from_user.id,
+    state_storage.update_data(
+        callback.from_user.id,
         selected_teammate_id=selected_teammate['student_id'],
         teammate_name=selected_teammate['name'],
     )

@@ -58,7 +58,9 @@ def handle_join_team(message: telebot.types.Message, invite_code: str):
     team = db.team_get_by_invite_code(invite_code)
 
     if not team:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Неверный код приглашения. Обратитесь к администратору команды за новой ссылкой.",
         )
         return
@@ -67,7 +69,9 @@ def handle_join_team(message: telebot.types.Message, invite_code: str):
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if student and 'team' in student:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Вы уже состоите в команде. Для смены команды обратитесь к администратору.",
         )
         return
@@ -78,7 +82,9 @@ def handle_join_team(message: telebot.types.Message, invite_code: str):
     if student:
         # Пользователь есть в системе, но не в команде - сразу выбираем роль
         state_storage.set_state(message.from_user.id, "states.JoinTeam.user_role")
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
             f"Выберите вашу роль в команде:",
             reply_markup=inline_keyboards.get_roles_inline_keyboard(),
@@ -87,7 +93,9 @@ def handle_join_team(message: telebot.types.Message, invite_code: str):
     else:
         # Новый пользователь - запрашиваем данные
         state_storage.set_state(message.from_user.id, "states.JoinTeam.user_name")
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             f"👥 Присоединяемся к команде *{team['team_name']}*\n\n"
             f"Введите ваше имя и фамилию:",
             parse_mode="Markdown",

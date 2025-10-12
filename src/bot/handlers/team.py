@@ -38,13 +38,17 @@ def handle_register_team(message: telebot.types.Message, ):
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if student and 'team' in student:
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь.",
         )
         return
 
     state_storage.set_state(message.from_user.id, "states.TeamRegistration.team_name")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "📝 *Регистрация новой команды*\n\n"
         "Введите название команды:",
         parse_mode="Markdown",
@@ -70,14 +74,18 @@ def process_team_name(message: telebot.types.Message, ):
     team_name = message.text.strip()
 
     if not helpers.is_valid_team_name(team_name):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Название команды должно содержать от 3 до 64 символов. Попробуйте еще раз:",
         )
         return
 
     state_storage.update_data(message.from_user.id, team_name=team_name)
     state_storage.set_state(message.from_user.id, "states.TeamRegistration.product_name")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "Название разрабатываемого продукта:",
         parse_mode="Markdown",
     )
@@ -89,7 +97,9 @@ def process_product_name(message: telebot.types.Message, ):
     product_name = message.text.strip()
 
     if not helpers.is_valid_product_name(product_name):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Название продукта должно содержать от 3 до 100 символов. Попробуйте еще раз:",
         )
         return
@@ -112,7 +122,10 @@ def process_product_name(message: telebot.types.Message, ):
             input_field_placeholder=suggested_name,
         )
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         "Ваше имя и фамилия («Иван Иванов»):",
         reply_markup=keyboard,
         parse_mode="Markdown",
@@ -125,7 +138,9 @@ def process_admin_name(message: telebot.types.Message, ):
     user_name = message.text.strip()
 
     if not is_valid_full_name(user_name):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
             "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
@@ -133,7 +148,9 @@ def process_admin_name(message: telebot.types.Message, ):
 
     state_storage.update_data(message.from_user.id, user_name=user_name)
     state_storage.set_state(message.from_user.id, "states.TeamRegistration.user_group")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown",
     )
@@ -146,7 +163,9 @@ def process_admin_group(message: telebot.types.Message, ):
 
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
@@ -166,7 +185,10 @@ def process_admin_group(message: telebot.types.Message, ):
         f"Все верно?"
     )
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_team_registration_confirm_keyboard(),
         parse_mode="Markdown",
@@ -214,7 +236,10 @@ def confirm_team_registration(message: telebot.types.Message, ):
 
             invite_link_text = f"🔗 Код приглашения: `{invite_code}`"
 
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+
+                message.chat.id,
                 f"🎉 *Команда успешно создана!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"📱 Продукт: {data['product_name']}\n"
@@ -225,7 +250,9 @@ def confirm_team_registration(message: telebot.types.Message, ):
             )
 
         except Exception as e:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"❌ Ошибка при создании команды: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
@@ -243,7 +270,9 @@ def process_join_user_name(message: telebot.types.Message, ):
     user_name = message.text.strip()
 
     if not is_valid_full_name(user_name):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
             "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
@@ -251,7 +280,9 @@ def process_join_user_name(message: telebot.types.Message, ):
 
     state_storage.update_data(message.from_user.id, user_name=user_name)
     state_storage.set_state(message.from_user.id, "states.JoinTeam.user_group")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown",
     )
@@ -264,14 +295,18 @@ def process_join_user_group(message: telebot.types.Message, ):
 
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
-        bot.send_message(message.chat.id,
+        bot.send_message(
+
+            message.chat.id,
             "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
 
     state_storage.update_data(message.from_user.id, user_group=user_group)
     state_storage.set_state(message.from_user.id, "states.JoinTeam.user_role")
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+        message.chat.id,
         "Выберите вашу роль в команде:",
         reply_markup=inline_keyboards.get_roles_inline_keyboard(),
         parse_mode="Markdown",
@@ -306,7 +341,10 @@ def process_join_user_role(message: telebot.types.Message, ):
         f"Присоединиться к команде?"
     )
 
-    bot.send_message(message.chat.id,
+    bot.send_message(
+
+
+        message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
         parse_mode="Markdown",
@@ -343,7 +381,10 @@ def confirm_join_team(message: telebot.types.Message, ):
             # Отправляем главное меню
             keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=True)
 
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+
+                message.chat.id,
                 f"🎉 *Добро пожаловать в команду!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"💼 Ваша роль: {data['user_role']}\n\n"
@@ -354,7 +395,9 @@ def confirm_join_team(message: telebot.types.Message, ):
             )
 
         except Exception as e:
-            bot.send_message(message.chat.id,
+            bot.send_message(
+
+                message.chat.id,
                 f"❌ Ошибка при присоединении к команде: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
