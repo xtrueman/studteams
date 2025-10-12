@@ -4,7 +4,7 @@
 Создает различные типы inline-клавиатур для взаимодействия с пользователем.
 """
 
-import aiogram.types
+import telebot.types
 from config import config
 
 
@@ -15,14 +15,12 @@ def get_confirmation_inline_keyboard(
     cancel_data: str = "cancel",
 ):
     """Inline клавиатура подтверждения"""
-    return aiogram.types.InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                aiogram.types.InlineKeyboardButton(text=confirm_text, callback_data=confirm_data),
-                aiogram.types.InlineKeyboardButton(text=cancel_text, callback_data=cancel_data),
-            ],
-        ],
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.row(
+        telebot.types.InlineKeyboardButton(text=confirm_text, callback_data=confirm_data),
+        telebot.types.InlineKeyboardButton(text=cancel_text, callback_data=cancel_data),
     )
+    return markup
 
 
 def get_roles_inline_keyboard():
@@ -34,64 +32,65 @@ def get_roles_inline_keyboard():
         ("👥 Участник команды", "role_member"),
     ]
 
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
     for i in range(0, len(roles), 2):
-        row = [aiogram.types.InlineKeyboardButton(text=roles[i][0], callback_data=roles[i][1])]
+        buttons = [telebot.types.InlineKeyboardButton(text=roles[i][0], callback_data=roles[i][1])]
         if i + 1 < len(roles):
-            row.append(aiogram.types.InlineKeyboardButton(text=roles[i + 1][0], callback_data=roles[i + 1][1]))
-        keyboard.append(row)
+            buttons.append(telebot.types.InlineKeyboardButton(text=roles[i + 1][0], callback_data=roles[i + 1][1]))
+        markup.row(*buttons)
 
-    keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup.row(telebot.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel"))
+    return markup
 
 
 def get_sprints_inline_keyboard():
     """Иnline клавиатура выбора спринта"""
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
     sprints = [f"Спринт №{i}" for i in range(1, config.features.max_sprint_number + 1)]
 
     for i in range(0, len(sprints), 3):
-        row = []
+        buttons = []
         for j in range(3):
             if i + j < len(sprints):
                 sprint_num = i + j + 1
-                row.append(
-                    aiogram.types.InlineKeyboardButton(
+                buttons.append(
+                    telebot.types.InlineKeyboardButton(
                         text=sprints[i + j],
                         callback_data=f"sprint_{sprint_num}",
-                    ),
+                    )
                 )
-        keyboard.append(row)
+        if buttons:
+            markup.row(*buttons)
 
-    keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup.row(telebot.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel"))
+    return markup
 
 
 def get_ratings_inline_keyboard():
     """Иnline клавиатура выбора оценки"""
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
 
     # Первая строка: 1-5
     row1 = []
     for i in range(config.features.min_rating, 6):
-        row1.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
+        row1.append(telebot.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
 
     # Вторая строка: 6-10
     row2 = []
     for i in range(6, config.features.max_rating + 1):
-        row2.append(aiogram.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
+        row2.append(telebot.types.InlineKeyboardButton(text=f"⭐ {i}", callback_data=f"rating_{i}"))
 
-    keyboard.extend([row1, row2])
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup.row(*row1)
+    markup.row(*row2)
+    return markup
 
 
 def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns: int = 2):
     """Динамическая inline клавиатура для списков (участники, отчеты и т.д.)"""
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
 
     for i in range(0, len(items), columns):
-        row = []
+        buttons = []
         for j in range(columns):
             if i + j < len(items):
                 item_index = i + j
@@ -100,16 +99,17 @@ def get_dynamic_inline_keyboard(items: list[str], callback_prefix: str, columns:
                 if len(item_text) > 20:
                     item_text = item_text[:17] + "..."
 
-                row.append(
-                    aiogram.types.InlineKeyboardButton(
+                buttons.append(
+                    telebot.types.InlineKeyboardButton(
                         text=item_text,
                         callback_data=f"{callback_prefix}_{item_index}",
-                    ),
+                    )
                 )
-        keyboard.append(row)
+        if buttons:
+            markup.row(*buttons)
 
-    keyboard.append([aiogram.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel")])
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    markup.row(telebot.types.InlineKeyboardButton(text="❌ Отмена", callback_data="cancel"))
+    return markup
 
 
 # Удалено: get_skip_cancel_inline_keyboard - больше не используется
@@ -154,7 +154,7 @@ def get_review_confirm_keyboard():
 
 def get_team_member_management_keyboard(members, current_user_id, is_admin=False):
     """Клавиатура управления участниками команды"""
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
 
     if is_admin and len(members) > 1:  # Можно удалять только если есть кого удалять
         # Кнопки для каждого участника (кроме самого админа)
@@ -173,23 +173,23 @@ def get_team_member_management_keyboard(members, current_user_id, is_admin=False
                 if len(name) > 15:
                     name = name[:12] + "..."
 
-                keyboard.append([
-                    aiogram.types.InlineKeyboardButton(
+                markup.row(
+                    telebot.types.InlineKeyboardButton(
                         text=f"✏️ {name}",
                         callback_data=f"edit_member_{member_id}",
                     ),
-                    aiogram.types.InlineKeyboardButton(
+                    telebot.types.InlineKeyboardButton(
                         text="🗑️ Удалить",
                         callback_data=f"remove_member_{member_id}",
                     ),
-                ])
+                )
 
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
 
 
 def get_report_management_keyboard(reports):
     """Клавиатура управления отчетами"""
-    keyboard = []
+    markup = telebot.types.InlineKeyboardMarkup()
 
     if reports:
         # Кнопки для каждого отчета
@@ -201,15 +201,15 @@ def get_report_management_keyboard(reports):
 
             sprint_text = f"Спринт №{report['sprint_num']}"
 
-            keyboard.append([
-                aiogram.types.InlineKeyboardButton(
+            markup.row(
+                telebot.types.InlineKeyboardButton(
                     text=f"✏️ {sprint_text}",
                     callback_data=f"edit_report_{report['sprint_num']}",
                 ),
-                aiogram.types.InlineKeyboardButton(
+                telebot.types.InlineKeyboardButton(
                     text="🗑️ Удалить",
                     callback_data=f"delete_report_{report['sprint_num']}",
                 ),
-            ])
+            )
 
-    return aiogram.types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup

@@ -4,16 +4,16 @@
 Обрабатывают команды администратора бота и функции управления.
 """
 
-import aiogram
-import aiogram.fsm.context
-from aiogram import F
+import telebot
 
-import bot.db as db
-import bot.keyboards.inline as inline_keyboards
-import bot.keyboards.reply as keyboards
-import bot.states.user_states as states
-import bot.utils.decorators as decorators
-import bot.utils.helpers as helpers
+
+from bot.state_storage import state_storage
+from bot import db
+from bot.bot_instance import bot as db
+from bot.keyboards import inline as inline_keyboards
+from bot.keyboards import reply as keyboards
+from bot.utils import decorators as decorators
+from bot.utils import helpers as helpers
 
 
 def get_team_member_stats(member_id: int) -> dict:
@@ -157,13 +157,13 @@ def get_team_overall_stats(team_id: int) -> dict:
 
 
 @decorators.log_handler("admin_panel")
-async def handle_admin_panel(message: aiogram.types.Message):
+def handle_admin_panel(message: telebot.types.Message):
     """Показать панель администратора"""
     # В реальной реализации здесь должна быть проверка прав администратора
     # Например, проверка по списку разрешенных user_id
 
     keyboard = keyboards.get_admin_panel_keyboard()
-    await message.answer(
+    bot.send_message(message.chat.id,
         "🔧 *Панель администратора*\n\n"
         "Выберите действие:",
         reply_markup=keyboard,
@@ -172,30 +172,30 @@ async def handle_admin_panel(message: aiogram.types.Message):
 
 
 @decorators.log_handler("view_team_members")
-async def handle_view_team_members(message: aiogram.types.Message):
+def handle_view_team_members(message: telebot.types.Message):
     """Просмотр участников команды"""
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Check if student is in a team
     if 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Check if user is admin
     if isinstance(student, dict) and 'team' in student:
         if isinstance(student['team'], dict) and 'admin_student_id' in student['team']:
             if student['team']['admin_student_id'] != student['student_id']:
-                await message.answer("❌ Недостаточно прав.")
+                bot.send_message(message.chat.id, "❌ Недостаточно прав.")
                 return
         else:
-            await message.answer("❌ Ошибка данных.")
+            bot.send_message(message.chat.id, "❌ Ошибка данных.")
             return
     else:
-        await message.answer("❌ Ошибка данных.")
+        bot.send_message(message.chat.id, "❌ Ошибка данных.")
         return
 
     # Get student ID safely
@@ -208,28 +208,28 @@ async def handle_view_team_members(message: aiogram.types.Message):
     team_data = helpers.get_team_display_data(student_id, message.from_user.id)
 
     if not team_data:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
-    await message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+    bot.send_message(message.chat.id, team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
 
 
 @decorators.log_handler("remove_team_member")
-async def handle_remove_team_member(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def handle_remove_team_member(message: telebot.types.Message, ):
     """Начало удаления участника команды"""
     # This function is now handled through inline keyboards in the view_team_members function
     # We'll keep it for backward compatibility but redirect to view_team_members
-    await handle_view_team_members(message)
+    handle_view_team_members(message)
 
 
 @decorators.log_handler("process_member_selection")
-async def process_member_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_member_selection(message: telebot.types.Message, ):
     """Обработка выбора участника для удаления"""
     if message.text == "Отмена":
-        await cancel_admin_action(message, state)
+        cancel_admin_action(message)
         return
 
-    data = await state.get_data()
+    data = state_storage.get_data(message.from_user.id)
     teammates = data.get('teammates', [])
 
     # Находим выбранного участника
@@ -247,12 +247,12 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
                 break
 
     if not selected_member:
-        await message.answer("❌ Участник не найден. Выберите участника из списка:")
+        bot.send_message(message.chat.id, "❌ Участник не найден. Выберите участника из списка:")
         return
 
     # Сохраняем выбранного участника в состоянии
-    await state.update_data(selected_member=selected_member)
-    await state.set_state(states.AdminActions.confirm_removal)
+    state_storage.update_data(message.from_user.id, selected_member=selected_member)
+    state_storage.set_state(message.from_user.id, "states.AdminActions.confirm_removal")
 
     # Подтверждение удаления
     keyboard = keyboards.get_confirmation_keyboard("Подтвердить", "Отмена")
@@ -264,7 +264,7 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
     else:
         member_name = getattr(selected_member, 'name', 'Неизвестно')
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         f"⚠️ *Подтверждение удаления*\n\n"
         f"Вы действительно хотите удалить *{member_name}* из команды?\n\n"
         f"*Это действие нельзя отменить!*",
@@ -274,16 +274,16 @@ async def process_member_selection(message: aiogram.types.Message, state: aiogra
 
 
 @decorators.log_handler("confirm_member_removal")
-async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def confirm_member_removal(message: telebot.types.Message, ):
     """Подтверждение удаления участника"""
     if message.text == "Подтвердить":
-        data = await state.get_data()
+        data = state_storage.get_data(message.from_user.id)
         selected_member = data.get('selected_member')
         student = db.student_get_by_tg_id(message.from_user.id)
 
         if not selected_member or not student:
-            await message.answer("❌ Ошибка данных.")
-            await state.clear()
+            bot.send_message(message.chat.id, "❌ Ошибка данных.")
+            state_storage.clear_state(message.from_user.id)
             return
 
         try:
@@ -320,45 +320,45 @@ async def confirm_member_removal(message: aiogram.types.Message, state: aiogram.
             else:
                 member_name = getattr(selected_member, 'name', 'Неизвестно')
 
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"✅ Участник *{member_name}* успешно удален из команды!",
                 parse_mode="Markdown",
             )
 
         except Exception as e:
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"❌ Ошибка при удалении участника: {e!s}",
             )
 
     elif message.text == "Отмена":
-        await message.answer("❌ Удаление участника отменено.")
+        bot.send_message(message.chat.id, "❌ Удаление участника отменено.")
 
-    await state.clear()
+    state_storage.clear_state(message.from_user.id)
 
 
 @decorators.log_handler("view_member_stats")
-async def handle_view_member_stats(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def handle_view_member_stats(message: telebot.types.Message, ):
     """Просмотр статистики участника"""
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Проверяем права администратора команды
     if student['team']['admin_student_id'] != student['student_id']:
-        await message.answer("❌ Недостаточно прав.")
+        bot.send_message(message.chat.id, "❌ Недостаточно прав.")
         return
 
     teammates = db.student_get_teammates(student['student_id'])
 
     if not teammates:
-        await message.answer("👥 В команде нет других участников.")
+        bot.send_message(message.chat.id, "👥 В команде нет других участников.")
         return
 
     # Сохраняем список участников в состоянии
-    await state.update_data(teammates=teammates)
-    await state.set_state(states.AdminActions.select_member_stats)
+    state_storage.update_data(message.from_user.id, teammates=teammates)
+    state_storage.set_state(message.from_user.id, "states.AdminActions.select_member_stats")
 
     # Создаем клавиатуру с выбором участников
     teammate_names = []
@@ -372,7 +372,7 @@ async def handle_view_member_stats(message: aiogram.types.Message, state: aiogra
 
     keyboard = inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "member", columns=2)
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         "📊 *Статистика участника*\n\n"
         "Выберите участника для просмотра статистики:",
         reply_markup=keyboard,
@@ -381,13 +381,13 @@ async def handle_view_member_stats(message: aiogram.types.Message, state: aiogra
 
 
 @decorators.log_handler("process_member_stats_selection")
-async def process_member_stats_selection(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_member_stats_selection(message: telebot.types.Message, ):
     """Обработка выбора участника для просмотра статистики"""
     if message.text == "Отмена":
-        await cancel_admin_action(message, state)
+        cancel_admin_action(message)
         return
 
-    data = await state.get_data()
+    data = state_storage.get_data(message.from_user.id)
     teammates = data.get('teammates', [])
 
     # Находим выбранного участника
@@ -405,7 +405,7 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
                 break
 
     if not selected_member:
-        await message.answer("❌ Участник не найден. Выберите участника из списка:")
+        bot.send_message(message.chat.id, "❌ Участник не найден. Выберите участника из списка:")
         return
 
     # Получаем статистику участника с помощью новой функции
@@ -421,8 +421,8 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         stats = get_team_member_stats(member_id)
 
         if not stats['success']:
-            await message.answer(f"❌ Ошибка при получении статистики: {stats['error']}")
-            await state.clear()
+            bot.send_message(message.chat.id, f"❌ Ошибка при получении статистики: {stats['error']}")
+            state_storage.clear_state(message.from_user.id)
             return
 
         # Get name safely
@@ -464,30 +464,30 @@ async def process_member_stats_selection(message: aiogram.types.Message, state: 
         else:
             stats_text += "Не оценивал других\n"
 
-        await message.answer(stats_text, parse_mode="Markdown")
+        bot.send_message(message.chat.id, stats_text, parse_mode="Markdown")
 
     except Exception as e:
-        await message.answer(
+        bot.send_message(message.chat.id,
             f"❌ Ошибка при получении статистики: {e!s}",
         )
 
-    await state.clear()
+    state_storage.clear_state(message.from_user.id)
 
 
 @decorators.log_handler("team_report")
-async def handle_team_report(message: aiogram.types.Message):
+def handle_team_report(message: telebot.types.Message):
     """Просмотр отчёта о команде"""
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Получаем общую статистику команды с помощью новой функции
     team_stats_result = get_team_overall_stats(student['team']['team_id'])
 
     if not team_stats_result['success']:
-        await message.answer(f"❌ Ошибка при получении отчета: {team_stats_result['error']}")
+        bot.send_message(message.chat.id, f"❌ Ошибка при получении отчета: {team_stats_result['error']}")
         return
 
     # Формируем текст отчета
@@ -502,12 +502,12 @@ async def handle_team_report(message: aiogram.types.Message):
             report_text += f" (средняя: {stats['avg_rating']}/10)"
         report_text += "\n\n"
 
-    await message.answer(report_text, parse_mode="Markdown")
+    bot.send_message(message.chat.id, report_text, parse_mode="Markdown")
 
 
-async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def cancel_admin_action(message: telebot.types.Message, ):
     """Отмена административного действия"""
-    await state.clear()
+    state_storage.clear_state(message.from_user.id)
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
@@ -520,14 +520,13 @@ async def cancel_admin_action(message: aiogram.types.Message, state: aiogram.fsm
     else:
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
-    await message.answer("❌ Действие отменено.", reply_markup=keyboard)
+    bot.send_message(message.chat.id, "❌ Действие отменено.", reply_markup=keyboard)
 
 
-def register_admin_handlers(dp: aiogram.Dispatcher):
+def register_admin_handlers(bot_instance: telebot.TeleBot):
     """Регистрация обработчиков административных функций"""
-    dp.message.register(handle_admin_panel, F.text == "🔧 Админ панель")
-    dp.message.register(handle_view_team_members, F.text == "👥 Участники команды")
-    dp.message.register(handle_view_member_stats, F.text == "📊 Статистика участника")
+    bot_instance.register_message_handler(handle_admin_panel, func=lambda m: m.text == "🔧 Админ панель")
+    bot_instance.register_message_handler(handle_view_team_members, func=lambda m: m.text == "👥 Участники команды")
+    bot_instance.register_message_handler(handle_view_member_stats, func=lambda m: m.text == "📊 Статистика участника")
 
     # FSM для просмотра статистики
-    dp.message.register(process_member_stats_selection, states.AdminActions.select_member_stats)

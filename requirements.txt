@@ -1,5 +1,5 @@
 # Telegram Bot
-aiogram>=3.21.0
+pyTelegramBotAPI>=4.14.0
 
 # Web Framework
 fastapi>=0.116.1
@@ -10,7 +10,7 @@ jinja2>=3.1.0
 omegaconf>=2.3.0
 
 # Validation
-pydantic>=2.11.7
+pydantic>=2.12.0
 
 # Logging
 loguru>=0.7.3

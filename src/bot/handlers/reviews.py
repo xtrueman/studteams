@@ -4,36 +4,36 @@
 Обрабатывают процесс взаимного оценивания и просмотр полученных оценок.
 """
 
-import aiogram
-import aiogram.fsm.context
-from aiogram import F
+import telebot
+
 from config import config
 
-import bot.db as db
-import bot.keyboards.inline as inline_keyboards
-import bot.keyboards.reply as keyboards
-import bot.states.user_states as states
-import bot.utils.decorators as decorators
+from bot.state_storage import state_storage
+from bot import db
+from bot.bot_instance import bot as db
+from bot.keyboards import inline as inline_keyboards
+from bot.keyboards import reply as keyboards
+from bot.utils import decorators as decorators
 
 
 @decorators.log_handler("rate_teammates")
-async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def handle_rate_teammates(message: telebot.types.Message, ):
     """Начало оценивания участников команды"""
     if not config.features.enable_reviews:
-        await message.answer("❌ Функция оценивания временно отключена.")
+        bot.send_message(message.chat.id, "❌ Функция оценивания временно отключена.")
         return
 
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Получаем участников команды, которых еще не оценил пользователь
     teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
     if not teammates_to_rate:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "✅ Вы уже оценили всех участников команды!\n\n"
             "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
         )
@@ -42,10 +42,10 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
     # Создаем список имен для выбора
     teammate_names = [teammate['name'] for teammate in teammates_to_rate]
 
-    await state.update_data(teammates_to_rate=teammates_to_rate)
-    await state.set_state(states.ReviewProcess.teammate_selection)
+    state_storage.update_data(message.from_user.id, teammates_to_rate=teammates_to_rate)
+    state_storage.set_state(message.from_user.id, "states.ReviewProcess.teammate_selection")
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         "⭐ *Оценивание участников команды*\n\n"
         "Выберите участника для оценки:",
         reply_markup=inline_keyboards.get_dynamic_inline_keyboard(teammate_names, "teammate", columns=2),
@@ -54,23 +54,23 @@ async def handle_rate_teammates(message: aiogram.types.Message, state: aiogram.f
 
 
 @decorators.log_handler("who_rated_me")
-async def handle_who_rated_me(message: aiogram.types.Message):
+def handle_who_rated_me(message: telebot.types.Message):
     """Показать кто оценил пользователя"""
     if not config.features.enable_reviews:
-        await message.answer("❌ Функция оценивания временно отключена.")
+        bot.send_message(message.chat.id, "❌ Функция оценивания временно отключена.")
         return
 
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Получаем оценки пользователя
     ratings = db.rating_get_who_rated_me(student['student_id'])
 
     if not ratings:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "⭐ Вас пока никто не оценил.\n\n"
             "Оценки появятся здесь после того, как участники команды "
             "воспользуются функцией \"Оценить участников команды\".",
@@ -102,36 +102,36 @@ async def handle_who_rated_me(message: aiogram.types.Message):
 
     full_text = status_text + ratings_text
 
-    await message.answer(full_text, parse_mode="Markdown")
+    bot.send_message(message.chat.id, full_text, parse_mode="Markdown")
 
 
 @decorators.log_handler("process_rating_input")
-async def process_rating_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_rating_input(message: telebot.types.Message, ):
     """Обработка ввода оценки"""
     if message.text == "Отмена":
-        await cancel_review(message, state)
+        cancel_review(message)
         return
 
     try:
         rating = int(message.text.strip())
     except ValueError:
-        await message.answer(
+        bot.send_message(message.chat.id,
             f"❌ Введите число от {config.features.min_rating} до {config.features.max_rating}:",
         )
         return
 
     if rating < config.features.min_rating or rating > config.features.max_rating:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Оценка должна быть от "
             f"{config.features.min_rating} до {config.features.max_rating}. "
             "Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(overall_rating=rating)
-    await state.set_state(states.ReviewProcess.advantages_input)
+    state_storage.update_data(message.from_user.id, overall_rating=rating)
+    state_storage.set_state(message.from_user.id, "states.ReviewProcess.advantages_input")
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         f"✅ Оценка: {rating}/10\n\n"
         f"👍 *Положительные качества*\n"
         f"Напишите положительные качества участника:",
@@ -140,30 +140,30 @@ async def process_rating_input(message: aiogram.types.Message, state: aiogram.fs
 
 
 @decorators.log_handler("process_advantages_input")
-async def process_advantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_advantages_input(message: telebot.types.Message, ):
     """Обработка ввода положительных качеств"""
     if message.text == "Отмена":
-        await cancel_review(message, state)
+        cancel_review(message)
         return
 
     advantages = message.text.strip() if message.text and message.text.strip() else ""
 
     if len(advantages) < 15:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
             "👍 Напишите положительные качества ещё раз:",
         )
         return
 
     if len(advantages) > 1000:
-        await message.answer("❌ Текст слишком длинный. Максимум 1000 символов:")
+        bot.send_message(message.chat.id, "❌ Текст слишком длинный. Максимум 1000 символов:")
         return
 
-    data = await state.get_data()
-    await state.update_data(advantages=advantages)
-    await state.set_state(states.ReviewProcess.disadvantages_input)
+    data = state_storage.get_data(message.from_user.id)
+    state_storage.update_data(message.from_user.id, advantages=advantages)
+    state_storage.set_state(message.from_user.id, "states.ReviewProcess.disadvantages_input")
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         text=f"📈 *Области для улучшения*\n"
         f"Напишите, что {data['teammate_name']} мог бы улучшить:",
         parse_mode="Markdown",
@@ -171,30 +171,30 @@ async def process_advantages_input(message: aiogram.types.Message, state: aiogra
 
 
 @decorators.log_handler("process_disadvantages_input")
-async def process_disadvantages_input(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_disadvantages_input(message: telebot.types.Message, ):
     """Обработка ввода областей для улучшения"""
     if message.text == "Отмена":
-        await cancel_review(message, state)
+        cancel_review(message)
         return
 
     disadvantages = message.text.strip() if message.text and message.text.strip() else ""
 
     if len(disadvantages) < 15:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Ответ слишком короткий. Минимум 15 символов.\n\n"
             "📈 Напишите области для улучшения ещё раз:",
         )
         return
 
     if len(disadvantages) > 1000:
-        await message.answer("❌ Текст слишком длинный. Максимум 1000 символов:")
+        bot.send_message(message.chat.id, "❌ Текст слишком длинный. Максимум 1000 символов:")
         return
 
-    await state.update_data(disadvantages=disadvantages)
-    await state.set_state(states.ReviewProcess.confirmation)
+    state_storage.update_data(message.from_user.id, disadvantages=disadvantages)
+    state_storage.set_state(message.from_user.id, "states.ReviewProcess.confirmation")
 
     # Показываем итоговую оценку
-    data = await state.get_data()
+    data = state_storage.get_data(message.from_user.id)
 
     confirmation_text = (
         f"📋 *Проверьте оценку:*\n\n"
@@ -205,7 +205,7 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
         f"Отправить оценку?"
     )
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_review_confirm_keyboard(),
         parse_mode="Markdown",
@@ -213,11 +213,11 @@ async def process_disadvantages_input(message: aiogram.types.Message, state: aio
 
 
 @decorators.log_handler("confirm_review")
-async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def confirm_review(message: telebot.types.Message, ):
     """Подтверждение отправки оценки"""
     if message.text == "Отправить":
         student = db.student_get_by_tg_id(message.from_user.id)
-        data = await state.get_data()
+        data = state_storage.get_data(message.from_user.id)
 
         try:
             db.rating_create(
@@ -228,9 +228,9 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                 disadvantages=data['disadvantages'],
             )
 
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"✅ *Оценка успешно отправлена!*\n\n"
                 f"👤 Участник: {data['teammate_name']}\n"
                 f"⭐ Оценка: {data['overall_rating']}/10",
@@ -242,7 +242,7 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                 teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                 if not teammates_to_rate:
-                    await message.answer(
+                    bot.send_message(message.chat.id,
                         "✅ Вы уже оценили всех участников команды!\n\n"
                         "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                     )
@@ -250,13 +250,13 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                     # Создаем список имен для выбора
                     teammate_names = [teammate['name'] for teammate in teammates_to_rate]
 
-                    await state.update_data(teammates_to_rate=teammates_to_rate)
-                    await state.set_state(states.ReviewProcess.teammate_selection)
+                    state_storage.update_data(message.from_user.id, teammates_to_rate=teammates_to_rate)
+                    state_storage.set_state(message.from_user.id, "states.ReviewProcess.teammate_selection")
 
                     keyboard = inline_keyboards.get_dynamic_inline_keyboard(
                         teammate_names, "teammate", columns=2,
                     )
-                    await message.answer(
+                    bot.send_message(message.chat.id,
                         "⭐ *Оценивание участников команды*\n\n"
                         "Выберите участника для оценки:",
                         reply_markup=keyboard,
@@ -264,19 +264,19 @@ async def confirm_review(message: aiogram.types.Message, state: aiogram.fsm.cont
                     )
 
         except Exception as e:
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"❌ Ошибка при отправке оценки: {e!s}\n"
                 f"Попробуйте еще раз.",
             )
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
     elif message.text == "Отмена":
-        await cancel_review(message, state)
+        cancel_review(message)
 
 
-async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def cancel_review(message: telebot.types.Message, ):
     """Отмена оценивания"""
-    await state.clear()
+    state_storage.clear_state(message.from_user.id)
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if student:
@@ -289,17 +289,13 @@ async def cancel_review(message: aiogram.types.Message, state: aiogram.fsm.conte
     else:
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
-    await message.answer("❌ Оценивание отменено.", reply_markup=keyboard)
+    bot.send_message(message.chat.id, "❌ Оценивание отменено.", reply_markup=keyboard)
 
 
-def register_reviews_handlers(dp: aiogram.Dispatcher):
+def register_reviews_handlers(bot_instance: telebot.TeleBot):
     """Регистрация обработчиков оценивания"""
     # FSM обработчики РЕГИСТРИРУЮТСЯ ПЕРВЫМИ
-    dp.message.register(process_rating_input, states.ReviewProcess.rating_input)
-    dp.message.register(process_advantages_input, states.ReviewProcess.advantages_input)
-    dp.message.register(process_disadvantages_input, states.ReviewProcess.disadvantages_input)
-    dp.message.register(confirm_review, states.ReviewProcess.confirmation)
 
     # Основные команды (регистрируются ПОСЛЕ FSM)
-    dp.message.register(handle_rate_teammates, F.text == "Оценить участников команды")
-    dp.message.register(handle_who_rated_me, F.text == "Кто меня оценил?")
+    bot_instance.register_message_handler(handle_rate_teammates, func=lambda m: m.text == "Оценить участников команды")
+    bot_instance.register_message_handler(handle_who_rated_me, func=lambda m: m.text == "Кто меня оценил?")

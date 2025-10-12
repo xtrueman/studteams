@@ -26,7 +26,8 @@ class Config:
             component: Компонент системы ('tgbot' или 'webapp')
         """
         self.component = component
-        self.config_dir = Path(__file__).parent / "config"
+        # Путь к конфигу - на уровень выше src/, в корне проекта
+        self.config_dir = Path(__file__).parent.parent / "config"
         self._config = None
         self._load_configs()
 

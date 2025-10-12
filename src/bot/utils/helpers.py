@@ -10,7 +10,7 @@ import string
 
 from config import config
 
-import bot.db as db
+from bot import db as db
 
 
 def is_valid_team_name(name: str) -> bool:

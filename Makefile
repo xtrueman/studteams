@@ -1,17 +1,27 @@
-.PHONY: *
+.PHONY: run-bot run-web-prod run-web-debug test lint install clean activate freeze
+
+PYTHONPATH := src
+VENV := venv/bin
+PYTHON := python3
+
+# Запуск приложений
+run-bot:
+	PYTHONPATH=$(PYTHONPATH) ./src/bot/main.py
+
+run-web-prod:
+	PYTHONPATH=$(PYTHONPATH) ./src/web/run_web.py
+
+run-web-debug:
+	PYTHONPATH=$(PYTHONPATH) ./src/web/app.py
 
 # Активация виртуальной среды
 activate:
 	@echo "Для активации виртуальной среды выполните:"
 	@echo "source venv/bin/activate"
 
-# Запуск бота
-run:
-	venv/bin/python bot.py
-
 # Создание requirements.txt
 freeze:
-	venv/bin/pip freeze > requirements.txt
+	$(VENV)/pip freeze > requirements.txt
 
 install:
 	venv/bin/pip install -r requirements.txt
@@ -39,7 +49,23 @@ lint:
 	flake8
 
 ruff-fix:
-	ruff check --fix
+	$(VENV)/ruff check --fix
+
+# Тесты
+test:
+	PYTHONPATH=$(PYTHONPATH) $(VENV)/pytest
+
+# Линтеры
+lint:
+	$(VENV)/flake8 src/
+
+# Очистка
+clean:
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	find . -type f -name "*~" -delete
 ruff-fix-unsafe:
 	ruff check --fix --unsafe-fixes
 

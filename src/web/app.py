@@ -1,21 +1,28 @@
-import sys
-import os
+#!/usr/bin/env python3
+"""
+Web-приложение StudTeams.
+Запуск в debug режиме: ./src/web/app.py
+"""
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from web.db import get_teams_count, get_teams_with_members, get_total_students_count, get_all_reports, get_teams_list
 
 app = FastAPI(title="StudTeams Web")
 
+# Определяем базовую директорию web приложения
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Jinja2 templates
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 
 @app.get("/", include_in_schema=False)
@@ -74,3 +81,14 @@ async def reports(request: Request, team: str = "", sprint: str = "", student: s
         },
     }
     return templates.TemplateResponse("reports.jinja", params)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "web.app:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )

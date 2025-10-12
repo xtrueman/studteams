@@ -3,11 +3,8 @@
 Содержит функции для получения данных о командах, студентах и отчетах
 """
 
-import sys
-import os
 from typing import Any
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from myconn import cursors
 
 

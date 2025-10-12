@@ -6,16 +6,16 @@
 
 import re
 
-import aiogram
-import aiogram.fsm.context
-from aiogram import F
+import telebot
 
-import bot.db as db
-import bot.keyboards.inline as inline_keyboards
-import bot.keyboards.reply as keyboards
-import bot.states.user_states as states
-import bot.utils.decorators as decorators
-import bot.utils.helpers as helpers
+
+from bot.state_storage import state_storage
+from bot import db
+from bot.bot_instance import bot as db
+from bot.keyboards import inline as inline_keyboards
+from bot.keyboards import reply as keyboards
+from bot.utils import decorators as decorators
+from bot.utils import helpers as helpers
 
 
 def is_valid_full_name(name):
@@ -33,19 +33,19 @@ def is_valid_full_name(name):
 
 
 @decorators.log_handler("register_team")
-async def handle_register_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def handle_register_team(message: telebot.types.Message, ):
     """Начало регистрации команды"""
     # Проверяем, не зарегистрирован ли уже пользователь
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if student and 'team' in student:
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Вы уже состоите в команде. Создать новую команду может только незарегистрированный пользователь.",
         )
         return
 
-    await state.set_state(states.TeamRegistration.team_name)
-    await message.answer(
+    state_storage.set_state(message.from_user.id, "states.TeamRegistration.team_name")
+    bot.send_message(message.chat.id,
         "📝 *Регистрация новой команды*\n\n"
         "Введите название команды:",
         parse_mode="Markdown",
@@ -53,50 +53,50 @@ async def handle_register_team(message: aiogram.types.Message, state: aiogram.fs
 
 
 @decorators.log_handler("my_team")
-async def handle_my_team(message: aiogram.types.Message):
+def handle_my_team(message: telebot.types.Message):
     """Показать информацию о команде"""
     # get_team_display_data не использует первый параметр student_id, передаем пустую строку
     team_data = helpers.get_team_display_data("", message.from_user.id)
 
     if not team_data:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
-    await message.answer(team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
+    bot.send_message(message.chat.id, team_data['team_info'], parse_mode="Markdown", reply_markup=team_data['keyboard'])
 
 
 @decorators.log_handler("process_team_name")
-async def process_team_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_team_name(message: telebot.types.Message, ):
     """Обработка названия команды"""
     team_name = message.text.strip()
 
     if not helpers.is_valid_team_name(team_name):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Название команды должно содержать от 3 до 64 символов. Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(team_name=team_name)
-    await state.set_state(states.TeamRegistration.product_name)
-    await message.answer(
+    state_storage.update_data(message.from_user.id, team_name=team_name)
+    state_storage.set_state(message.from_user.id, "states.TeamRegistration.product_name")
+    bot.send_message(message.chat.id,
         "Название разрабатываемого продукта:",
         parse_mode="Markdown",
     )
 
 
 @decorators.log_handler("process_product_name")
-async def process_product_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_product_name(message: telebot.types.Message, ):
     """Обработка названия продукта"""
     product_name = message.text.strip()
 
     if not helpers.is_valid_product_name(product_name):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Название продукта должно содержать от 3 до 100 символов. Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(product_name=product_name)
-    await state.set_state(states.TeamRegistration.user_name)
+    state_storage.update_data(message.from_user.id, product_name=product_name)
+    state_storage.set_state(message.from_user.id, "states.TeamRegistration.user_name")
 
     # Получаем имя пользователя из Telegram
     first_name = message.from_user.first_name or ""
@@ -106,14 +106,14 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
     # Создаем клавиатуру с подсказкой ТОЛЬКО если имя соответствует нашему регексу
     keyboard = None
     if suggested_name and is_valid_full_name(suggested_name):
-        keyboard = aiogram.types.ReplyKeyboardMarkup(
-            keyboard=[[aiogram.types.KeyboardButton(text=suggested_name)]],
+        keyboard = telebot.types.ReplyKeyboardMarkup(
+            keyboard=[[telebot.types.KeyboardButton(text=suggested_name)]],
             resize_keyboard=True,
             one_time_keyboard=True,
             input_field_placeholder=suggested_name,
         )
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         "Ваше имя и фамилия («Иван Иванов»):",
         reply_markup=keyboard,
         parse_mode="Markdown",
@@ -121,42 +121,42 @@ async def process_product_name(message: aiogram.types.Message, state: aiogram.fs
 
 
 @decorators.log_handler("process_admin_name")
-async def process_admin_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_admin_name(message: telebot.types.Message, ):
     """Обработка имени администратора"""
     user_name = message.text.strip()
 
     if not is_valid_full_name(user_name):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
             "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(user_name=user_name)
-    await state.set_state(states.TeamRegistration.user_group)
-    await message.answer(
+    state_storage.update_data(message.from_user.id, user_name=user_name)
+    state_storage.set_state(message.from_user.id, "states.TeamRegistration.user_group")
+    bot.send_message(message.chat.id,
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown",
     )
 
 
 @decorators.log_handler("process_admin_group")
-async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_admin_group(message: telebot.types.Message, ):
     """Обработка группы администратора"""
     user_group = message.text.strip()
 
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(user_group=user_group)
+    state_storage.update_data(message.from_user.id, user_group=user_group)
 
     # Показываем данные для подтверждения
-    data = await state.get_data()
-    await state.set_state(states.TeamRegistration.confirm)
+    data = state_storage.get_data(message.from_user.id)
+    state_storage.set_state(message.from_user.id, "states.TeamRegistration.confirm")
 
     confirmation_text = (
         "📋 *Проверьте данные:*\n\n"
@@ -167,7 +167,7 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
         f"Все верно?"
     )
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_team_registration_confirm_keyboard(),
         parse_mode="Markdown",
@@ -175,10 +175,10 @@ async def process_admin_group(message: aiogram.types.Message, state: aiogram.fsm
 
 
 @decorators.log_handler("confirm_team_registration")
-async def confirm_team_registration(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def confirm_team_registration(message: telebot.types.Message, ):
     """Подтверждение регистрации команды"""
     if message.text == "Продолжить":
-        data = await state.get_data()
+        data = state_storage.get_data(message.from_user.id)
 
         try:
             # Проверяем, есть ли уже пользователь в системе
@@ -208,14 +208,14 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
                 role="Scrum Master",
             )
 
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
             # Отправляем главное меню
             keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
 
             invite_link_text = f"🔗 Код приглашения: `{invite_code}`"
 
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"🎉 *Команда успешно создана!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"📱 Продукт: {data['product_name']}\n"
@@ -226,53 +226,53 @@ async def confirm_team_registration(message: aiogram.types.Message, state: aiogr
             )
 
         except Exception as e:
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"❌ Ошибка при создании команды: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
     elif message.text == "Отмена":
-        await state.clear()
+        state_storage.clear_state(message.from_user.id)
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
-        await message.answer("❌ Регистрация команды отменена.", reply_markup=keyboard)
+        bot.send_message(message.chat.id, "❌ Регистрация команды отменена.", reply_markup=keyboard)
 
 
 @decorators.log_handler("process_join_user_name")
-async def process_join_user_name(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_join_user_name(message: telebot.types.Message, ):
     """Обработка имени при присоединении к команде"""
     user_name = message.text.strip()
 
     if not is_valid_full_name(user_name):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Имя должно состоять из 2 слов (имя и фамилия), каждое от 2 до 18 букв, "
             "начинающиеся с заглавной буквы. Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(user_name=user_name)
-    await state.set_state(states.JoinTeam.user_group)
-    await message.answer(
+    state_storage.update_data(message.from_user.id, user_name=user_name)
+    state_storage.set_state(message.from_user.id, "states.JoinTeam.user_group")
+    bot.send_message(message.chat.id,
         "Введите номер вашей группы (или 0 если без группы):",
         parse_mode="Markdown",
     )
 
 
 @decorators.log_handler("process_join_user_group")
-async def process_join_user_group(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_join_user_group(message: telebot.types.Message, ):
     """Обработка группы при присоединении к команде"""
     user_group = message.text.strip()
 
     # Разрешаем "0" как специальное значение для пользователей без группы
     if user_group != "0" and not helpers.is_valid_group_number(user_group):
-        await message.answer(
+        bot.send_message(message.chat.id,
             "❌ Номер группы должен содержать от 2 до 16 символов (или 0 если без группы). Попробуйте еще раз:",
         )
         return
 
-    await state.update_data(user_group=user_group)
-    await state.set_state(states.JoinTeam.user_role)
-    await message.answer(
+    state_storage.update_data(message.from_user.id, user_group=user_group)
+    state_storage.set_state(message.from_user.id, "states.JoinTeam.user_role")
+    bot.send_message(message.chat.id,
         "Выберите вашу роль в команде:",
         reply_markup=inline_keyboards.get_roles_inline_keyboard(),
         parse_mode="Markdown",
@@ -280,23 +280,23 @@ async def process_join_user_group(message: aiogram.types.Message, state: aiogram
 
 
 @decorators.log_handler("process_join_user_role")
-async def process_join_user_role(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def process_join_user_role(message: telebot.types.Message, ):
     """Обработка роли при присоединении к команде"""
     if message.text == "Отмена":
-        await cancel_join_team(message, state)
+        cancel_join_team(message)
         return
 
     valid_roles = ["Product owner", "Scrum Master", "Разработчик", "Участник команды"]
 
     if message.text not in valid_roles:
-        await message.answer("❌ Выберите роль из предложенных вариантов:")
+        bot.send_message(message.chat.id, "❌ Выберите роль из предложенных вариантов:")
         return
 
-    await state.update_data(user_role=message.text)
-    await state.set_state(states.JoinTeam.confirm)
+    state_storage.update_data(message.from_user.id, user_role=message.text)
+    state_storage.set_state(message.from_user.id, "states.JoinTeam.confirm")
 
     # Показываем данные для подтверждения
-    data = await state.get_data()
+    data = state_storage.get_data(message.from_user.id)
 
     confirmation_text = (
         f"📋 *Проверьте данные:*\n\n"
@@ -307,7 +307,7 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
         f"Присоединиться к команде?"
     )
 
-    await message.answer(
+    bot.send_message(message.chat.id,
         confirmation_text,
         reply_markup=inline_keyboards.get_join_team_confirm_keyboard(),
         parse_mode="Markdown",
@@ -315,10 +315,10 @@ async def process_join_user_role(message: aiogram.types.Message, state: aiogram.
 
 
 @decorators.log_handler("confirm_join_team")
-async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def confirm_join_team(message: telebot.types.Message, ):
     """Подтверждение присоединения к команде"""
     if message.text == "Присоединиться":
-        data = await state.get_data()
+        data = state_storage.get_data(message.from_user.id)
 
         try:
             # Проверяем, есть пользователь в системе
@@ -339,12 +339,12 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
                 role=data['user_role'],
             )
 
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
             # Отправляем главное меню
             keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=True)
 
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"🎉 *Добро пожаловать в команду!*\n\n"
                 f"👥 Команда: {data['team_name']}\n"
                 f"💼 Ваша роль: {data['user_role']}\n\n"
@@ -355,38 +355,38 @@ async def confirm_join_team(message: aiogram.types.Message, state: aiogram.fsm.c
             )
 
         except Exception as e:
-            await message.answer(
+            bot.send_message(message.chat.id,
                 f"❌ Ошибка при присоединении к команде: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
-            await state.clear()
+            state_storage.clear_state(message.from_user.id)
 
     elif message.text == "Отмена":
-        await cancel_join_team(message, state)
+        cancel_join_team(message)
 
 
 @decorators.log_handler("cancel_join_team")
-async def cancel_join_team(message: aiogram.types.Message, state: aiogram.fsm.context.FSMContext):
+def cancel_join_team(message: telebot.types.Message, ):
     """Отмена присоединения к команде"""
-    await state.clear()
+    state_storage.clear_state(message.from_user.id)
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
-    await message.answer("❌ Присоединение к команде отменено.", reply_markup=keyboard)
+    bot.send_message(message.chat.id, "❌ Присоединение к команде отменено.", reply_markup=keyboard)
 
 
 @decorators.log_handler("team_report")
-async def handle_team_report(message: aiogram.types.Message):
+def handle_team_report(message: telebot.types.Message):
     """Просмотр отчёта о команде"""
     student = db.student_get_by_tg_id(message.from_user.id)
 
     if not student or 'team' not in student:
-        await message.answer("❌ Вы не состоите в команде.")
+        bot.send_message(message.chat.id, "❌ Вы не состоите в команде.")
         return
 
     # Получаем всех участников команды, включая администратора
     all_members = db.team_get_all_members(student['team']['team_id'])
 
     if not all_members:
-        await message.answer("👥 В команде нет участников.")
+        bot.send_message(message.chat.id, "👥 В команде нет участников.")
         return
 
     # Собираем статистику для каждого участника
@@ -456,23 +456,17 @@ async def handle_team_report(message: aiogram.types.Message):
             report_text += f" (средняя: {stats['avg_rating']}/10)"
         report_text += "\n\n"
 
-    await message.answer(report_text, parse_mode="Markdown")
+    bot.send_message(message.chat.id, report_text, parse_mode="Markdown")
 
 
-def register_team_handlers(dp: aiogram.Dispatcher):
+def register_team_handlers(bot_instance: telebot.TeleBot):
     """Регистрация обработчиков команды"""
     # FSM обработчики РЕГИСТРИРУЮТСЯ ПЕРВЫМИ (они имеют приоритет)
     # FSM для регистрации команды
-    dp.message.register(process_team_name, states.TeamRegistration.team_name)
-    dp.message.register(process_product_name, states.TeamRegistration.product_name)
-    dp.message.register(process_admin_name, states.TeamRegistration.user_name)
-    dp.message.register(process_admin_group, states.TeamRegistration.user_group)
 
     # FSM для присоединения к команде
-    dp.message.register(process_join_user_name, states.JoinTeam.user_name)
-    dp.message.register(process_join_user_group, states.JoinTeam.user_group)
 
     # Основные команды (регистрируются ПОСЛЕ FSM)
-    dp.message.register(handle_register_team, F.text == "Регистрация команды")
-    dp.message.register(handle_my_team, F.text == "Моя команда")
-    dp.message.register(handle_team_report, F.text == "📊 Отчёт о команде")
+    bot_instance.register_message_handler(handle_register_team, func=lambda m: m.text == "Регистрация команды")
+    bot_instance.register_message_handler(handle_my_team, func=lambda m: m.text == "Моя команда")
+    bot_instance.register_message_handler(handle_team_report, func=lambda m: m.text == "📊 Отчёт о команде")
