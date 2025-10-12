@@ -5,8 +5,9 @@
 import os
 
 import mysql.connector
-from config import config
 from mysql.connector import Error
+
+from config import config
 
 # Глобальная переменная для хранения соединения с базой данных
 conn = None

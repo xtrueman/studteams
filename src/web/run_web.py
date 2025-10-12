@@ -6,7 +6,7 @@ import uvicorn
 
 uvicorn.run(
     "web.app:app",
-    host="0.0.0.0",
+    host="localhost",
     port=8000,
     reload=False,
     log_level="info",

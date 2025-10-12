@@ -6,15 +6,13 @@
 
 import telebot
 
-from config import config
-
-from bot.state_storage import state_storage
 from bot import db
-from bot.bot_instance import bot
 from bot.keyboards import inline as inline_keyboards
 from bot.keyboards import reply as keyboards
+from bot.state_storage import state_storage
 from bot.utils import decorators as decorators
 from bot.utils import helpers as helpers
+from config import config
 
 # Team Registration Callbacks
 
@@ -24,7 +22,7 @@ def callback_confirm_team_registration(
     callback: telebot.types.CallbackQuery,
 ):
     """Callback обработчик подтверждения регистрации команды"""
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
 
     try:
         # Проверяем, есть ли уже пользователь в системе
@@ -54,7 +52,7 @@ def callback_confirm_team_registration(
             role="Scrum Master",
         )
 
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
         # Отправляем главное меню
         keyboard = keyboards.get_main_menu_keyboard(is_admin=True, has_team=True)
@@ -73,7 +71,7 @@ def callback_confirm_team_registration(
                 parse_mode="Markdown",
             )
 
-            callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+            callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
 
     except Exception as e:
         if callback.message:
@@ -81,7 +79,7 @@ def callback_confirm_team_registration(
                 f"❌ Ошибка при создании команды: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -91,12 +89,12 @@ def callback_cancel_team_registration(
     callback: telebot.types.CallbackQuery,
 ):
     """Callback обработчик отмены регистрации команды"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
     if callback.message:
         callback.message.edit_text("❌ Регистрация команды отменена.")
-        callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+        callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
     callback.answer()
 
 # Role Selection Callbacks
@@ -114,7 +112,7 @@ def callback_role_selection(callback: telebot.types.CallbackQuery):
 
     if callback.data == "cancel":
         # Проверяем текущее состояние, чтобы понять контекст отмены
-        current_state = state.get_state()
+        current_state = state_storage.get_state(callback.from_user.id)
         if current_state and "JoinTeam" in str(current_state):
             callback_cancel_join_team(callback)
         else:
@@ -130,11 +128,11 @@ def callback_role_selection(callback: telebot.types.CallbackQuery):
         callback.answer("❌ Неверная роль")
         return
 
-    state_storage.update_data(message.from_user.id, user_role=role)
-    state_storage.set_state(message.from_user.id, "states.JoinTeam.confirm")
+    state_storage.update_data(callback.from_user.id, user_role=role)
+    state_storage.set_state(callback.from_user.id, "states.JoinTeam.confirm")
 
     # Показываем данные для подтверждения
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
 
     confirmation_text = (
         f"📋 *Проверьте данные:*\n\n"
@@ -159,7 +157,7 @@ def callback_role_selection(callback: telebot.types.CallbackQuery):
 @decorators.log_handler("callback_confirm_join_team")
 def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
     """Callback обработчик подтверждения присоединения к команде"""
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
 
     try:
         # Проверяем, есть ли пользователь в системе
@@ -184,7 +182,7 @@ def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
             role=data['user_role'],
         )
 
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
         # Отправляем главное меню
         keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=True)
@@ -199,7 +197,7 @@ def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
                 parse_mode="Markdown",
             )
 
-            callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+            callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
 
     except Exception as e:
         if callback.message:
@@ -207,7 +205,7 @@ def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
                 f"❌ Ошибка при присоединении к команде: {e!s}\n"
                 f"Попробуйте еще раз или обратитесь к администратору.",
             )
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -215,13 +213,13 @@ def callback_confirm_join_team(callback: telebot.types.CallbackQuery):
 @decorators.log_handler("callback_cancel_join_team")
 def callback_cancel_join_team(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены присоединения к команде"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
     if callback.message:
         callback.message.edit_text("❌ Присоединение к команде отменено.")
 
-        callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+        callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
     callback.answer()
 
 
@@ -229,7 +227,7 @@ def callback_cancel_join_team(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_confirm_report")
 def callback_confirm_report(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик подтверждения отправки отчета"""
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
     is_editing = data.get('editing', False)
 
     try:
@@ -241,7 +239,7 @@ def callback_confirm_report(callback: telebot.types.CallbackQuery, ):
             report_text=data['report_text'],
         )
 
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
         # Показываем сообщение об успешном сохранении
         if callback.message:
@@ -264,7 +262,10 @@ def callback_confirm_report(callback: telebot.types.CallbackQuery, ):
             reports = db.report_get_by_student(student['student_id'])
             report_text = helpers.format_reports_list(reports)
             keyboard = inline_keyboards.get_report_management_keyboard(reports)
-            callback.bot.send_message(message.chat.id, report_text, parse_mode="Markdown", reply_markup=keyboard)
+            callback.bot.send_message(
+                callback.message.chat.id, report_text,
+                parse_mode="Markdown", reply_markup=keyboard
+            )
 
     except Exception as e:
         if callback.message:
@@ -272,7 +273,7 @@ def callback_confirm_report(callback: telebot.types.CallbackQuery, ):
                 f"❌ Ошибка при сохранении отчета: {e!s}\n"
                 f"Попробуйте еще раз.",
             )
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -280,7 +281,7 @@ def callback_confirm_report(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_cancel_report")
 def callback_cancel_report(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены отправки отчета"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
@@ -296,7 +297,7 @@ def callback_cancel_report(callback: telebot.types.CallbackQuery, ):
         else:
             keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
-        callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+        callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
     callback.answer()
 
 
@@ -329,13 +330,13 @@ def callback_edit_report(callback: telebot.types.CallbackQuery, ):
         return
 
     # Сохраняем данные в состоянии
-    state.update_data(
+    state_storage.update_data(callback.from_user.id,
         sprint_num=sprint_num,
         report_text=report_to_edit['report_text'],
         editing=True,
     )
 
-    state_storage.set_state(message.from_user.id, "states.ReportCreation.report_text")
+    state_storage.set_state(callback.from_user.id, "states.ReportCreation.report_text")
 
     if callback.message:
         report_preview = report_to_edit['report_text'][:200]
@@ -370,7 +371,7 @@ def callback_delete_report_inline(callback: telebot.types.CallbackQuery, ):
     student = db.student_get_by_tg_id(callback.from_user.id)
 
     # Сохраняем данные в состоянии
-    state.update_data(
+    state_storage.update_data(callback.from_user.id,
         sprint_num=sprint_num,
         student_id=student['student_id'],
     )
@@ -389,7 +390,7 @@ def callback_delete_report_inline(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_confirm_delete_report")
 def callback_confirm_delete_report(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик подтверждения удаления отчета"""
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
 
     try:
         db.report_delete(
@@ -397,7 +398,7 @@ def callback_confirm_delete_report(callback: telebot.types.CallbackQuery, ):
             sprint_num=data['sprint_num'],
         )
 
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
         if callback.message:
             callback.message.edit_text(
@@ -410,7 +411,10 @@ def callback_confirm_delete_report(callback: telebot.types.CallbackQuery, ):
             reports = db.report_get_by_student(student['student_id'])
             report_text = helpers.format_reports_list(reports)
             keyboard = inline_keyboards.get_report_management_keyboard(reports)
-            callback.bot.send_message(message.chat.id, report_text, parse_mode="Markdown", reply_markup=keyboard)
+            callback.bot.send_message(
+                callback.message.chat.id, report_text,
+                parse_mode="Markdown", reply_markup=keyboard
+            )
 
     except Exception as e:
         if callback.message:
@@ -418,7 +422,7 @@ def callback_confirm_delete_report(callback: telebot.types.CallbackQuery, ):
                 f"❌ Ошибка при удалении отчета: {e!s}\n"
                 f"Попробуйте еще раз.",
             )
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -426,7 +430,7 @@ def callback_confirm_delete_report(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_cancel_delete_report")
 def callback_cancel_delete_report(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены удаления отчета"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
@@ -436,7 +440,10 @@ def callback_cancel_delete_report(callback: telebot.types.CallbackQuery, ):
         reports = db.report_get_by_student(student['student_id'])
         report_text = helpers.format_reports_list(reports)
         keyboard = inline_keyboards.get_report_management_keyboard(reports)
-        callback.bot.send_message(message.chat.id, report_text, parse_mode="Markdown", reply_markup=keyboard)
+        callback.bot.send_message(
+            callback.message.chat.id, report_text,
+            parse_mode="Markdown", reply_markup=keyboard
+        )
     callback.answer()
 
 
@@ -446,7 +453,7 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик подтверждения отправки оценки"""
     if callback.data == "confirm_review":
         student = db.student_get_by_tg_id(callback.from_user.id)
-        data = state_storage.get_data(message.from_user.id)
+        data = state_storage.get_data(callback.from_user.id)
 
         try:
             db.rating_create(
@@ -457,7 +464,7 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                 disadvantages=data['disadvantages'],
             )
 
-            state_storage.clear_state(message.from_user.id)
+            state_storage.clear_state(callback.from_user.id)
 
             if callback.message:
                 callback.message.edit_text(
@@ -472,7 +479,7 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                     teammates_to_rate = db.student_get_teammates_not_rated(student['student_id'])
 
                     if not teammates_to_rate:
-                        callback.bot.send_message(message.chat.id,
+                        callback.bot.send_message(callback.message.chat.id,
                             "✅ Вы уже оценили всех участников команды!\n\n"
                             "Используйте кнопку \"Кто меня оценил?\" чтобы посмотреть свои оценки.",
                         )
@@ -480,12 +487,12 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                         # Создаем список имен для выбора
                         teammate_names = [teammate['name'] for teammate in teammates_to_rate]
 
-                        state_storage.set_state(message.from_user.id, "states.ReviewProcess.teammate_selection")
+                        state_storage.set_state(callback.from_user.id, "states.ReviewProcess.teammate_selection")
 
                         keyboard = inline_keyboards.get_dynamic_inline_keyboard(
                             teammate_names, "teammate", columns=2,
                         )
-                        callback.bot.send_message(message.chat.id,
+                        callback.bot.send_message(callback.message.chat.id,
                             "⭐ *Оценивание участников команды*\n\n"
                             "Выберите участника для оценки:",
                             reply_markup=keyboard,
@@ -498,7 +505,7 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
                     f"❌ Ошибка при отправке оценки: {e!s}\n"
                     f"Попробуйте еще раз.",
                 )
-            state_storage.clear_state(message.from_user.id)
+            state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -506,7 +513,7 @@ def callback_confirm_review(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_cancel_review")
 def callback_cancel_review(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены отправки оценки"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
@@ -522,7 +529,7 @@ def callback_cancel_review(callback: telebot.types.CallbackQuery, ):
         else:
             keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
-        callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+        callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
     callback.answer()
 
 
@@ -558,7 +565,7 @@ def callback_remove_member_inline(callback: telebot.types.CallbackQuery, ):
         return
 
     # Сохраняем данные в состоянии
-    state.update_data(
+    state_storage.update_data(callback.from_user.id,
         selected_member=member_to_remove,
         team_id=team['team_id'],
     )
@@ -578,7 +585,7 @@ def callback_remove_member_inline(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_confirm_remove_member")
 def callback_confirm_remove_member(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик подтверждения удаления участника"""
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
 
     try:
         db.team_remove_member(
@@ -586,7 +593,7 @@ def callback_confirm_remove_member(callback: telebot.types.CallbackQuery, ):
             student_id=data['selected_member']['student_id'],
         )
 
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
         if callback.message:
             callback.message.edit_text(
@@ -598,7 +605,7 @@ def callback_confirm_remove_member(callback: telebot.types.CallbackQuery, ):
             team_data = helpers.get_team_display_data("", callback.from_user.id)
 
             if team_data:
-                callback.bot.send_message(message.chat.id,
+                callback.bot.send_message(callback.message.chat.id,
                     team_data['team_info'],
                     parse_mode="Markdown",
                     reply_markup=team_data['keyboard'],
@@ -610,7 +617,7 @@ def callback_confirm_remove_member(callback: telebot.types.CallbackQuery, ):
                 f"❌ Ошибка при удалении участника: {e!s}\n"
                 f"Попробуйте еще раз.",
             )
-        state_storage.clear_state(message.from_user.id)
+        state_storage.clear_state(callback.from_user.id)
 
     callback.answer()
 
@@ -618,7 +625,7 @@ def callback_confirm_remove_member(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_cancel_remove_member")
 def callback_cancel_remove_member(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены удаления участника"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
 
     if callback.message:
         callback.message.edit_text("❌ Удаление участника отменено.")
@@ -627,7 +634,7 @@ def callback_cancel_remove_member(callback: telebot.types.CallbackQuery, ):
         team_data = helpers.get_team_display_data("", callback.from_user.id)
 
         if team_data:
-            callback.bot.send_message(message.chat.id,
+            callback.bot.send_message(callback.message.chat.id,
                 team_data['team_info'],
                 parse_mode="Markdown",
                 reply_markup=team_data['keyboard'],
@@ -650,8 +657,8 @@ def callback_sprint_selection(callback: telebot.types.CallbackQuery, ):
         callback.answer("❌ Неверные данные")
         return
 
-    state_storage.update_data(message.from_user.id, sprint_num=sprint_num)
-    state_storage.set_state(message.from_user.id, "states.ReportCreation.report_text")
+    state_storage.update_data(callback.from_user.id, sprint_num=sprint_num)
+    state_storage.set_state(callback.from_user.id, "states.ReportCreation.report_text")
 
     if callback.message:
         callback.message.edit_text(
@@ -677,7 +684,7 @@ def callback_member_selection(callback: telebot.types.CallbackQuery, ):
         callback.answer("❌ Неверные данные")
         return
 
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
     teammates = data.get('teammates_to_rate', [])
 
     # Проверяем, что индекс корректный
@@ -689,12 +696,12 @@ def callback_member_selection(callback: telebot.types.CallbackQuery, ):
     selected_teammate = teammates[member_index]
 
     # Сохраняем выбранного участника в состоянии
-    state.update_data(
+    state_storage.update_data(callback.from_user.id,
         selected_teammate_id=selected_teammate['student_id'],
         teammate_name=selected_teammate['name'],
     )
 
-    state_storage.set_state(message.from_user.id, "states.ReviewProcess.rating_input")
+    state_storage.set_state(callback.from_user.id, "states.ReviewProcess.rating_input")
 
     if callback.message:
         callback.message.edit_text(
@@ -720,7 +727,7 @@ def callback_teammate_selection(callback: telebot.types.CallbackQuery, ):
         callback.answer("❌ Неверные данные")
         return
 
-    data = state_storage.get_data(message.from_user.id)
+    data = state_storage.get_data(callback.from_user.id)
     teammates = data.get('teammates_to_rate', [])
 
     # Проверяем, что индекс корректный
@@ -732,12 +739,12 @@ def callback_teammate_selection(callback: telebot.types.CallbackQuery, ):
     selected_teammate = teammates[teammate_index]
 
     # Сохраняем выбранного участника в состоянии
-    state.update_data(
+    state_storage.update_data(callback.from_user.id,
         selected_teammate_id=selected_teammate['student_id'],
         teammate_name=selected_teammate['name'],
     )
 
-    state_storage.set_state(message.from_user.id, "states.ReviewProcess.rating_input")
+    state_storage.set_state(callback.from_user.id, "states.ReviewProcess.rating_input")
 
     if callback.message:
         callback.message.edit_text(
@@ -769,8 +776,8 @@ def callback_rating_selection(callback: telebot.types.CallbackQuery, ):
         )
         return
 
-    state_storage.update_data(message.from_user.id, overall_rating=rating)
-    state_storage.set_state(message.from_user.id, "states.ReviewProcess.advantages_input")
+    state_storage.update_data(callback.from_user.id, overall_rating=rating)
+    state_storage.set_state(callback.from_user.id, "states.ReviewProcess.advantages_input")
 
     if callback.message:
         callback.message.edit_text(
@@ -826,7 +833,7 @@ def callback_edit_member(callback: telebot.types.CallbackQuery, ):
 @decorators.log_handler("callback_cancel_action")
 def callback_cancel_action(callback: telebot.types.CallbackQuery, ):
     """Callback обработчик отмены действия (универсальный)"""
-    state_storage.clear_state(message.from_user.id)
+    state_storage.clear_state(callback.from_user.id)
     student = db.student_get_by_tg_id(callback.from_user.id)
 
     if callback.message:
@@ -842,47 +849,91 @@ def callback_cancel_action(callback: telebot.types.CallbackQuery, ):
         else:
             keyboard = keyboards.get_main_menu_keyboard(is_admin=False, has_team=False)
 
-        callback.bot.send_message(message.chat.id, "Главное меню:", reply_markup=keyboard)
+        callback.bot.send_message(callback.message.chat.id, "Главное меню:", reply_markup=keyboard)
     callback.answer()
 
 
 def register_callback_handlers(bot_instance: telebot.TeleBot):
     """Регистрация callback обработчиков"""
     # Team registration callbacks
-    bot_instance.register_callback_query_handler(callback_confirm_team_registration, func=lambda c: c.data == "confirm_team_reg")
-    bot_instance.register_callback_query_handler(callback_cancel_team_registration, func=lambda c: c.data == "cancel_team_reg")
+    bot_instance.register_callback_query_handler(
+        callback_confirm_team_registration, func=lambda c: c.data == "confirm_team_reg"
+    )
+    bot_instance.register_callback_query_handler(
+        callback_cancel_team_registration, func=lambda c: c.data == "cancel_team_reg"
+    )
 
     # Join team callbacks
-    bot_instance.register_callback_query_handler(callback_confirm_join_team, func=lambda c: c.data == "confirm_join_team")
-    bot_instance.register_callback_query_handler(callback_cancel_join_team, func=lambda c: c.data == "cancel_join_team")
+    bot_instance.register_callback_query_handler(
+        callback_confirm_join_team, func=lambda c: c.data == "confirm_join_team"
+    )
+    bot_instance.register_callback_query_handler(
+        callback_cancel_join_team, func=lambda c: c.data == "cancel_join_team"
+    )
 
     # Report callbacks - specific callbacks first
     bot_instance.register_callback_query_handler(callback_confirm_report, func=lambda c: c.data == "confirm_report")
     bot_instance.register_callback_query_handler(callback_cancel_report, func=lambda c: c.data == "cancel_report")
-    bot_instance.register_callback_query_handler(callback_confirm_delete_report, func=lambda c: c.data == "confirm_delete_report")
-    bot_instance.register_callback_query_handler(callback_cancel_delete_report, func=lambda c: c.data == "cancel_delete_report")
+    bot_instance.register_callback_query_handler(
+        callback_confirm_delete_report,
+        func=lambda c: c.data == "confirm_delete_report"
+    )
+    bot_instance.register_callback_query_handler(
+        callback_cancel_delete_report,
+        func=lambda c: c.data == "cancel_delete_report"
+    )
 
     # Review callbacks - specific callbacks first
     bot_instance.register_callback_query_handler(callback_confirm_review, func=lambda c: c.data == "confirm_review")
     bot_instance.register_callback_query_handler(callback_cancel_review, func=lambda c: c.data == "cancel_review")
 
     # Member management callbacks - specific callbacks first
-    bot_instance.register_callback_query_handler(callback_confirm_remove_member, func=lambda c: c.data == "confirm_remove_member")
-    bot_instance.register_callback_query_handler(callback_cancel_remove_member, func=lambda c: c.data == "cancel_remove_member")
+    bot_instance.register_callback_query_handler(
+        callback_confirm_remove_member,
+        func=lambda c: c.data == "confirm_remove_member"
+    )
+    bot_instance.register_callback_query_handler(
+        callback_cancel_remove_member,
+        func=lambda c: c.data == "cancel_remove_member"
+    )
 
     # Pattern-based callbacks with mixed patterns - more specific first
-    bot_instance.register_callback_query_handler(callback_sprint_selection, func=lambda c: c.data and c.data.startswith("sprint_"))
-    bot_instance.register_callback_query_handler(callback_member_selection, func=lambda c: c.data and c.data.startswith("member_"))
-    bot_instance.register_callback_query_handler(callback_teammate_selection, func=lambda c: c.data and c.data.startswith("teammate_"))
-    bot_instance.register_callback_query_handler(callback_rating_selection, func=lambda c: c.data and c.data.startswith("rating_"))
+    bot_instance.register_callback_query_handler(
+        callback_sprint_selection,
+        func=lambda c: c.data and c.data.startswith("sprint_")
+    )
+    bot_instance.register_callback_query_handler(
+        callback_member_selection,
+        func=lambda c: c.data and c.data.startswith("member_")
+    )
+    bot_instance.register_callback_query_handler(
+        callback_teammate_selection,
+        func=lambda c: c.data and c.data.startswith("teammate_")
+    )
+    bot_instance.register_callback_query_handler(
+        callback_rating_selection,
+        func=lambda c: c.data and c.data.startswith("rating_")
+    )
 
     # Team member management callbacks (inline)
-    bot_instance.register_callback_query_handler(callback_edit_member, func=lambda c: c.data and c.data.startswith("edit_member_"))
-    bot_instance.register_callback_query_handler(callback_remove_member_inline, func=lambda c: c.data and c.data.startswith("remove_member_"))
+    bot_instance.register_callback_query_handler(
+        callback_edit_member,
+        func=lambda c: c.data and c.data.startswith("edit_member_")
+    )
+    bot_instance.register_callback_query_handler(
+        callback_remove_member_inline,
+        func=lambda c: c.data and c.data.startswith("remove_member_")
+    )
 
     # Report management callbacks (inline)
-    bot_instance.register_callback_query_handler(callback_edit_report, func=lambda c: c.data and c.data.startswith("edit_report_"))
-    bot_instance.register_callback_query_handler(callback_delete_report_inline, func=lambda c: c.data and c.data.startswith("delete_report_"))
+    bot_instance.register_callback_query_handler(
+        callback_edit_report,
+        func=lambda c: c.data and c.data.startswith("edit_report_")
+    )
+    bot_instance.register_callback_query_handler(
+        callback_delete_report_inline,
+        func=lambda c: c.data and c.data.startswith("delete_report_")
+    )
 
     # General cancel callback (fallback) - MUST BE LAST
     bot_instance.register_callback_query_handler(callback_cancel_action, func=lambda c: c.data == "cancel")

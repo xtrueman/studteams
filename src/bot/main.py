@@ -6,8 +6,8 @@ Telegram-бот для отслеживания прогресса студен�
 и управления проектами по методологии Scrum.
 """
 
-import telebot
 import loguru
+import telebot
 
 from bot import bot_instance
 from bot.handlers import admin as admin_handlers

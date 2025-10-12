@@ -4,7 +4,7 @@
 Содержит функции для выполнения всех необходимых операций с базой данных.
 """
 
-from myconn import select_one, select_all, insert_update
+from myconn import insert_update, select_all, select_one
 
 
 def student_get_by_tg_id(tg_id: int):

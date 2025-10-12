@@ -8,9 +8,8 @@ import datetime
 import random
 import string
 
-from config import config
-
 from bot import db as db
+from config import config
 
 
 def is_valid_team_name(name: str) -> bool:

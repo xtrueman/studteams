@@ -8,12 +8,11 @@ import re
 
 import telebot
 
-
-from bot.state_storage import state_storage
 from bot import db
 from bot.bot_instance import bot
 from bot.keyboards import inline as inline_keyboards
 from bot.keyboards import reply as keyboards
+from bot.state_storage import state_storage
 from bot.utils import decorators as decorators
 from bot.utils import helpers as helpers
 

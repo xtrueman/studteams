@@ -36,7 +36,7 @@ class StateStorage:
             self._data[user_id] = {}
         self._data[user_id][key] = value
 
-    def get_data(self, user_id: int, key: str = None) -> Any:
+    def get_data(self, user_id: int, key: str | None = None) -> Any:
         """Получить данные пользователя"""
         if user_id not in self._data:
             return None if key else {}

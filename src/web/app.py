@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from web.db import get_teams_count, get_teams_with_members, get_total_students_count, get_all_reports, get_teams_list
+from web.db import get_all_reports, get_teams_count, get_teams_list, get_teams_with_members, get_total_students_count
 
 app = FastAPI(title="StudTeams Web")
 

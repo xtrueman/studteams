@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from myconn import select_one, select_all
+from myconn import select_all, select_one
 
 
 def get_teams_with_members() -> list[dict[str, Any]]:
