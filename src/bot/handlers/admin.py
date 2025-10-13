@@ -538,8 +538,17 @@ def cancel_admin_action(message: telebot.types.Message, ):
 
 def register_admin_handlers(bot_instance: telebot.TeleBot):
     """Регистрация обработчиков административных функций"""
-    bot_instance.register_message_handler(handle_admin_panel, func=lambda m: m.text == "🔧 Админ панель")
-    bot_instance.register_message_handler(handle_view_team_members, func=lambda m: m.text == "👥 Участники команды")
-    bot_instance.register_message_handler(handle_view_member_stats, func=lambda m: m.text == "📊 Статистика участника")
+    bot_instance.register_message_handler(
+        handle_admin_panel,
+        func=lambda m: m.text == "🔧 Админ панель"
+    )
+    bot_instance.register_message_handler(
+        handle_view_team_members,
+        func=lambda m: m.text == "👥 Участники команды"
+    )
+    bot_instance.register_message_handler(
+        handle_view_member_stats,
+        func=lambda m: m.text == "📊 Статистика участника"
+    )
 
     # FSM для просмотра статистики

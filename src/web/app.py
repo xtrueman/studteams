@@ -7,10 +7,11 @@ Web-приложение StudTeams.
 import os
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+import myconn
 from web.db import get_all_reports, get_teams_count, get_teams_list, get_teams_with_members, get_total_students_count
 
 app = FastAPI(title="StudTeams Web")
@@ -28,6 +29,26 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/teams")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint для мониторинга."""
+    try:
+        # Проверяем подключение к БД
+        conn = myconn.get_connection()
+        db_status = "healthy" if conn and conn.is_connected() else "unhealthy"
+    except Exception as e:
+        db_status = f"unhealthy: {e!s}"
+
+    health = {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "version": "1.0.0",
+        "database": db_status,
+    }
+
+    status_code = 200 if health["status"] == "healthy" else 503
+    return JSONResponse(content=health, status_code=status_code)
 
 
 @app.get("/faq", response_class=HTMLResponse)
